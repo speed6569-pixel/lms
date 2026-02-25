@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수강 신청</title>
+</head>
+<body>
+<h1>수강 신청 페이지</h1>
+<p id="courseText">원하는 강의를 선택해서 수강 신청할 수 있는 화면입니다.</p>
+
+<ul>
+    <li><a href="/courses">강의목록 보기</a></li>
+    <li><a href="/">홈으로 돌아가기</a></li>
+</ul>
+
+<script>
+    const params = new URLSearchParams(location.search);
+    const course = params.get('course');
+    if (course) {
+        document.getElementById('courseText').textContent = `선택한 강의(${course})의 수강 신청 화면입니다.`;
+    }
+</script>
+</body>
+</html>

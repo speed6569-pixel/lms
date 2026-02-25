@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인</title>
+</head>
+<body>
+<h1>로그인</h1>
+
+<p th:if="${message}" th:text="${message}" style="color: green;"></p>
+
+<h2 style="font-size: 18px;">운영자 로컬 로그인</h2>
+<form method="post" action="/login">
+    <div>
+        <label for="username">아이디 또는 이메일</label>
+        <input id="username" name="username" type="text" required>
+    </div>
+
+    <div>
+        <label for="password">비밀번호</label>
+        <input id="password" name="password" type="password" required>
+    </div>
+
+    <button type="submit">로그인</button>
+</form>
+
+<section style="margin-top: 24px; margin-bottom: 20px; padding: 14px; border: 1px solid #ddd; border-radius: 8px;">
+    <h2 style="margin-top: 0; font-size: 18px;">조직 SSO 로그인</h2>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
+        <a href="/oauth2/authorization/entra" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; text-decoration: none;">Entra ID</a>
+        <a href="/oauth2/authorization/google" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; text-decoration: none;">Google</a>
+        <a href="/oauth2/authorization/okta" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; text-decoration: none;">Okta</a>
+    </div>
+</section>
+
+<p>
+    아직 계정이 없나요? <a href="/signup">회원가입</a>
+</p>
+<p>
+    <a href="/">홈으로</a>
+</p>
+<script>
+    document.querySelector('form[action="/login"]').addEventListener('submit', function () {
+        localStorage.setItem('isLoggedIn', 'true');
+    });
+</script>
+</body>
+</html>
