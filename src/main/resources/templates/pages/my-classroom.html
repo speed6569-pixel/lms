@@ -17,12 +17,36 @@
     </div>
 </header>
 <main class="container content-wrap">
-    <div class="search-row"><input type="text" placeholder="내강의실 검색"><button type="button">검색</button></div>
-    <section class="post-list">
-        <article class="post-card"><h3>[내강의실] 진행 중 강의</h3><p>스프링부트 실전 2주차 학습이 진행 중입니다.</p></article>
-        <article class="post-card"><h3>[내강의실] 과제 제출 안내</h3><p>이번 주 과제 마감은 금요일 23:59까지입니다.</p></article>
-        <article class="post-card"><h3>[내강의실] 복습 추천</h3><p>지난 주 학습 내용 복습 퀴즈를 통해 이해도를 점검하세요.</p></article>
-    </section>
+    <div class="search-row">
+        <input id="pageSearchInput" type="text" placeholder="내강의실 검색">
+        <button id="pageSearchBtn" type="button">검색</button>
+    </div>
+
+    <div class="table-wrap">
+        <table class="data-table" id="searchContainer">
+            <thead>
+            <tr><th>과목코드</th><th>교과목명</th><th>진행률</th><th>상태</th><th>담당교수</th></tr>
+            </thead>
+            <tbody>
+            <tr class="search-item"><td>CSE201</td><td>웹프로그래밍</td><td>45%</td><td>수강중</td><td>김교수</td></tr>
+            <tr class="search-item"><td>CSE301</td><td>데이터베이스</td><td>70%</td><td>수강중</td><td>이교수</td></tr>
+            <tr class="search-item"><td>GEN101</td><td>커뮤니케이션 스킬</td><td>100%</td><td>수료</td><td>박교수</td></tr>
+            </tbody>
+        </table>
+    </div>
 </main>
+<script>
+(function(){
+  const input = document.getElementById('pageSearchInput');
+  const btn = document.getElementById('pageSearchBtn');
+  const rows = Array.from(document.querySelectorAll('.search-item'));
+  function run(){
+    const q = (input.value||'').trim().toLowerCase();
+    rows.forEach(r=>{ r.style.display = !q || r.textContent.toLowerCase().includes(q) ? '' : 'none'; });
+  }
+  btn.addEventListener('click', run);
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter'){e.preventDefault();run();} });
+})();
+</script>
 </body>
 </html>

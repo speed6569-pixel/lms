@@ -16,19 +16,118 @@
         <div class="top-auth"><a class="auth-link" href="/login">로그인</a><a class="auth-link auth-signup" href="/signup">회원가입</a></div>
     </div>
 </header>
+
 <main class="container content-wrap">
-    <div class="search-row"><input type="text" placeholder="수강신청 검색"><button type="button">검색</button></div>
-    <section class="post-list">
-        <article class="post-card"><h3>[수강신청] 신청 가능 과정</h3><p id="courseText">원하는 강의를 선택해서 수강 신청할 수 있는 화면입니다.</p></article>
-        <article class="post-card"><h3>[수강신청] 신청 안내</h3><p>원하는 과정 선택 후 신청 버튼을 누르면 즉시 신청됩니다.</p></article>
-        <article class="post-card"><h3>[수강신청] 유의사항</h3><p>정원 초과 시 대기 신청으로 전환될 수 있습니다.</p></article>
+    <p th:if="${message}" class="flash-msg" th:text="${message}"></p>
+
+    <section class="tab-row">
+        <button type="button" class="tab-btn active">개설과목 조회/신청</button>
+        <button type="button" class="tab-btn">찜강신청 내역</button>
+        <button type="button" class="tab-btn">시간표 조회</button>
     </section>
+
+    <section class="quick-apply-row">
+        <label>과목코드 <input id="quickCourseCode" type="text" placeholder="예: CSE201"></label>
+        <label>분반 <input id="quickSection" type="text" placeholder="예: 01"></label>
+        <button type="button" class="btn-primary" onclick="submitApplyByInput()">신청</button>
+    </section>
+
+    <form class="filter-grid" method="get" action="/enrollments/apply">
+        <select name="division">
+            <option value="">구분 전체</option>
+            <option value="전공" th:selected="${division == '전공'}">전공</option>
+            <option value="기타" th:selected="${division == '기타'}">기타</option>
+        </select>
+        <select name="college">
+            <option value="">학부(과) 전체</option>
+            <option value="공학" th:selected="${college == '공학'}">공학</option>
+            <option value="교양" th:selected="${college == '교양'}">교양</option>
+        </select>
+        <select name="major">
+            <option value="">전공 전체</option>
+            <option value="컴퓨터공학" th:selected="${major == '컴퓨터공학'}">컴퓨터공학</option>
+            <option value="소프트웨어" th:selected="${major == '소프트웨어'}">소프트웨어</option>
+            <option value="공통" th:selected="${major == '공통'}">공통</option>
+        </select>
+        <select name="dayNight">
+            <option value="">주야 전체</option>
+            <option value="주간" th:selected="${dayNight == '주간'}">주간</option>
+            <option value="야간" th:selected="${dayNight == '야간'}">야간</option>
+        </select>
+        <select name="grade">
+            <option value="">학년 전체</option>
+            <option value="1" th:selected="${grade == '1'}">1학년</option>
+            <option value="2" th:selected="${grade == '2'}">2학년</option>
+            <option value="3" th:selected="${grade == '3'}">3학년</option>
+        </select>
+        <input type="text" name="keyword" th:value="${keyword}" placeholder="교과목명/교수명/과목코드">
+        <button type="submit" class="btn-primary">검색</button>
+    </form>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>신청</th><th>주야</th><th>학년</th><th>과목코드</th><th>분반</th><th>교과목명</th><th>이수구분</th><th>학점</th><th>담당교수</th><th>강의시간</th><th>인원제한</th><th>비고(기타)</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="course : ${courses}">
+                <td><button type="button" class="apply-btn" th:attr="data-code=${course.courseCode},data-section=${course.section}" onclick="submitApply(this)">신청</button></td>
+                <td th:text="${course.dayNight}"></td>
+                <td th:text="${course.grade}"></td>
+                <td th:text="${course.courseCode}"></td>
+                <td th:text="${course.section}"></td>
+                <td th:text="${course.title}"></td>
+                <td th:text="${course.division}"></td>
+                <td th:text="${course.credits}"></td>
+                <td th:text="${course.professor}"></td>
+                <td th:text="${course.classTime}"></td>
+                <td th:text="${course.limitText}"></td>
+                <td th:text="${course.note}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(courses)}"><td colspan="12">검색 결과가 없습니다.</td></tr>
+            </tbody>
+        </table>
+    </div>
 </main>
+
 <script>
-    const params = new URLSearchParams(location.search);
-    const course = params.get('course');
-    if (course) {
-        document.getElementById('courseText').textContent = `선택한 강의(${course})의 수강 신청 화면입니다.`;
+    function submitApply(button) {
+        const courseCode = button.dataset.code;
+        const section = button.dataset.section;
+        postApply(courseCode, section);
+    }
+
+    function submitApplyByInput() {
+        const courseCode = document.getElementById('quickCourseCode').value.trim();
+        const section = document.getElementById('quickSection').value.trim();
+        if (!courseCode || !section) {
+            alert('과목코드와 분반을 입력하세요.');
+            return;
+        }
+        postApply(courseCode, section);
+    }
+
+    function postApply(courseCode, section) {
+        const form = document.createElement('form');
+        form.method = 'post';
+        form.action = '/enrollments/apply/request';
+
+        const codeInput = document.createElement('input');
+        codeInput.type = 'hidden';
+        codeInput.name = 'courseCode';
+        codeInput.value = courseCode;
+
+        const sectionInput = document.createElement('input');
+        sectionInput.type = 'hidden';
+        sectionInput.name = 'section';
+        sectionInput.value = section;
+
+        form.appendChild(codeInput);
+        form.appendChild(sectionInput);
+        document.body.appendChild(form);
+        form.submit();
     }
 </script>
 </body>

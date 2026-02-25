@@ -17,7 +17,7 @@ body {
 }
 
 .container {
-  width: min(1140px, calc(100% - 32px));
+  width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
 }
 
@@ -39,28 +39,10 @@ body {
 }
 
 .logo { font-size: 22px; margin: 0; }
+.main-nav { display: flex; gap: 30px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.main-nav a { text-decoration: none; color: var(--text); font-size: 17px; font-weight: 600; }
 
-.main-nav {
-  display: flex;
-  gap: 30px;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.main-nav a {
-  text-decoration: none;
-  color: var(--text);
-  font-size: 17px;
-  font-weight: 600;
-}
-
-.top-auth {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
+.top-auth { display: flex; gap: 8px; align-items: center; }
 .auth-link {
   font-size: 12px;
   color: var(--text);
@@ -70,72 +52,130 @@ body {
   padding: 6px 10px;
   background: #fff;
 }
+.auth-signup { border-color: #c7d7ff; color: var(--primary-strong); }
 
-.auth-signup {
-  border-color: #c7d7ff;
-  color: var(--primary-strong);
-}
+.content-wrap { margin: 24px auto 40px; }
 
-.content-wrap {
-  margin: 28px auto 40px;
-}
-
-.search-row {
+.search-row,
+.filter-grid,
+.quick-apply-row {
   display: flex;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
-.search-row input {
-  flex: 1;
+.search-row input,
+.search-row select,
+.filter-grid input,
+.filter-grid select,
+.quick-apply-row input {
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 12px;
+  padding: 10px 12px;
+  background: #fff;
+  min-height: 40px;
 }
 
-.search-row button {
+.search-row input,
+.filter-grid input { flex: 1; min-width: 220px; }
+
+.btn-primary,
+.search-row button,
+.filter-grid button,
+.apply-btn {
   border: none;
   background: var(--primary);
   color: #fff;
   border-radius: 10px;
-  padding: 0 16px;
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tab-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+.tab-btn {
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  border-radius: 10px;
+  padding: 10px 14px;
   font-weight: 600;
 }
-
-.post-list {
-  display: grid;
-  gap: 12px;
+.tab-btn.active {
+  border-color: #bed2ff;
+  color: var(--primary-strong);
+  background: #edf3ff;
 }
 
-.post-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 16px;
+.quick-apply-row {
+  justify-content: flex-end;
 }
 
-.post-card h3 {
-  margin: 0 0 8px;
-  font-size: 18px;
-}
-
-.post-card p {
-  margin: 0;
+.quick-apply-row label {
+  font-size: 13px;
   color: var(--muted);
-  line-height: 1.6;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
+
+.table-wrap {
+  overflow-x: auto;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.data-table th,
+.data-table td {
+  border-bottom: 1px solid #eef2f7;
+  padding: 10px 8px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.data-table thead th {
+  background: #f3f7ff;
+  color: #1f3b7a;
+  font-weight: 700;
+}
+
+.data-table tbody tr:nth-child(even) {
+  background: #fbfcff;
+}
+
+.flash-msg {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #cfe1ff;
+  background: #eef5ff;
+  color: #1f3b7a;
+}
+
+.post-list { display: grid; gap: 12px; }
+.post-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+.post-card h3 { margin: 0 0 8px; font-size: 18px; }
+.post-card p { margin: 0; color: var(--muted); line-height: 1.6; }
 
 @media (max-width: 980px) {
-  .topbar-inner {
-    grid-template-columns: 1fr;
-    justify-items: center;
-  }
-
-  .main-nav {
-    gap: 18px;
-  }
-
-  .main-nav a {
-    font-size: 15px;
-  }
+  .topbar-inner { grid-template-columns: 1fr; justify-items: center; }
+  .main-nav { gap: 18px; }
+  .main-nav a { font-size: 15px; }
+  .quick-apply-row { justify-content: flex-start; }
 }

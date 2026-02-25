@@ -17,12 +17,44 @@
     </div>
 </header>
 <main class="container content-wrap">
-    <div class="search-row"><input type="text" placeholder="과정안내 검색"><button type="button">검색</button></div>
-    <section class="post-list">
-        <article class="post-card"><h3>[과정안내] 3월 신규 오픈 과정</h3><p>자바 기초, 스프링부트 실전, SQL 마스터 과정을 순차 오픈합니다.</p></article>
-        <article class="post-card"><h3>[과정안내] 추천 학습 로드맵</h3><p>입문 → 백엔드 → 데이터 분석 순서로 학습하면 효과적입니다.</p></article>
-        <article class="post-card"><h3>[과정안내] 수강 전 준비사항</h3><p>기본 개발 환경 설치와 사전 진단 테스트를 진행해주세요.</p></article>
-    </section>
+    <form class="search-row" method="get" action="/courses">
+        <select name="category">
+            <option value="">과정구분 전체</option>
+            <option value="전공" th:selected="${category == '전공'}">전공</option>
+            <option value="기타" th:selected="${category == '기타'}">기타</option>
+        </select>
+        <select name="openedYear">
+            <option value="">개설연도 전체</option>
+            <option value="2026" th:selected="${openedYear == '2026'}">2026</option>
+            <option value="2025" th:selected="${openedYear == '2025'}">2025</option>
+        </select>
+        <input type="text" name="keyword" th:value="${keyword}" placeholder="과정명/교수명/과목코드 검색">
+        <button type="submit">검색</button>
+    </form>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>숫자</th><th>과정</th><th>운영 방식</th><th>제목</th><th>개설 연/월/일</th><th>학습정원</th><th>교수 이름</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="course : ${courses}">
+                <td th:text="${course.number}"></td>
+                <td th:text="${course.process}"></td>
+                <td th:text="${course.operation}"></td>
+                <td th:text="${course.title}"></td>
+                <td th:text="${course.openDate}"></td>
+                <td th:text="${course.capacity}"></td>
+                <td th:text="${course.professor}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(courses)}">
+                <td colspan="7">검색 결과가 없습니다.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
 </main>
 </body>
 </html>

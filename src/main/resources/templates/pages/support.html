@@ -17,12 +17,25 @@
     </div>
 </header>
 <main class="container content-wrap">
-    <div class="search-row"><input type="text" placeholder="학습지원 검색"><button type="button">검색</button></div>
-    <section class="post-list">
-        <article class="post-card"><h3>[학습지원] 자주 묻는 질문</h3><p>학습진도 반영, 영상 재생 오류, 과제 제출 오류 해결 가이드를 제공합니다.</p></article>
-        <article class="post-card"><h3>[학습지원] 학습 가이드</h3><p>효율적인 주간 학습 계획표와 시간 관리 팁을 확인해보세요.</p></article>
-        <article class="post-card"><h3>[학습지원] 자료실 업데이트</h3><p>최신 강의 노트와 실습 파일이 자료실에 추가되었습니다.</p></article>
+    <div class="search-row"><input id="pageSearchInput" type="text" placeholder="학습지원 검색"><button id="pageSearchBtn" type="button">검색</button></div>
+    <section class="post-list" id="searchContainer">
+        <article class="post-card search-item"><h3>[학습지원] 자주 묻는 질문</h3><p>학습진도 반영, 영상 재생 오류, 과제 제출 오류 해결 가이드를 제공합니다.</p></article>
+        <article class="post-card search-item"><h3>[학습지원] 학습 가이드</h3><p>효율적인 주간 학습 계획표와 시간 관리 팁을 확인해보세요.</p></article>
+        <article class="post-card search-item"><h3>[학습지원] 자료실 업데이트</h3><p>최신 강의 노트와 실습 파일이 자료실에 추가되었습니다.</p></article>
     </section>
 </main>
+<script>
+(function(){
+  const input = document.getElementById('pageSearchInput');
+  const btn = document.getElementById('pageSearchBtn');
+  const rows = Array.from(document.querySelectorAll('.search-item'));
+  function run(){
+    const q = (input.value||'').trim().toLowerCase();
+    rows.forEach(r=>{ r.style.display = !q || r.textContent.toLowerCase().includes(q) ? '' : 'none'; });
+  }
+  btn.addEventListener('click', run);
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter'){e.preventDefault();run();} });
+})();
+</script>
 </body>
 </html>
