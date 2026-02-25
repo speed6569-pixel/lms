@@ -7,20 +7,22 @@
     <link rel="stylesheet" th:href="@{/css/page.css}">
 </head>
 <body>
-<div class="container">
-    <section class="page">
-        <h1>학습지원</h1>
-        <p>학습 중 필요한 가이드와 자주 묻는 질문을 제공합니다.</p>
-        <ul>
-            <li>학습 가이드</li>
-            <li>강의 수강 방법</li>
-            <li>과제 제출 안내</li>
-        </ul>
-        <div class="actions">
-            <a href="/customer-center">고객 센터</a>
-            <a href="/">홈으로</a>
-        </div>
+<header class="topbar">
+    <div class="container topbar-inner">
+        <h1 class="logo"><a href="/" style="text-decoration:none;color:inherit;">LMS</a></h1>
+        <nav class="main-nav">
+            <a href="/courses">과정안내</a><a href="/enrollments/apply">수강신청</a><a href="/enrollments/me">내강의실</a><a href="/support">학습지원</a><a href="/customer-center">고객 센터</a><a href="/schedule">교육일정</a>
+        </nav>
+        <div class="top-auth"><a class="auth-link" href="/login">로그인</a><a class="auth-link auth-signup" href="/signup">회원가입</a></div>
+    </div>
+</header>
+<main class="container content-wrap">
+    <div class="search-row"><input type="text" placeholder="학습지원 검색"><button type="button">검색</button></div>
+    <section class="post-list">
+        <article class="post-card"><h3>[학습지원] 자주 묻는 질문</h3><p>학습진도 반영, 영상 재생 오류, 과제 제출 오류 해결 가이드를 제공합니다.</p></article>
+        <article class="post-card"><h3>[학습지원] 학습 가이드</h3><p>효율적인 주간 학습 계획표와 시간 관리 팁을 확인해보세요.</p></article>
+        <article class="post-card"><h3>[학습지원] 자료실 업데이트</h3><p>최신 강의 노트와 실습 파일이 자료실에 추가되었습니다.</p></article>
     </section>
-</div>
+</main>
 </body>
 </html>

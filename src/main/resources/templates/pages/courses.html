@@ -7,20 +7,22 @@
     <link rel="stylesheet" th:href="@{/css/page.css}">
 </head>
 <body>
-<div class="container">
-    <section class="page">
-        <h1>과정안내</h1>
-        <p>현재 운영 중인 과정의 학습 목표와 커리큘럼을 안내합니다.</p>
-        <ul>
-            <li>입문: 자바 기초 완성</li>
-            <li>실무: 스프링부트 실전</li>
-            <li>데이터: SQL 마스터 클래스</li>
-        </ul>
-        <div class="actions">
-            <a href="/enrollments/apply">수강신청 바로가기</a>
-            <a href="/">홈으로</a>
-        </div>
+<header class="topbar">
+    <div class="container topbar-inner">
+        <h1 class="logo"><a href="/" style="text-decoration:none;color:inherit;">LMS</a></h1>
+        <nav class="main-nav">
+            <a href="/courses">과정안내</a><a href="/enrollments/apply">수강신청</a><a href="/enrollments/me">내강의실</a><a href="/support">학습지원</a><a href="/customer-center">고객 센터</a><a href="/schedule">교육일정</a>
+        </nav>
+        <div class="top-auth"><a class="auth-link" href="/login">로그인</a><a class="auth-link auth-signup" href="/signup">회원가입</a></div>
+    </div>
+</header>
+<main class="container content-wrap">
+    <div class="search-row"><input type="text" placeholder="과정안내 검색"><button type="button">검색</button></div>
+    <section class="post-list">
+        <article class="post-card"><h3>[과정안내] 3월 신규 오픈 과정</h3><p>자바 기초, 스프링부트 실전, SQL 마스터 과정을 순차 오픈합니다.</p></article>
+        <article class="post-card"><h3>[과정안내] 추천 학습 로드맵</h3><p>입문 → 백엔드 → 데이터 분석 순서로 학습하면 효과적입니다.</p></article>
+        <article class="post-card"><h3>[과정안내] 수강 전 준비사항</h3><p>기본 개발 환경 설치와 사전 진단 테스트를 진행해주세요.</p></article>
     </section>
-</div>
+</main>
 </body>
 </html>

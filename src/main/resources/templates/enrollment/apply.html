@@ -1,19 +1,29 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>수강 신청</title>
+    <title>수강신청</title>
+    <link rel="stylesheet" th:href="@{/css/page.css}">
 </head>
 <body>
-<h1>수강 신청 페이지</h1>
-<p id="courseText">원하는 강의를 선택해서 수강 신청할 수 있는 화면입니다.</p>
-
-<ul>
-    <li><a href="/courses">강의목록 보기</a></li>
-    <li><a href="/">홈으로 돌아가기</a></li>
-</ul>
-
+<header class="topbar">
+    <div class="container topbar-inner">
+        <h1 class="logo"><a href="/" style="text-decoration:none;color:inherit;">LMS</a></h1>
+        <nav class="main-nav">
+            <a href="/courses">과정안내</a><a href="/enrollments/apply">수강신청</a><a href="/enrollments/me">내강의실</a><a href="/support">학습지원</a><a href="/customer-center">고객 센터</a><a href="/schedule">교육일정</a>
+        </nav>
+        <div class="top-auth"><a class="auth-link" href="/login">로그인</a><a class="auth-link auth-signup" href="/signup">회원가입</a></div>
+    </div>
+</header>
+<main class="container content-wrap">
+    <div class="search-row"><input type="text" placeholder="수강신청 검색"><button type="button">검색</button></div>
+    <section class="post-list">
+        <article class="post-card"><h3>[수강신청] 신청 가능 과정</h3><p id="courseText">원하는 강의를 선택해서 수강 신청할 수 있는 화면입니다.</p></article>
+        <article class="post-card"><h3>[수강신청] 신청 안내</h3><p>원하는 과정 선택 후 신청 버튼을 누르면 즉시 신청됩니다.</p></article>
+        <article class="post-card"><h3>[수강신청] 유의사항</h3><p>정원 초과 시 대기 신청으로 전환될 수 있습니다.</p></article>
+    </section>
+</main>
 <script>
     const params = new URLSearchParams(location.search);
     const course = params.get('course');

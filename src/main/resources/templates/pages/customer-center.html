@@ -7,20 +7,22 @@
     <link rel="stylesheet" th:href="@{/css/page.css}">
 </head>
 <body>
-<div class="container">
-    <section class="page">
-        <h1>고객 센터</h1>
-        <p>서비스 이용 문의, 계정 문의, 환불 문의를 접수할 수 있습니다.</p>
-        <ul>
-            <li>운영시간: 평일 09:00 ~ 18:00</li>
-            <li>이메일: support@lms.local</li>
-            <li>전화: 02-0000-0000</li>
-        </ul>
-        <div class="actions">
-            <a href="/support">학습지원</a>
-            <a href="/">홈으로</a>
-        </div>
+<header class="topbar">
+    <div class="container topbar-inner">
+        <h1 class="logo"><a href="/" style="text-decoration:none;color:inherit;">LMS</a></h1>
+        <nav class="main-nav">
+            <a href="/courses">과정안내</a><a href="/enrollments/apply">수강신청</a><a href="/enrollments/me">내강의실</a><a href="/support">학습지원</a><a href="/customer-center">고객 센터</a><a href="/schedule">교육일정</a>
+        </nav>
+        <div class="top-auth"><a class="auth-link" href="/login">로그인</a><a class="auth-link auth-signup" href="/signup">회원가입</a></div>
+    </div>
+</header>
+<main class="container content-wrap">
+    <div class="search-row"><input type="text" placeholder="고객 센터 검색"><button type="button">검색</button></div>
+    <section class="post-list">
+        <article class="post-card"><h3>[고객 센터] 문의 접수 안내</h3><p>운영시간 내 문의 시 평균 1시간 이내 답변드립니다.</p></article>
+        <article class="post-card"><h3>[고객 센터] 계정 관련 도움말</h3><p>아이디/비밀번호 찾기, 계정 잠금 해제 절차를 확인하세요.</p></article>
+        <article class="post-card"><h3>[고객 센터] 공지</h3><p>시스템 점검 시 서비스가 일시 중단될 수 있습니다.</p></article>
     </section>
-</div>
+</main>
 </body>
 </html>

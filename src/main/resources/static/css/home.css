@@ -32,47 +32,52 @@ body {
 
 .topbar-inner {
   min-height: 76px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 140px 1fr auto;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
   padding: 10px 0;
 }
 
-.logo { font-size: 22px; margin: 0; }
-
-.topbar-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 10px;
+.logo {
+  font-size: 22px;
+  margin: 0;
 }
 
-.search-wrap {
+.main-nav {
   display: flex;
-  gap: 8px;
-}
-
-.search-wrap input {
-  width: 280px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 14px;
-}
-
-nav {
-  display: flex;
-  gap: 14px;
+  gap: 30px;
   align-items: center;
+  justify-content: center;
   flex-wrap: wrap;
-  justify-content: flex-end;
 }
 
-nav a {
+.main-nav a {
   text-decoration: none;
   color: var(--text);
-  font-size: 14px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.top-auth {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.auth-link {
+  font-size: 12px;
+  color: var(--text);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #fff;
+}
+
+.auth-signup {
+  border-color: #c7d7ff;
+  color: var(--primary-strong);
 }
 
 .hero {
@@ -106,7 +111,7 @@ nav a {
 .desc {
   color: var(--muted);
   line-height: 1.65;
-  margin: 0 0 12px;
+  margin: 0;
 }
 
 .btn {
@@ -127,26 +132,12 @@ nav a {
 
 .btn-primary:hover { background: var(--primary-strong); }
 
-.btn-outline {
-  color: var(--primary);
-  border: 1px solid #b7ccff;
-  background: white;
-}
-
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 16px;
   box-shadow: var(--shadow);
   padding: 20px;
-}
-
-.search-results h4 { margin: 0 0 8px; }
-.search-results ul {
-  margin: 0;
-  padding-left: 18px;
-  color: #374151;
-  line-height: 1.7;
 }
 
 .preview-card h3 { margin-top: 0; }
@@ -177,32 +168,62 @@ nav a {
 .section-block {
   margin: 12px auto 22px;
 }
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
 .section-block h3 {
-  margin: 0 0 12px;
+  margin: 0;
 }
 
-.cards-grid {
-  display: grid;
+.carousel-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.carousel-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  background: white;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.lecture-carousel {
+  display: flex;
   gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scroll-behavior: smooth;
 }
 
-.lectures-grid {
-  grid-template-columns: repeat(3, 1fr);
+.lecture-carousel::-webkit-scrollbar {
+  height: 8px;
 }
 
-.notice-grid {
-  grid-template-columns: 1fr;
-  margin-bottom: 42px;
+.lecture-carousel::-webkit-scrollbar-thumb {
+  background: #d3d9e5;
+  border-radius: 999px;
 }
 
 .lecture-card {
+  flex: 0 0 320px;
+  min-height: 176px;
   cursor: pointer;
   transition: transform .16s ease, box-shadow .16s ease;
 }
+
 .lecture-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 14px 28px rgba(0,0,0,.1);
 }
+
 .card-tag {
   display: inline-block;
   margin: 0 0 8px;
@@ -213,13 +234,24 @@ nav a {
   font-size: 12px;
   font-weight: 700;
 }
+
 .lecture-card h4,
-.notice-card h4 { margin: 0 0 8px; }
+.notice-card h4 {
+  margin: 0 0 8px;
+}
+
 .lecture-card p,
 .notice-card p {
   margin: 0;
   color: var(--muted);
   line-height: 1.55;
+}
+
+.notice-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin-bottom: 42px;
 }
 
 .footer {
@@ -235,10 +267,28 @@ nav a {
 }
 
 @media (max-width: 980px) {
-  .hero-inner { grid-template-columns: 1fr; }
-  .lectures-grid { grid-template-columns: 1fr; }
-  .topbar-right { align-items: stretch; width: 100%; }
-  .search-wrap { width: 100%; }
-  .search-wrap input { width: 100%; }
-  nav { justify-content: flex-start; }
+  .topbar-inner {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .top-auth {
+    justify-self: center;
+  }
+
+  .main-nav {
+    gap: 18px;
+  }
+
+  .main-nav a {
+    font-size: 15px;
+  }
+
+  .hero-inner {
+    grid-template-columns: 1fr;
+  }
+
+  .lecture-card {
+    flex-basis: 270px;
+  }
 }
