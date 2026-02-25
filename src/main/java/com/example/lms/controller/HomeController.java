@@ -40,29 +40,23 @@ public class HomeController {
     @GetMapping("/enrollments/apply")
     public String enrollmentApplyPage(
             @RequestParam(required = false) String division,
-            @RequestParam(required = false) String college,
-            @RequestParam(required = false) String major,
+            @RequestParam(required = false) String job,
+            @RequestParam(required = false) String position,
             @RequestParam(required = false) String dayNight,
-            @RequestParam(required = false) String grade,
-            @RequestParam(required = false) String keyword,
             Model model
     ) {
         List<Course> filtered = sampleCourses().stream()
                 .filter(c -> isBlank(division) || c.division().equalsIgnoreCase(division))
-                .filter(c -> isBlank(college) || c.college().equalsIgnoreCase(college))
-                .filter(c -> isBlank(major) || c.major().equalsIgnoreCase(major))
+                .filter(c -> isBlank(job) || c.job().equalsIgnoreCase(job))
+                .filter(c -> isBlank(position) || c.position().equalsIgnoreCase(position))
                 .filter(c -> isBlank(dayNight) || c.dayNight().equalsIgnoreCase(dayNight))
-                .filter(c -> isBlank(grade) || String.valueOf(c.grade()).equals(grade))
-                .filter(c -> isBlank(keyword) || contains(c, keyword))
                 .toList();
 
         model.addAttribute("courses", filtered);
         model.addAttribute("division", division);
-        model.addAttribute("college", college);
-        model.addAttribute("major", major);
+        model.addAttribute("job", job);
+        model.addAttribute("position", position);
         model.addAttribute("dayNight", dayNight);
-        model.addAttribute("grade", grade);
-        model.addAttribute("keyword", keyword);
         return "enrollment/apply";
     }
 
@@ -105,7 +99,7 @@ public class HomeController {
         return c.title().toLowerCase().contains(k)
                 || c.courseCode().toLowerCase().contains(k)
                 || c.professor().toLowerCase().contains(k)
-                || c.major().toLowerCase().contains(k);
+                || c.position().toLowerCase().contains(k);
     }
 
     private List<Course> sampleCourses() {
@@ -135,8 +129,8 @@ public class HomeController {
             String classTime,
             String limitText,
             String note,
-            String college,
-            String major
+            String job,
+            String position
     ) {
         public Course(int number, String category, String operation, String process, String title, String openDate,
                       int capacity, String professor, String division, String dayNight, int grade, String courseCode,
