@@ -1,9 +1,11 @@
 package com.example.lms.config;
 
 import com.example.lms.auth.service.CustomUserDetailsService;
+import com.example.lms.enrollment.repo.UserJpaRepository;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -20,9 +22,12 @@ import java.io.IOException;
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
+    private final UserJpaRepository userJpaRepository;
 
-    public SecurityConfig(CustomUserDetailsService userDetailsService) {
+    public SecurityConfig(CustomUserDetailsService userDetailsService,
+                          UserJpaRepository userJpaRepository) {
         this.userDetailsService = userDetailsService;
+        this.userJpaRepository = userJpaRepository;
     }
 
     @Bean
@@ -36,7 +41,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .userDetailsService(userDetailsService)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/login", "/signup", "/signup/**", "/css/**", "/js/**", "/images/**").permitAll()
+                .requestMatchers("/", "/homepage", "/login", "/signup", "/signup/**", "/css/**", "/js/**", "/images/**").permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/user/**").hasAnyRole("USER", "ADMIN")
                 .anyRequest().authenticated()
@@ -50,11 +55,17 @@ public class SecurityConfig {
                 .failureUrl("/login?error")
                 .permitAll()
             )
+            .rememberMe(remember -> remember
+                .userDetailsService(userDetailsService)
+                .key("lms-remember-me-secret-key-change-this")
+                .rememberMeParameter("remember-me")
+                .tokenValiditySeconds(14 * 24 * 60 * 60)
+            )
             .logout(logout -> logout
                 .logoutUrl("/logout")
                 .logoutSuccessUrl("/login?logout")
                 .invalidateHttpSession(true)
-                .deleteCookies("JSESSIONID")
+                .deleteCookies("JSESSIONID", "remember-me")
                 .permitAll()
             );
 
@@ -66,22 +77,24 @@ public class SecurityConfig {
                                      org.springframework.security.core.Authentication authentication)
             throws IOException, ServletException {
 
+        String loginId = authentication.getName();
+        HttpSession session = request.getSession(true);
+        userJpaRepository.findByLoginId(loginId).ifPresent(u -> {
+            session.setAttribute("loginUserId", u.getId());
+            session.setAttribute("loginUserName", u.getName());
+            session.setAttribute("loginUserEmail", loginId);
+            session.setAttribute("loginUserRole", u.getRole());
+        });
+
         RequestCache requestCache = new HttpSessionRequestCache();
         SavedRequest savedRequest = requestCache.getRequest(request, response);
         if (savedRequest != null) {
-            response.sendRedirect(savedRequest.getRedirectUrl());
+            String target = savedRequest.getRedirectUrl();
+            if (target.endsWith("?continue")) target = target.replace("?continue", "");
+            response.sendRedirect(target);
             return;
         }
 
-        String referer = request.getHeader("Referer");
-        if (referer != null && !referer.contains("/login") && !referer.contains("/signup")) {
-            response.sendRedirect(referer);
-            return;
-        }
-
-        boolean isAdmin = authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-
-        response.sendRedirect(isAdmin ? "/admin/dashboard" : "/user/home");
+        response.sendRedirect("/");
     }
 }
