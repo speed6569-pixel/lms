@@ -26,8 +26,7 @@
 
     <section id="openPanel">
         <form class="filter-grid" method="get" action="/enrollments/apply">
-            <input id="quickCourseCode" name="courseCode" type="text" placeholder="과목코드" th:value="${courseCode}" style="max-width:120px;">
-            <input id="quickSection" name="section" type="text" placeholder="분반" th:value="${section}" style="max-width:90px;">
+            <input id="quickCourseCode" type="text" placeholder="과목코드" style="max-width:140px;">
             <select name="job">
                 <option value="">직군 전체</option>
                 <option value="개발" th:selected="${job == '개발'}">개발</option>
@@ -58,7 +57,7 @@
             <table class="data-table">
                 <thead>
                 <tr>
-                    <th>신청</th><th>주야</th><th>과목코드</th><th>분반</th><th>직군</th><th>직급</th><th>교과목명</th><th>담당교수</th><th>강의시간</th><th>가격</th><th>인원제한</th><th>비고</th>
+                    <th>신청</th><th>주야</th><th>과목코드</th><th>직군</th><th>직급</th><th>교과목명</th><th>담당교수</th><th>강의시간</th><th>가격</th><th>인원제한</th><th>비고</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -73,7 +72,6 @@
                     </td>
                     <td th:text="${course.dayNight}"></td>
                     <td th:text="${course.courseCode}"></td>
-                    <td th:text="${course.section}"></td>
                     <td th:text="${course.job}"></td>
                     <td th:text="${course.position}"></td>
                     <td th:text="${course.title}"></td>
@@ -83,7 +81,7 @@
                     <td th:text="|${course.enrolledCount}/${course.maxCount}|"></td>
                     <td th:text="${course.note}"></td>
                 </tr>
-                <tr th:if="${#lists.isEmpty(courses)}"><td colspan="12">검색 결과가 없습니다.</td></tr>
+                <tr th:if="${#lists.isEmpty(courses)}"><td colspan="11">검색 결과가 없습니다.</td></tr>
                 </tbody>
             </table>
         </div>
@@ -257,34 +255,11 @@
 
     window.submitApplyByInput = function(){
       const courseCode = document.getElementById('quickCourseCode').value.trim();
-      const section = document.getElementById('quickSection').value.trim();
-      const job = filterForm.querySelector('select[name="job"]').value.trim();
-      const position = filterForm.querySelector('select[name="position"]').value.trim();
-      const dayNight = filterForm.querySelector('select[name="dayNight"]').value.trim();
-      const keyword = filterForm.querySelector('input[name="keyword"]').value.trim();
-
-      if (!courseCode && !section && !job && !position && !dayNight && !keyword) {
-        return alert('정보를 입력하세요');
-      }
-
-      if (!courseCode || !section) return alert('과목코드와 분반을 입력하세요.');
-      const btn = findApplyButton(courseCode, section);
-      if (!btn) return alert('해당 과목코드/분반 강의를 찾을 수 없습니다.');
+      if (!courseCode) return alert('과목코드를 입력하세요.');
+      const btn = document.querySelector(`button.apply-btn[data-code="${courseCode}"]`);
+      if (!btn) return alert('해당 과목코드 강의를 찾을 수 없습니다.');
       window.toggleApply(btn);
     }
-
-    filterForm.addEventListener('submit', (e) => {
-      const courseCode = document.getElementById('quickCourseCode').value.trim();
-      const job = filterForm.querySelector('select[name="job"]').value.trim();
-      const position = filterForm.querySelector('select[name="position"]').value.trim();
-      const dayNight = filterForm.querySelector('select[name="dayNight"]').value.trim();
-      const keyword = filterForm.querySelector('input[name="keyword"]').value.trim();
-
-      if (!courseCode && !job && !position && !dayNight && !keyword) {
-        e.preventDefault();
-        alert('정보를 입력하세요');
-      }
-    });
 
     (async function init(){
       await loadState();
