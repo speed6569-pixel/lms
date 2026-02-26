@@ -216,7 +216,33 @@ public Optional<Course> findById(Long courseId) {
 
 ---
 
-## 8) 권한 정책 (RBAC)
+## 8) 로그인/인증 전략 (요구사항 반영)
+
+### 8.1 기본 정책: SSO 우선
+- 고객사 사용자는 기본적으로 **SSO만 허용**
+- 우선 구현 표준: **OIDC (Authorization Code + PKCE)**
+- SAML은 엔터프라이즈 요구 시 추가
+- 대상 IdP: Microsoft Entra ID / Google Workspace / Okta
+
+### 8.2 보조 정책: 로컬 로그인 최소화
+- 로컬 로그인은 **Super Admin(내부 운영자)** 전용
+- 방식: 이메일 + 비밀번호
+- 고객사 사용자 로컬 로그인은 기본 차단
+- 필요 시 테넌트 설정으로 예외 허용
+
+### 8.3 온보딩 정책: 초대 링크 + 도메인 제한
+- 관리자가 사용자 초대
+- 초대 수락 시 해당 조직(tenant) 자동 소속
+- 조직별 허용 도메인(예: `@company.com`) 검증
+- 파일럿/초기 계약 시 계정 세팅 속도 개선
+
+### 8.4 구현 메모
+- 상세 설계 문서: `docs/auth-strategy.md`
+- 추후 테이블 확장: tenants, tenant_domains, identity_providers, invitations, user_identities
+
+---
+
+## 9) 권한 정책 (RBAC)
 
 - **ADMIN**: 전체 관리 가능
 - **INSTRUCTOR**: 본인 강의의 생성/수정/삭제, 공지 등록
@@ -526,3 +552,10 @@ public Optional<Course> findById(Long courseId) {
 ---
 
 필요하면 다음 단계로, 위 15일 작업표를 기준으로 **Jira/Trello 티켓 형식(담당자/우선순위/완료조건 포함)**으로 변환해줄 수 있다.
+
+---
+
+## 추가 문서
+
+- 수행계획서(초안): `docs/수행계획서.md`
+- 수행계획서(최종 제출용): `docs/최종_수행계획서.md`
