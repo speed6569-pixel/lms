@@ -9,6 +9,10 @@ import java.util.List;
 
 public interface EnrollmentJpaRepository extends JpaRepository<EnrollmentEntity, Long> {
 
+    boolean existsByUserIdAndCourseSessionIdAndStatus(Long userId, Long courseSessionId, String status);
+
+    EnrollmentEntity findTopByUserIdAndCourseSessionIdAndStatusOrderByIdDesc(Long userId, Long courseSessionId, String status);
+
     @Query(value = """
             SELECT c.course_code AS courseCode,
                    cs.section AS section,

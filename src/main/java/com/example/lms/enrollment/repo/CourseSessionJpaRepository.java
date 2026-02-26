@@ -9,7 +9,8 @@ import java.util.List;
 public interface CourseSessionJpaRepository extends JpaRepository<CourseSessionEntity, Long> {
 
     @Query(value = """
-            SELECT c.course_code AS courseCode,
+            SELECT cs.id AS sessionId,
+                   c.course_code AS courseCode,
                    cs.section AS section,
                    c.job_group AS job,
                    c.job_level AS position,
