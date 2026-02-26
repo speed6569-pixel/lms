@@ -46,18 +46,12 @@
         <form class="filter-grid" method="get" action="/enrollments/me">
             <select name="division">
                 <option value="">구분(전공/기타)</option>
-                <option value="전공" th:selected="${division == '전공'}">전공</option>
-                <option value="기타" th:selected="${division == '기타'}">기타</option>
             </select>
             <select name="job">
                 <option value="">직업</option>
-                <option value="공학" th:selected="${job == '공학'}">공학</option>
-                <option value="교양" th:selected="${job == '교양'}">교양</option>
             </select>
             <select name="dayNight">
                 <option value="">주야</option>
-                <option value="주간" th:selected="${dayNight == '주간'}">주간</option>
-                <option value="야간" th:selected="${dayNight == '야간'}">야간</option>
             </select>
             <input type="text" name="keyword" th:value="${keyword}" placeholder="키워드 검색">
             <button type="submit">검색</button>
