@@ -78,7 +78,10 @@ public class AuthController {
             model.addAttribute("emailMessage", "인증번호를 이메일로 보냈습니다. (유효시간 5분)");
             model.addAttribute("expireSeconds", emailVerificationService.getRemainExpireSeconds(session));
         } catch (Exception e) {
-            model.addAttribute("emailError", "이메일 전송에 실패했습니다. 메일 설정을 확인해주세요.");
+            // 개발/로컬 환경 fallback: SMTP 미설정 시 화면에 코드 노출(운영에서는 제거 권장)
+            model.addAttribute("emailError", "이메일 전송에 실패했습니다. 개발모드 인증번호를 사용하세요.");
+            model.addAttribute("devVerificationCode", code);
+            model.addAttribute("expireSeconds", emailVerificationService.getRemainExpireSeconds(session));
         }
 
         return "auth/signup";
