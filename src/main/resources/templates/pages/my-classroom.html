@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내강의실</title>
+    <title>마이페이지</title>
     <link rel="stylesheet" th:href="@{/css/page.css}">
 </head>
 <body>
@@ -11,42 +11,137 @@
     <div class="container topbar-inner">
         <h1 class="logo"><a href="/" style="text-decoration:none;color:inherit;">LMS</a></h1>
         <nav class="main-nav">
-            <a href="/courses">과정안내</a><a href="/enrollments/apply">수강신청</a><a href="/enrollments/me">내강의실</a><a href="/support">학습지원</a><a href="/customer-center">고객 센터</a><a href="/schedule">교육일정</a>
+            <a href="/courses">과정안내</a><a href="/enrollments/apply">수강신청</a><a href="/enrollments/me">마이페이지</a><a href="/support">학습지원</a><a href="/customer-center">고객 센터</a><a href="/schedule">교육일정</a>
         </nav>
         <div class="top-auth"><a class="auth-link" href="/login">로그인</a><a class="auth-link auth-signup" href="/signup">회원가입</a></div>
     </div>
 </header>
-<main class="container content-wrap">
-    <div class="search-row">
-        <input id="pageSearchInput" type="text" placeholder="내강의실 검색">
-        <button id="pageSearchBtn" type="button">검색</button>
-    </div>
 
-    <div class="table-wrap">
-        <table class="data-table" id="searchContainer">
-            <thead>
-            <tr><th>과목코드</th><th>교과목명</th><th>진행률</th><th>상태</th><th>담당교수</th></tr>
-            </thead>
-            <tbody>
-            <tr class="search-item"><td>CSE201</td><td>웹프로그래밍</td><td>45%</td><td>수강중</td><td>김교수</td></tr>
-            <tr class="search-item"><td>CSE301</td><td>데이터베이스</td><td>70%</td><td>수강중</td><td>이교수</td></tr>
-            <tr class="search-item"><td>GEN101</td><td>커뮤니케이션 스킬</td><td>100%</td><td>수료</td><td>박교수</td></tr>
-            </tbody>
-        </table>
-    </div>
+<main class="container content-wrap mypage-layout">
+    <aside class="mypage-sidebar">
+        <h2>마이페이지</h2>
+        <nav class="side-nav">
+            <a href="/enrollments/me" class="active">개설과목 조회/신청</a>
+            <a href="/enrollments/me?tab=profile">개인정보</a>
+            <a href="/enrollments/me?tab=history">수강 내역</a>
+            <a href="/enrollments/me?tab=timetable">시간표 조회</a>
+            <a href="/support">학습지원</a>
+        </nav>
+    </aside>
+
+    <section class="mypage-main card-surface">
+        <div class="tab-row">
+            <button type="button" class="tab-btn">개인정보</button>
+            <button type="button" class="tab-btn active">개설과목 조회/신청</button>
+            <button type="button" class="tab-btn">수강 내역</button>
+            <button type="button" class="tab-btn">시간표 조회</button>
+        </div>
+
+        <div class="quick-apply-row">
+            <label>과목코드 <input id="quickCourseCode" type="text" placeholder="예: CSE201"></label>
+            <label>분반 <input id="quickSection" type="text" placeholder="예: 01"></label>
+            <button type="button" class="btn-primary" onclick="submitApplyByInput()">빠른 신청</button>
+        </div>
+
+        <form class="filter-grid" method="get" action="/enrollments/me">
+            <select name="division">
+                <option value="">구분(전공/기타)</option>
+                <option value="전공" th:selected="${division == '전공'}">전공</option>
+                <option value="기타" th:selected="${division == '기타'}">기타</option>
+            </select>
+            <select name="job">
+                <option value="">직업</option>
+                <option value="공학" th:selected="${job == '공학'}">공학</option>
+                <option value="교양" th:selected="${job == '교양'}">교양</option>
+            </select>
+            <select name="dayNight">
+                <option value="">주야</option>
+                <option value="주간" th:selected="${dayNight == '주간'}">주간</option>
+                <option value="야간" th:selected="${dayNight == '야간'}">야간</option>
+            </select>
+            <input type="text" name="keyword" th:value="${keyword}" placeholder="키워드 검색">
+            <button type="submit">검색</button>
+        </form>
+
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                <tr>
+                    <th>신청</th>
+                    <th>주야</th>
+                    <th>코드</th>
+                    <th>분반</th>
+                    <th>교과목명</th>
+                    <th>이수구분</th>
+                    <th>교수</th>
+                    <th>강의시간</th>
+                    <th>인원제한</th>
+                    <th>수업계획서</th>
+                    <th>점수확인</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="course : ${courses}">
+                    <td>
+                        <button type="button" class="apply-btn"
+                                th:attr="data-code=${course.courseCode},data-section=${course.section}"
+                                onclick="submitApply(this)">신청</button>
+                    </td>
+                    <td th:text="${course.dayNight}"></td>
+                    <td th:text="${course.courseCode}"></td>
+                    <td th:text="${course.section}"></td>
+                    <td th:text="${course.title}"></td>
+                    <td th:text="${course.division}"></td>
+                    <td th:text="${course.professor}"></td>
+                    <td th:text="${course.classTime}"></td>
+                    <td th:text="${course.limitText}"></td>
+                    <td><button type="button" class="mini-btn mini-blue">수업계획서</button></td>
+                    <td><button type="button" class="mini-btn mini-green">점수확인</button></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(courses)}"><td colspan="11">검색 결과가 없습니다.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
 </main>
+
 <script>
-(function(){
-  const input = document.getElementById('pageSearchInput');
-  const btn = document.getElementById('pageSearchBtn');
-  const rows = Array.from(document.querySelectorAll('.search-item'));
-  function run(){
-    const q = (input.value||'').trim().toLowerCase();
-    rows.forEach(r=>{ r.style.display = !q || r.textContent.toLowerCase().includes(q) ? '' : 'none'; });
-  }
-  btn.addEventListener('click', run);
-  input.addEventListener('keydown', e=>{ if(e.key==='Enter'){e.preventDefault();run();} });
-})();
+    function submitApply(button) {
+        const courseCode = button.dataset.code;
+        const section = button.dataset.section;
+        postApply(courseCode, section);
+    }
+
+    function submitApplyByInput() {
+        const courseCode = document.getElementById('quickCourseCode').value.trim();
+        const section = document.getElementById('quickSection').value.trim();
+        if (!courseCode || !section) {
+            alert('과목코드와 분반을 입력하세요.');
+            return;
+        }
+        postApply(courseCode, section);
+    }
+
+    async function postApply(courseCode, section) {
+        try {
+            const body = new URLSearchParams({ courseCode, section }).toString();
+            const response = await fetch('/enrollments/me/request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body
+            });
+
+            if (!response.ok) {
+                alert('신청 처리 중 오류가 발생했습니다.');
+                return;
+            }
+
+            const result = await response.json();
+            alert(result.message || (result.success ? '신청이 완료되었습니다.' : '신청에 실패했습니다.'));
+        } catch (e) {
+            alert('네트워크 오류로 신청에 실패했습니다.');
+        }
+    }
 </script>
 </body>
 </html>

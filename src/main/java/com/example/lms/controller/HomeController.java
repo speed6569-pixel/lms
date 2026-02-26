@@ -5,9 +5,12 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 public class HomeController {
@@ -71,8 +74,44 @@ public class HomeController {
     }
 
     @GetMapping("/enrollments/me")
-    public String myClassroomPage() {
+    public String myPage(
+            @RequestParam(required = false) String division,
+            @RequestParam(required = false) String job,
+            @RequestParam(required = false) String dayNight,
+            @RequestParam(required = false) String keyword,
+            Model model
+    ) {
+        List<Course> filtered = sampleCourses().stream()
+                .filter(c -> isBlank(division) || c.division().equalsIgnoreCase(division))
+                .filter(c -> isBlank(job) || c.job().equalsIgnoreCase(job))
+                .filter(c -> isBlank(dayNight) || c.dayNight().equalsIgnoreCase(dayNight))
+                .filter(c -> isBlank(keyword) || contains(c, keyword))
+                .toList();
+
+        model.addAttribute("courses", filtered);
+        model.addAttribute("division", division);
+        model.addAttribute("job", job);
+        model.addAttribute("dayNight", dayNight);
+        model.addAttribute("keyword", keyword);
         return "pages/my-classroom";
+    }
+
+    @PostMapping("/enrollments/me/request")
+    @ResponseBody
+    public Map<String, Object> requestCourseAjax(
+            @RequestParam String courseCode,
+            @RequestParam String section
+    ) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (isBlank(courseCode) || isBlank(section)) {
+            result.put("success", false);
+            result.put("message", "과목코드와 분반을 입력해 주세요.");
+            return result;
+        }
+
+        result.put("success", true);
+        result.put("message", "신청 요청 완료: " + courseCode + "-" + section);
+        return result;
     }
 
     @GetMapping("/support")
