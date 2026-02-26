@@ -127,12 +127,15 @@
     const enrolledMap = new Map();
 
     const timetableEntries = (window.__TIMETABLE_ENTRIES__ || []).filter(e => ['월','화','수','목','금'].includes(e.day));
-    const colors = {
-      '개발': 'bg-blue-200 border-blue-300 text-blue-900',
-      '기획/마케팅': 'bg-orange-200 border-orange-300 text-orange-900',
-      '경영': 'bg-emerald-200 border-emerald-300 text-emerald-900',
-      '영업': 'bg-purple-200 border-purple-300 text-purple-900'
+    const pastelByCategory = {
+      '개발': 'bg-blue-100',
+      '기획/마케팅': 'bg-orange-100',
+      '경영': 'bg-emerald-100',
+      '영업': 'bg-purple-100'
     };
+
+    const days = ['월','화','수','목','금'];
+    const hours = Array.from({ length: 10 }, (_, i) => `${String(9 + i).padStart(2,'0')}:00`); // 09:00~18:00
 
     function activate(tab) {
       [tabOpen, tabHistory, tabTime].forEach(t => t.classList.remove('active'));
@@ -150,20 +153,13 @@
     });
 
     function keyOf(code, section){ return `${code}-${section}`; }
-
-    function saveState(){
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(enrolledMap.values())));
-    }
-
+    function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(enrolledMap.values()))); }
     function loadState(){
-      try {
-        const items = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        items.forEach(v => enrolledMap.set(keyOf(v.code, v.section), v));
-      } catch (_) {}
+      try { JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]').forEach(v => enrolledMap.set(keyOf(v.code, v.section), v)); }
+      catch(_) {}
     }
 
     function updateEmptyRow(){ historyEmpty.style.display = enrolledMap.size ? 'none' : ''; }
-
     function addHistoryRow(item){
       const tr = document.createElement('tr');
       tr.id = `history-${keyOf(item.code,item.section)}`;
@@ -171,7 +167,6 @@
                      `<td><button type="button" class="apply-btn" onclick="window.cancelFromHistory('${item.code}','${item.section}')">수강 취소</button></td>`;
       historyBody.appendChild(tr);
     }
-
     function renderHistory(){
       historyBody.querySelectorAll('tr[id^="history-"]').forEach(x => x.remove());
       Array.from(enrolledMap.values()).forEach(addHistoryRow);
@@ -190,45 +185,53 @@
       });
     }
 
-    function parseMinutes(hm){
-      const [h,m] = hm.split(':').map(Number); return h*60+m;
+    function hourIndex(hm) {
+      const hour = Number(hm.split(':')[0]);
+      return hour - 9;
     }
 
-    function WeeklyTimetable({ enrolledKeys }) {
-      const days = ['월','화','수','목','금'];
-      const startBase = 9 * 60;
-      const endBase = 21 * 60;
-      const pxPerMin = 1.2;
-      const totalHeight = (endBase - startBase) * pxPerMin;
+    function WeeklyTimetable({ items }) {
+      const grid = {};
+      const skip = {};
+      days.forEach(d => {
+        grid[d] = {};
+        skip[d] = new Set();
+      });
 
-      const items = timetableEntries
-        .filter(e => enrolledKeys.has(`${e.courseCode}-${e.section}`))
-        .map(e => {
-          const top = Math.max(0, (parseMinutes(e.start) - startBase) * pxPerMin);
-          const height = Math.max(44, (parseMinutes(e.end) - parseMinutes(e.start)) * pxPerMin);
-          return { ...e, top, height, cls: colors[e.category] || 'bg-slate-200 border-slate-300 text-slate-900' };
-        });
+      items.forEach(item => {
+        const start = Math.max(0, hourIndex(item.startTime));
+        const end = Math.min(hours.length, hourIndex(item.endTime));
+        const span = Math.max(1, end - start);
+        if (!grid[item.day]) return;
+        grid[item.day][start] = { ...item, span };
+        for (let i = start + 1; i < start + span; i++) skip[item.day].add(i);
+      });
 
-      return React.createElement('div', { className: 'w-full overflow-x-auto' },
-        React.createElement('div', { className: 'min-w-[820px]' },
-          React.createElement('div', { className: 'grid grid-cols-6 bg-slate-50 border border-slate-200 rounded-t-lg text-sm font-semibold text-slate-700' },
-            React.createElement('div', { className: 'p-2 border-r border-slate-200' }, '시간'),
-            ...days.map(d => React.createElement('div', { key: d, className: 'p-2 border-r last:border-r-0 border-slate-200 text-center' }, d))
+      return React.createElement('div', { className: 'overflow-x-auto' },
+        React.createElement('table', { className: 'min-w-[900px] w-full border-collapse text-sm' },
+          React.createElement('thead', null,
+            React.createElement('tr', { className: 'bg-slate-50 text-slate-700' },
+              React.createElement('th', { className: 'border border-slate-200 p-2 w-24' }, '시간'),
+              ...days.map(d => React.createElement('th', { key: d, className: 'border border-slate-200 p-2 text-center' }, d))
+            )
           ),
-          React.createElement('div', { className: 'grid grid-cols-6 border-x border-b border-slate-200 rounded-b-lg' },
-            React.createElement('div', { className: 'relative border-r border-slate-200 bg-white', style: { height: `${totalHeight}px` } },
-              ...Array.from({length: 13}).map((_,i)=>{
-                const h = 9 + i;
-                return React.createElement('div', { key: h, className:'absolute left-0 right-0 text-xs text-slate-500 border-t border-slate-100 pl-2', style:{ top:`${i*60*pxPerMin}px`} }, `${String(h).padStart(2,'0')}:00`);
+          React.createElement('tbody', null,
+            ...hours.map((time, r) => React.createElement('tr', { key: time, className: 'h-16' },
+              React.createElement('td', { className: 'border border-slate-200 px-2 py-1 text-slate-500 bg-slate-50' }, time),
+              ...days.map(day => {
+                if (skip[day].has(r)) return null;
+                const entry = grid[day][r];
+                if (!entry) return React.createElement('td', { key: `${day}-${time}`, className: 'border border-slate-200 bg-white' });
+                const cls = pastelByCategory[entry.category] || 'bg-slate-100';
+                return React.createElement('td', {
+                  key: `${day}-${time}`,
+                  rowSpan: entry.span,
+                  className: `border border-slate-200 align-top p-2 ${cls}`
+                },
+                  React.createElement('div', { className: 'font-semibold text-slate-900 leading-snug' }, entry.title),
+                  React.createElement('div', { className: 'text-xs text-slate-700 mt-1' }, entry.room)
+                );
               })
-            ),
-            ...days.map(day => React.createElement('div', { key: day, className:'relative border-r last:border-r-0 border-slate-200 bg-white', style:{height:`${totalHeight}px`} },
-              ...Array.from({length: 13}).map((_,i)=>React.createElement('div',{key:i,className:'absolute left-0 right-0 border-t border-slate-100',style:{top:`${i*60*pxPerMin}px`}})),
-              ...items.filter(x=>x.day===day).map((x,idx)=>React.createElement('div',{key:idx,className:`absolute left-1 right-1 rounded-lg border p-2 shadow-sm ${x.cls}`,style:{top:`${x.top}px`,height:`${x.height}px`}},
-                React.createElement('div',{className:'text-xs font-bold leading-tight'},x.subject),
-                React.createElement('div',{className:'text-[11px] mt-1'},x.room),
-                React.createElement('div',{className:'text-[11px]'},`${x.start}~${x.end}`)
-              ))
             ))
           )
         )
@@ -238,7 +241,17 @@
     const root = createRoot(document.getElementById('reactTimetableRoot'));
     function renderTimetable(){
       const keys = new Set(Array.from(enrolledMap.values()).map(v => `${v.code}-${v.section}`));
-      root.render(React.createElement(WeeklyTimetable, { enrolledKeys: keys }));
+      const items = timetableEntries
+        .filter(e => keys.has(`${e.courseCode}-${e.section}`))
+        .map(e => ({
+          title: e.subject,
+          day: e.day,
+          startTime: e.start,
+          endTime: e.end,
+          room: e.room,
+          category: e.category
+        }));
+      root.render(React.createElement(WeeklyTimetable, { items }));
     }
 
     window.toggleApply = function(button){
