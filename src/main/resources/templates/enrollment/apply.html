@@ -40,9 +40,11 @@
                 <option value="기타" th:selected="${division == '기타'}">기타</option>
             </select>
             <select name="job">
-                <option value="">직업 전체</option>
-                <option value="공학" th:selected="${job == '공학'}">공학</option>
-                <option value="교양" th:selected="${job == '교양'}">교양</option>
+                <option value="">직군 전체</option>
+                <option value="개발" th:selected="${job == '개발'}">개발</option>
+                <option value="기획/마케팅" th:selected="${job == '기획/마케팅'}">기획/마케팅</option>
+                <option value="경영" th:selected="${job == '경영'}">경영</option>
+                <option value="영업" th:selected="${job == '영업'}">영업</option>
             </select>
             <select name="position">
                 <option value="">직급 전체</option>
@@ -62,7 +64,7 @@
             <table class="data-table">
                 <thead>
                 <tr>
-                    <th>신청</th><th>주야</th><th>직업</th><th>과목코드</th><th>교과목명</th><th>이수구분</th><th>학점</th><th>담당교수</th><th>강의시간</th><th>인원제한</th><th>비고(기타)</th>
+                    <th>신청</th><th>주야</th><th>직군</th><th>과목코드</th><th>교과목명</th><th>이수구분</th><th>학점</th><th>담당교수</th><th>강의시간</th><th>인원제한</th><th>비고(기타)</th>
                 </tr>
                 </thead>
                 <tbody>
