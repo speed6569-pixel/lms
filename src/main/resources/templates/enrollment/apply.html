@@ -109,16 +109,17 @@
 
     <section id="timePanel" style="display:none;">
         <div class="table-wrap">
-            <table class="data-table">
-                <thead><tr><th>주야</th><th>과목코드</th><th>교과목명</th><th>강의시간</th><th>직급</th><th>인원제한</th></tr></thead>
+            <table class="data-table timetable-grid" id="timeGridTable">
+                <thead>
+                <tr>
+                    <th>시간</th>
+                    <th th:each="d : ${weekDays}" th:text="${d}"></th>
+                </tr>
+                </thead>
                 <tbody>
-                <tr th:each="course : ${courses}">
-                    <td th:text="${course.dayNight}"></td>
-                    <td th:text="${course.courseCode}"></td>
-                    <td th:text="${course.title}"></td>
-                    <td th:text="${course.classTime}"></td>
-                    <td th:text="${course.position}"></td>
-                    <td th:text="|${course.enrolledCount}/${course.maxCount}|"></td>
+                <tr th:each="t : ${timeSlots}">
+                    <td th:text="${t}"></td>
+                    <td th:each="d : ${weekDays}" th:attr="data-time=${t},data-day=${d}"></td>
                 </tr>
                 </tbody>
             </table>
@@ -126,7 +127,24 @@
     </section>
 </main>
 
-<script>
+<script th:inline="javascript">
+    const timetableEntries = /*[[${timetableEntries}]]*/ [];
+    const categoryColor = {
+      '개발': '#d9ecff',
+      '기획/마케팅': '#ffe8c7',
+      '경영': '#e3f7df',
+      '영업': '#f9dfff'
+    };
+
+    function renderTimeGrid() {
+      timetableEntries.forEach(item => {
+        const slot = document.querySelector(`[data-time="${item.start}"][data-day="${item.day}"]`);
+        if (!slot) return;
+        slot.innerHTML = `<div class="time-chip" style="background:${categoryColor[item.category] || '#eef2f7'}">`
+          + `<strong>${item.subject}</strong><small>${item.room}</small><small>${item.start}~${item.end}</small></div>`;
+      });
+    }
+
     const tabOpen = document.getElementById('tabOpen');
     const tabHistory = document.getElementById('tabHistory');
     const tabTime = document.getElementById('tabTime');
@@ -159,6 +177,8 @@
         historyPanel.style.display = 'none';
         timePanel.style.display = '';
     });
+
+    renderTimeGrid();
 
     function submitApply(button) {
         const courseCode = button.dataset.code;

@@ -60,6 +60,9 @@ public class HomeController {
         model.addAttribute("position", position);
         model.addAttribute("dayNight", dayNight);
         model.addAttribute("keyword", keyword);
+        model.addAttribute("timeSlots", List.of("09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "19:00"));
+        model.addAttribute("weekDays", List.of("월", "화", "수", "목", "금"));
+        model.addAttribute("timetableEntries", timetableEntries());
         return "enrollment/apply";
     }
 
@@ -170,6 +173,17 @@ public class HomeController {
                 || c.job().toLowerCase().contains(k);
     }
 
+    private List<TimetableEntry> timetableEntries() {
+        return List.of(
+                new TimetableEntry("Spring Boot 실무 API 개발", "A-201", "월", "10:00", "12:00", "개발"),
+                new TimetableEntry("React 프론트엔드 아키텍처", "B-302", "화", "19:00", "21:00", "개발"),
+                new TimetableEntry("디지털 퍼널 기획과 전환 최적화", "온라인", "수", "14:00", "16:00", "기획/마케팅"),
+                new TimetableEntry("성과관리와 조직 운영 전략", "C-105", "목", "18:30", "20:30", "경영"),
+                new TimetableEntry("B2B 제안서 작성과 수주 전략", "온라인", "금", "09:30", "11:30", "영업"),
+                new TimetableEntry("고객 협상 스킬 부트캠프", "D-110", "토", "13:00", "15:00", "영업")
+        );
+    }
+
     private List<Course> sampleCourses() {
         return List.of(
                 new Course(1, "전공", "온라인", "개발트랙", "Spring Boot 실무 API 개발", "2026-03-10", "김민수", "전공", "주간", "DEV401", "01", "월 10:00-12:00", "신청가능", "개발", "대리", 22, 30, "무료"),
@@ -200,6 +214,16 @@ public class HomeController {
             int enrolledCount,
             int maxCount,
             String price
+    ) {
+    }
+
+    public record TimetableEntry(
+            String subject,
+            String room,
+            String day,
+            String start,
+            String end,
+            String category
     ) {
     }
 }
