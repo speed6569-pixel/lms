@@ -101,13 +101,12 @@
     </section>
 
     <section id="timePanel" style="display:none;">
-        <div class="table-wrap">
-            <table class="data-table">
-                <thead><tr><th>교과목명</th><th>교수</th><th>강의시간</th><th>상태</th></tr></thead>
-                <tbody id="timeEnrolledBody">
-                <tr id="timeEnrolledEmpty"><td colspan="4">수강신청된 강의가 없습니다.</td></tr>
-                </tbody>
-            </table>
+        <div id="weeklyTimetable" class="weekly-wrap">
+            <div class="weekly-head">
+                <div>시간</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div>
+            </div>
+            <div class="weekly-body" id="weeklyBody"></div>
+            <div id="weeklyEvents" class="weekly-events"></div>
         </div>
     </section>
 </main>
@@ -122,8 +121,8 @@
 
     const historyBody = document.getElementById('historyBody');
     const historyEmpty = document.getElementById('historyEmpty');
-    const timeEnrolledBody = document.getElementById('timeEnrolledBody');
-    const timeEnrolledEmpty = document.getElementById('timeEnrolledEmpty');
+    const weeklyBody = document.getElementById('weeklyBody');
+    const weeklyEvents = document.getElementById('weeklyEvents');
     const filterForm = document.querySelector('#openPanel form.filter-grid');
     const enrolledMap = new Map();
     const courseRows = Array.from(document.querySelectorAll('#courseTableBody .course-row'));
@@ -198,10 +197,16 @@
     function keyOf(code, section){ return `${code}-${section}`; }
 
     async function loadState(){
-      const res = await fetch('/enroll/list');
-      const items = await res.json();
+      const [listRes, myRes] = await Promise.all([
+        fetch('/enroll/list'),
+        fetch('/api/me/enrollments')
+      ]);
+      const listItems = await listRes.json();
+      const myJson = await myRes.json();
+      const myLectures = myJson.lectures || [];
+
       enrolledMap.clear();
-      items.forEach(v => enrolledMap.set(keyOf(v.courseCode, v.section), {
+      listItems.forEach(v => enrolledMap.set(keyOf(v.courseCode, v.section), {
         code: v.courseCode,
         section: v.section,
         title: v.title,
@@ -209,6 +214,8 @@
         classTime: v.classTime,
         date: v.date
       }));
+
+      renderWeeklyGrid(myLectures);
     }
 
     function getCourseMeta(code, section) {
@@ -237,19 +244,64 @@
       updateEmptyRow();
     }
 
-    function renderTimeEnrolledList(){
-      timeEnrolledBody.querySelectorAll('tr[data-time-enrolled="true"]').forEach(x => x.remove());
-      Array.from(enrolledMap.values()).forEach(item => {
-        const meta = getCourseMeta(item.code, item.section);
-        const title = item.title || meta.title;
-        const professor = item.professor || meta.professor;
-        const classTime = item.classTime || meta.classTime;
-        const tr = document.createElement('tr');
-        tr.setAttribute('data-time-enrolled', 'true');
-        tr.innerHTML = `<td>${title}</td><td>${professor}</td><td>${classTime}</td><td>수강신청 완료</td>`;
-        timeEnrolledBody.appendChild(tr);
+    function toMin(hm){ const [h,m] = hm.split(':').map(Number); return h*60+m; }
+
+    function colorFor(title){
+      let hash = 0;
+      for (let i=0;i<title.length;i++) hash = (hash*31 + title.charCodeAt(i)) >>> 0;
+      const hue = hash % 360;
+      return `hsl(${hue} 75% 85%)`;
+    }
+
+    function renderWeeklyGrid(lectures){
+      const days = ['월','화','수','목','금'];
+      const startMin = 9*60, endMin = 19*60, step=30;
+      const rows = (endMin-startMin)/step;
+
+      weeklyBody.innerHTML = '';
+      weeklyEvents.innerHTML = '';
+
+      for(let r=0; r<rows; r++){
+        const t = startMin + r*step;
+        const th = document.createElement('div');
+        th.className='t';
+        th.textContent = t%60===0 ? `${String(Math.floor(t/60)).padStart(2,'0')}:00` : '';
+        weeklyBody.appendChild(th);
+        for(let d=0; d<5; d++){
+          const c=document.createElement('div'); c.className='c'; weeklyBody.appendChild(c);
+        }
+      }
+
+      const conflicts = new Set();
+      const byDay = {월:[],화:[],수:[],목:[],금:[]};
+      lectures.forEach((l,i)=>{ if(byDay[l.day]) byDay[l.day].push({...l,_i:i}); });
+      for(const day of days){
+        const arr = byDay[day].sort((a,b)=>toMin(a.startTime)-toMin(b.startTime));
+        for(let i=0;i<arr.length;i++) for(let j=i+1;j<arr.length;j++){
+          if(toMin(arr[j].startTime) < toMin(arr[i].endTime)) { conflicts.add(arr[i]._i); conflicts.add(arr[j]._i); }
+        }
+      }
+
+      const dayWidth = weeklyEvents.clientWidth/5;
+      const slotH = 24;
+      lectures.forEach((l,i)=>{
+        if(!days.includes(l.day)) return;
+        const s=Math.max(toMin(l.startTime),startMin), e=Math.min(toMin(l.endTime),endMin);
+        if(e<=s) return;
+        const dayIdx=days.indexOf(l.day);
+        const top=((s-startMin)/step)*slotH + 2;
+        const height=((e-s)/step)*slotH - 4;
+
+        const div=document.createElement('div');
+        div.className='lecture-block'+(conflicts.has(i)?' conflict':'');
+        div.style.left = `${dayIdx*dayWidth + 4}px`;
+        div.style.top = `${top}px`;
+        div.style.width = `${dayWidth - 8}px`;
+        div.style.height = `${Math.max(height,24)}px`;
+        div.style.background = colorFor(l.title || l.subject || '강의');
+        div.innerHTML = `<strong>${l.title || l.subject}</strong><div>${l.room || '-'}</div><div>${l.startTime}~${l.endTime}</div>`;
+        weeklyEvents.appendChild(div);
       });
-      timeEnrolledEmpty.style.display = enrolledMap.size ? 'none' : '';
     }
 
     function findApplyButton(code, section){
@@ -285,11 +337,9 @@
         });
       }
       const result = await res.json();
-      alert(result.message || '처리되었습니다.');
 
       await loadState();
       renderHistory();
-      renderTimeEnrolledList();
       syncApplyButtons();
     }
 
@@ -299,27 +349,24 @@
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({ courseCode: code, section }).toString()
       });
-      const result = await res.json();
-      alert(result.message || '수강이 취소되었습니다');
+      await res.json();
 
       await loadState();
       renderHistory();
-      renderTimeEnrolledList();
       syncApplyButtons();
     }
 
     window.submitApplyByInput = function(){
       const courseCode = document.getElementById('quickCourseCode').value.trim();
-      if (!courseCode) return alert('과목코드를 입력하세요.');
+      if (!courseCode) return;
       const btn = document.querySelector(`button.apply-btn[data-code="${courseCode}"]`);
-      if (!btn) return alert('해당 과목코드 강의를 찾을 수 없습니다.');
+      if (!btn) return;
       window.toggleApply(btn);
     }
 
     (async function init(){
       await loadState();
       renderHistory();
-      renderTimeEnrolledList();
       syncApplyButtons();
       applyCourseFilters();
     })();
