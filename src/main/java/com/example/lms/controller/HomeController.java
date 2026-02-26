@@ -42,6 +42,8 @@ public class HomeController {
 
     @GetMapping("/enrollments/apply")
     public String enrollmentApplyPage(
+            @RequestParam(required = false) String courseCode,
+            @RequestParam(required = false) String section,
             @RequestParam(required = false) String job,
             @RequestParam(required = false) String position,
             @RequestParam(required = false) String dayNight,
@@ -49,6 +51,8 @@ public class HomeController {
             Model model
     ) {
         List<Course> filtered = sampleCourses().stream()
+                .filter(c -> isBlank(courseCode) || c.courseCode().equalsIgnoreCase(courseCode))
+                .filter(c -> isBlank(section) || c.section().equalsIgnoreCase(section))
                 .filter(c -> isBlank(job) || c.job().equalsIgnoreCase(job))
                 .filter(c -> isBlank(position) || c.position().equalsIgnoreCase(position))
                 .filter(c -> isBlank(dayNight) || c.dayNight().equalsIgnoreCase(dayNight))
@@ -56,6 +60,8 @@ public class HomeController {
                 .toList();
 
         model.addAttribute("courses", filtered);
+        model.addAttribute("courseCode", courseCode);
+        model.addAttribute("section", section);
         model.addAttribute("job", job);
         model.addAttribute("position", position);
         model.addAttribute("dayNight", dayNight);
