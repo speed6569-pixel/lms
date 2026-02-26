@@ -49,7 +49,8 @@
                 <option value="야간" th:selected="${dayNight == '야간'}">야간</option>
             </select>
             <input type="text" name="keyword" placeholder="키워드 검색" th:value="${keyword}" style="min-width:180px;">
-            <button type="submit" class="btn-primary">검색</button>
+            <button type="button" id="searchBtn" class="btn-primary">검색</button>
+            <button type="button" id="resetFilterBtn" class="btn-primary" style="background:#6b7280;">필터 초기화</button>
             <button type="button" class="btn-primary" onclick="submitApplyByInput()">신청</button>
         </form>
 
@@ -60,8 +61,9 @@
                     <th>신청</th><th>주야</th><th>과목코드</th><th>직군</th><th>직급</th><th>교과목명</th><th>담당교수</th><th>강의시간</th><th>가격</th><th>인원제한</th><th>비고</th>
                 </tr>
                 </thead>
-                <tbody>
-                <tr th:each="course : ${courses}">
+                <tbody id="courseTableBody">
+                <tr th:each="course : ${courses}" class="course-row"
+                    th:attr="data-code=${course.courseCode},data-job=${course.job},data-position=${course.position},data-daynight=${course.dayNight}">
                     <td>
                         <button type="button" class="apply-btn"
                                 th:attr="data-code=${course.courseCode},data-section=${course.section},data-title=${course.title}"
@@ -81,7 +83,7 @@
                     <td th:text="|${course.enrolledCount}/${course.maxCount}|"></td>
                     <td th:text="${course.note}"></td>
                 </tr>
-                <tr th:if="${#lists.isEmpty(courses)}"><td colspan="11">검색 결과가 없습니다.</td></tr>
+                <tr id="noResultRow" th:if="${#lists.isEmpty(courses)}"><td colspan="11">검색 결과가 없습니다.</td></tr>
                 </tbody>
             </table>
         </div>
@@ -124,6 +126,47 @@
     const timeEnrolledEmpty = document.getElementById('timeEnrolledEmpty');
     const filterForm = document.querySelector('#openPanel form.filter-grid');
     const enrolledMap = new Map();
+    const courseRows = Array.from(document.querySelectorAll('#courseTableBody .course-row'));
+    const noResultRow = document.getElementById('noResultRow');
+    const searchBtn = document.getElementById('searchBtn');
+    const resetFilterBtn = document.getElementById('resetFilterBtn');
+
+    function applyCourseFilters() {
+      const code = document.getElementById('quickCourseCode').value.trim().toLowerCase();
+      const job = filterForm.querySelector('select[name="job"]').value.trim().toLowerCase();
+      const position = filterForm.querySelector('select[name="position"]').value.trim().toLowerCase();
+      const dayNight = filterForm.querySelector('select[name="dayNight"]').value.trim().toLowerCase();
+      const keyword = filterForm.querySelector('input[name="keyword"]').value.trim().toLowerCase();
+
+      let visibleCount = 0;
+      courseRows.forEach(row => {
+        const rowCode = (row.dataset.code || '').toLowerCase();
+        const rowJob = (row.dataset.job || '').toLowerCase();
+        const rowPosition = (row.dataset.position || '').toLowerCase();
+        const rowDayNight = (row.dataset.daynight || '').toLowerCase();
+        const rowText = row.textContent.toLowerCase();
+
+        const match = (!code || rowCode.includes(code))
+          && (!job || rowJob === job)
+          && (!position || rowPosition === position)
+          && (!dayNight || rowDayNight === dayNight)
+          && (!keyword || rowText.includes(keyword));
+
+        row.style.display = match ? '' : 'none';
+        if (match) visibleCount++;
+      });
+
+      if (noResultRow) noResultRow.style.display = visibleCount === 0 ? '' : 'none';
+    }
+
+    function resetCourseFilters() {
+      document.getElementById('quickCourseCode').value = '';
+      filterForm.querySelector('select[name="job"]').value = '';
+      filterForm.querySelector('select[name="position"]').value = '';
+      filterForm.querySelector('select[name="dayNight"]').value = '';
+      filterForm.querySelector('input[name="keyword"]').value = '';
+      applyCourseFilters();
+    }
 
     function activate(tab) {
       [tabOpen, tabHistory, tabTime].forEach(t => t.classList.remove('active'));
@@ -139,6 +182,18 @@
     tabTime.addEventListener('click', () => {
       activate(tabTime); openPanel.style.display='none'; historyPanel.style.display='none'; timePanel.style.display='';
     });
+
+    filterForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      applyCourseFilters();
+    });
+    searchBtn.addEventListener('click', applyCourseFilters);
+    resetFilterBtn.addEventListener('click', resetCourseFilters);
+    document.getElementById('quickCourseCode').addEventListener('input', applyCourseFilters);
+    filterForm.querySelector('select[name="job"]').addEventListener('change', applyCourseFilters);
+    filterForm.querySelector('select[name="position"]').addEventListener('change', applyCourseFilters);
+    filterForm.querySelector('select[name="dayNight"]').addEventListener('change', applyCourseFilters);
+    filterForm.querySelector('input[name="keyword"]').addEventListener('input', applyCourseFilters);
 
     function keyOf(code, section){ return `${code}-${section}`; }
 
@@ -266,6 +321,7 @@
       renderHistory();
       renderTimeEnrolledList();
       syncApplyButtons();
+      applyCourseFilters();
     })();
 </script>
 </body>
