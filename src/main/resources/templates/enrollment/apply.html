@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>수강신청</title>
     <link rel="stylesheet" th:href="@{/css/page.css}">
-    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
 <header class="topbar">
@@ -102,18 +101,18 @@
     </section>
 
     <section id="timePanel" style="display:none;">
-        <div id="reactTimetableRoot" class="bg-white rounded-xl border border-slate-200 p-4"></div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>교과목명</th><th>교수</th><th>강의시간</th><th>상태</th></tr></thead>
+                <tbody id="timeEnrolledBody">
+                <tr id="timeEnrolledEmpty"><td colspan="4">수강신청된 강의가 없습니다.</td></tr>
+                </tbody>
+            </table>
+        </div>
     </section>
 </main>
 
-<script th:inline="javascript">
-    window.__TIMETABLE_ENTRIES__ = /*[[${timetableEntries}]]*/ [];
-</script>
-
-<script type="module">
-    import React from 'https://esm.sh/react@18.3.1';
-    import { createRoot } from 'https://esm.sh/react-dom@18.3.1/client';
-
+<script>
     const tabOpen = document.getElementById('tabOpen');
     const tabHistory = document.getElementById('tabHistory');
     const tabTime = document.getElementById('tabTime');
@@ -123,19 +122,10 @@
 
     const historyBody = document.getElementById('historyBody');
     const historyEmpty = document.getElementById('historyEmpty');
+    const timeEnrolledBody = document.getElementById('timeEnrolledBody');
+    const timeEnrolledEmpty = document.getElementById('timeEnrolledEmpty');
     const STORAGE_KEY = 'lms_enrolled_courses_v1';
     const enrolledMap = new Map();
-
-    const timetableEntries = (window.__TIMETABLE_ENTRIES__ || []).filter(e => ['월','화','수','목','금'].includes(e.day));
-    const pastelByCategory = {
-      '개발': 'bg-blue-100',
-      '기획/마케팅': 'bg-orange-100',
-      '경영': 'bg-emerald-100',
-      '영업': 'bg-purple-100'
-    };
-
-    const days = ['월','화','수','목','금'];
-    const hours = Array.from({ length: 10 }, (_, i) => `${String(9 + i).padStart(2,'0')}:00`); // 09:00~18:00
 
     function activate(tab) {
       [tabOpen, tabHistory, tabTime].forEach(t => t.classList.remove('active'));
@@ -159,6 +149,18 @@
       catch(_) {}
     }
 
+    function getCourseMeta(code, section) {
+      const btn = document.querySelector(`button.apply-btn[data-code="${code}"][data-section="${section}"]`);
+      if (!btn) return { title: code, professor: '-', classTime: '-' };
+      const row = btn.closest('tr');
+      const cells = row ? row.querySelectorAll('td') : [];
+      return {
+        title: cells[6]?.textContent?.trim() || btn.dataset.title || code,
+        professor: cells[7]?.textContent?.trim() || '-',
+        classTime: cells[8]?.textContent?.trim() || '-'
+      };
+    }
+
     function updateEmptyRow(){ historyEmpty.style.display = enrolledMap.size ? 'none' : ''; }
     function addHistoryRow(item){
       const tr = document.createElement('tr');
@@ -173,6 +175,18 @@
       updateEmptyRow();
     }
 
+    function renderTimeEnrolledList(){
+      timeEnrolledBody.querySelectorAll('tr[data-time-enrolled="true"]').forEach(x => x.remove());
+      Array.from(enrolledMap.values()).forEach(item => {
+        const meta = getCourseMeta(item.code, item.section);
+        const tr = document.createElement('tr');
+        tr.setAttribute('data-time-enrolled', 'true');
+        tr.innerHTML = `<td>${meta.title}</td><td>${meta.professor}</td><td>${meta.classTime}</td><td>수강신청 완료</td>`;
+        timeEnrolledBody.appendChild(tr);
+      });
+      timeEnrolledEmpty.style.display = enrolledMap.size ? 'none' : '';
+    }
+
     function findApplyButton(code, section){
       return document.querySelector(`button.apply-btn[data-code="${code}"][data-section="${section}"]`);
     }
@@ -183,75 +197,6 @@
         const key = keyOf(btn.dataset.code, btn.dataset.section);
         btn.textContent = enrolledMap.has(key) ? '수강 취소' : '신청';
       });
-    }
-
-    function hourIndex(hm) {
-      const hour = Number(hm.split(':')[0]);
-      return hour - 9;
-    }
-
-    function WeeklyTimetable({ items }) {
-      const grid = {};
-      const skip = {};
-      days.forEach(d => {
-        grid[d] = {};
-        skip[d] = new Set();
-      });
-
-      items.forEach(item => {
-        const start = Math.max(0, hourIndex(item.startTime));
-        const end = Math.min(hours.length, hourIndex(item.endTime));
-        const span = Math.max(1, end - start);
-        if (!grid[item.day]) return;
-        grid[item.day][start] = { ...item, span };
-        for (let i = start + 1; i < start + span; i++) skip[item.day].add(i);
-      });
-
-      return React.createElement('div', { className: 'overflow-x-auto' },
-        React.createElement('table', { className: 'min-w-[900px] w-full border-collapse text-sm' },
-          React.createElement('thead', null,
-            React.createElement('tr', { className: 'bg-slate-50 text-slate-700' },
-              React.createElement('th', { className: 'border border-slate-200 p-2 w-24' }, '시간'),
-              ...days.map(d => React.createElement('th', { key: d, className: 'border border-slate-200 p-2 text-center' }, d))
-            )
-          ),
-          React.createElement('tbody', null,
-            ...hours.map((time, r) => React.createElement('tr', { key: time, className: 'h-16' },
-              React.createElement('td', { className: 'border border-slate-200 px-2 py-1 text-slate-500 bg-slate-50' }, time),
-              ...days.map(day => {
-                if (skip[day].has(r)) return null;
-                const entry = grid[day][r];
-                if (!entry) return React.createElement('td', { key: `${day}-${time}`, className: 'border border-slate-200 bg-white' });
-                const cls = pastelByCategory[entry.category] || 'bg-slate-100';
-                return React.createElement('td', {
-                  key: `${day}-${time}`,
-                  rowSpan: entry.span,
-                  className: `border border-slate-200 align-top p-2 ${cls}`
-                },
-                  React.createElement('div', { className: 'font-semibold text-slate-900 leading-snug' }, entry.title),
-                  React.createElement('div', { className: 'text-xs text-slate-700 mt-1' }, entry.room)
-                );
-              })
-            ))
-          )
-        )
-      );
-    }
-
-    const root = createRoot(document.getElementById('reactTimetableRoot'));
-    function renderTimetable(){
-      const keys = new Set(Array.from(enrolledMap.values()).map(v => `${v.code}-${v.section}`));
-      const items = timetableEntries
-        .filter(e => keys.has(`${e.courseCode}-${e.section}`))
-        .map(e => ({
-          title: e.subject,
-          day: e.day,
-          startTime: e.start,
-          endTime: e.end,
-          room: e.room,
-          category: e.category
-        }));
-      root.render(React.createElement(WeeklyTimetable, { items }));
     }
 
     window.toggleApply = function(button){
@@ -271,16 +216,16 @@
 
       saveState();
       renderHistory();
+      renderTimeEnrolledList();
       syncApplyButtons();
-      renderTimetable();
     }
 
     window.cancelFromHistory = function(code, section){
       enrolledMap.delete(keyOf(code, section));
       saveState();
       renderHistory();
+      renderTimeEnrolledList();
       syncApplyButtons();
-      renderTimetable();
       alert('수강이 취소되었습니다');
     }
 
@@ -295,8 +240,8 @@
 
     loadState();
     renderHistory();
+    renderTimeEnrolledList();
     syncApplyButtons();
-    renderTimetable();
 </script>
 </body>
 </html>
