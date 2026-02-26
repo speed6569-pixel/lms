@@ -175,12 +175,12 @@ public class HomeController {
 
     private List<TimetableEntry> timetableEntries() {
         return List.of(
-                new TimetableEntry("Spring Boot 실무 API 개발", "A-201", "월", "10:00", "12:00", "개발"),
-                new TimetableEntry("React 프론트엔드 아키텍처", "B-302", "화", "19:00", "21:00", "개발"),
-                new TimetableEntry("디지털 퍼널 기획과 전환 최적화", "온라인", "수", "14:00", "16:00", "기획/마케팅"),
-                new TimetableEntry("성과관리와 조직 운영 전략", "C-105", "목", "18:30", "20:30", "경영"),
-                new TimetableEntry("B2B 제안서 작성과 수주 전략", "온라인", "금", "09:30", "11:30", "영업"),
-                new TimetableEntry("고객 협상 스킬 부트캠프", "D-110", "토", "13:00", "15:00", "영업")
+                new TimetableEntry("DEV401", "01", "Spring Boot 실무 API 개발", "A-201", "월", "10:00", "12:00", "개발"),
+                new TimetableEntry("DEV402", "02", "React 프론트엔드 아키텍처", "B-302", "화", "19:00", "21:00", "개발"),
+                new TimetableEntry("MKT310", "01", "디지털 퍼널 기획과 전환 최적화", "온라인", "수", "14:00", "16:00", "기획/마케팅"),
+                new TimetableEntry("MNG220", "01", "성과관리와 조직 운영 전략", "C-105", "목", "18:30", "20:30", "경영"),
+                new TimetableEntry("SAL210", "03", "B2B 제안서 작성과 수주 전략", "온라인", "금", "09:30", "11:30", "영업"),
+                new TimetableEntry("SAL320", "01", "고객 협상 스킬 부트캠프", "D-110", "토", "13:00", "15:00", "영업")
         );
     }
 
@@ -219,6 +219,8 @@ public class HomeController {
     }
 
     public record TimetableEntry(
+            String courseCode,
+            String section,
             String subject,
             String room,
             String day,

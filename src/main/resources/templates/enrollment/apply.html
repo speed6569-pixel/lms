@@ -194,7 +194,7 @@
       const [h,m] = hm.split(':').map(Number); return h*60+m;
     }
 
-    function WeeklyTimetable({ enrolledTitles }) {
+    function WeeklyTimetable({ enrolledKeys }) {
       const days = ['월','화','수','목','금'];
       const startBase = 9 * 60;
       const endBase = 21 * 60;
@@ -202,7 +202,7 @@
       const totalHeight = (endBase - startBase) * pxPerMin;
 
       const items = timetableEntries
-        .filter(e => enrolledTitles.has(e.subject))
+        .filter(e => enrolledKeys.has(`${e.courseCode}-${e.section}`))
         .map(e => {
           const top = Math.max(0, (parseMinutes(e.start) - startBase) * pxPerMin);
           const height = Math.max(44, (parseMinutes(e.end) - parseMinutes(e.start)) * pxPerMin);
@@ -237,8 +237,8 @@
 
     const root = createRoot(document.getElementById('reactTimetableRoot'));
     function renderTimetable(){
-      const titles = new Set(Array.from(enrolledMap.values()).map(v => v.title));
-      root.render(React.createElement(WeeklyTimetable, { enrolledTitles: titles }));
+      const keys = new Set(Array.from(enrolledMap.values()).map(v => `${v.code}-${v.section}`));
+      root.render(React.createElement(WeeklyTimetable, { enrolledKeys: keys }));
     }
 
     window.toggleApply = function(button){
