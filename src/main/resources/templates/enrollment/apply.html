@@ -178,8 +178,11 @@
     tabHistory.addEventListener('click', () => {
       activate(tabHistory); openPanel.style.display='none'; historyPanel.style.display=''; timePanel.style.display='none';
     });
-    tabTime.addEventListener('click', () => {
+    tabTime.addEventListener('click', async () => {
       activate(tabTime); openPanel.style.display='none'; historyPanel.style.display='none'; timePanel.style.display='';
+      await loadState();
+      renderHistory();
+      syncApplyButtons();
     });
 
     filterForm.addEventListener('submit', (e) => {
@@ -363,6 +366,15 @@
       if (!btn) return;
       window.toggleApply(btn);
     }
+
+    window.addEventListener('resize', () => {
+      if (timePanel.style.display !== 'none') {
+        loadState().then(() => {
+          renderHistory();
+          syncApplyButtons();
+        });
+      }
+    });
 
     (async function init(){
       await loadState();
