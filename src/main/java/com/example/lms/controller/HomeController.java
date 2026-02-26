@@ -42,24 +42,24 @@ public class HomeController {
 
     @GetMapping("/enrollments/apply")
     public String enrollmentApplyPage(
-            @RequestParam(required = false) String division,
             @RequestParam(required = false) String job,
             @RequestParam(required = false) String position,
             @RequestParam(required = false) String dayNight,
+            @RequestParam(required = false) String keyword,
             Model model
     ) {
         List<Course> filtered = sampleCourses().stream()
-                .filter(c -> isBlank(division) || c.division().equalsIgnoreCase(division))
                 .filter(c -> isBlank(job) || c.job().equalsIgnoreCase(job))
                 .filter(c -> isBlank(position) || c.position().equalsIgnoreCase(position))
                 .filter(c -> isBlank(dayNight) || c.dayNight().equalsIgnoreCase(dayNight))
+                .filter(c -> isBlank(keyword) || contains(c, keyword))
                 .toList();
 
         model.addAttribute("courses", filtered);
-        model.addAttribute("division", division);
         model.addAttribute("job", job);
         model.addAttribute("position", position);
         model.addAttribute("dayNight", dayNight);
+        model.addAttribute("keyword", keyword);
         return "enrollment/apply";
     }
 
@@ -69,27 +69,35 @@ public class HomeController {
             @RequestParam String section,
             RedirectAttributes redirectAttributes
     ) {
+        Course target = findCourse(courseCode, section);
+        if (target == null) {
+            redirectAttributes.addFlashAttribute("message", "신청 실패: 강의를 찾을 수 없습니다.");
+            return "redirect:/enrollments/apply";
+        }
+
+        if (target.enrolledCount() >= target.maxCount()) {
+            redirectAttributes.addFlashAttribute("message", "신청 불가: 정원이 마감된 강의입니다.");
+            return "redirect:/enrollments/apply";
+        }
+
         redirectAttributes.addFlashAttribute("message", "신청 요청 완료: " + courseCode + "-" + section);
         return "redirect:/enrollments/apply";
     }
 
     @GetMapping("/enrollments/me")
     public String myPage(
-            @RequestParam(required = false) String division,
             @RequestParam(required = false) String job,
             @RequestParam(required = false) String dayNight,
             @RequestParam(required = false) String keyword,
             Model model
     ) {
         List<Course> filtered = sampleCourses().stream()
-                .filter(c -> isBlank(division) || c.division().equalsIgnoreCase(division))
                 .filter(c -> isBlank(job) || c.job().equalsIgnoreCase(job))
                 .filter(c -> isBlank(dayNight) || c.dayNight().equalsIgnoreCase(dayNight))
                 .filter(c -> isBlank(keyword) || contains(c, keyword))
                 .toList();
 
         model.addAttribute("courses", filtered);
-        model.addAttribute("division", division);
         model.addAttribute("job", job);
         model.addAttribute("dayNight", dayNight);
         model.addAttribute("keyword", keyword);
@@ -106,6 +114,19 @@ public class HomeController {
         if (isBlank(courseCode) || isBlank(section)) {
             result.put("success", false);
             result.put("message", "과목코드와 분반을 입력해 주세요.");
+            return result;
+        }
+
+        Course target = findCourse(courseCode, section);
+        if (target == null) {
+            result.put("success", false);
+            result.put("message", "신청 실패: 강의를 찾을 수 없습니다.");
+            return result;
+        }
+
+        if (target.enrolledCount() >= target.maxCount()) {
+            result.put("success", false);
+            result.put("message", "신청 불가: 정원이 마감된 강의입니다.");
             return result;
         }
 
@@ -129,6 +150,13 @@ public class HomeController {
         return "pages/schedule";
     }
 
+    private Course findCourse(String courseCode, String section) {
+        return sampleCourses().stream()
+                .filter(c -> c.courseCode().equalsIgnoreCase(courseCode) && c.section().equalsIgnoreCase(section))
+                .findFirst()
+                .orElse(null);
+    }
+
     private boolean isBlank(String v) {
         return v == null || v.isBlank();
     }
@@ -138,17 +166,18 @@ public class HomeController {
         return c.title().toLowerCase().contains(k)
                 || c.courseCode().toLowerCase().contains(k)
                 || c.professor().toLowerCase().contains(k)
-                || c.position().toLowerCase().contains(k);
+                || c.position().toLowerCase().contains(k)
+                || c.job().toLowerCase().contains(k);
     }
 
     private List<Course> sampleCourses() {
         return List.of(
-                new Course(1, "전공", "온라인", "개발트랙", "Spring Boot 실무 API 개발", "2026-03-10", 30, "김민수", "전공", "주간", 2, "DEV401", "01", 3, "월 10:00-12:00", "정원 30", "신청가능", "개발", "대리"),
-                new Course(2, "전공", "오프라인", "개발트랙", "React 프론트엔드 아키텍처", "2026-03-12", 28, "이서준", "전공", "야간", 3, "DEV402", "02", 3, "화 19:00-21:00", "정원 28", "신청가능", "개발", "과장"),
-                new Course(3, "기타", "온라인", "기획/마케팅트랙", "디지털 퍼널 기획과 전환 최적화", "2026-03-11", 35, "박지윤", "교양", "주간", 2, "MKT310", "01", 2, "수 14:00-16:00", "정원 35", "신청가능", "기획/마케팅", "주임"),
-                new Course(4, "기타", "오프라인", "경영트랙", "성과관리와 조직 운영 전략", "2026-03-14", 40, "최현우", "교양", "야간", 3, "MNG220", "01", 2, "목 18:30-20:30", "정원 40", "신청가능", "경영", "차장"),
-                new Course(5, "전공", "온라인", "영업트랙", "B2B 제안서 작성과 수주 전략", "2026-03-15", 32, "정다은", "전공", "주간", 2, "SAL210", "03", 2, "금 09:30-11:30", "정원 32", "신청가능", "영업", "사원"),
-                new Course(6, "기타", "오프라인", "영업트랙", "고객 협상 스킬 부트캠프", "2026-03-18", 24, "한도윤", "교양", "야간", 2, "SAL320", "01", 2, "토 13:00-15:00", "정원 24", "신청가능", "영업", "부장")
+                new Course(1, "전공", "온라인", "개발트랙", "Spring Boot 실무 API 개발", "2026-03-10", "김민수", "전공", "주간", "DEV401", "01", "월 10:00-12:00", "신청가능", "개발", "대리", 22, 30, "무료"),
+                new Course(2, "전공", "오프라인", "개발트랙", "React 프론트엔드 아키텍처", "2026-03-12", "이서준", "전공", "야간", "DEV402", "02", "화 19:00-21:00", "신청가능", "개발", "과장", 28, 28, "₩180,000"),
+                new Course(3, "기타", "온라인", "기획/마케팅트랙", "디지털 퍼널 기획과 전환 최적화", "2026-03-11", "박지윤", "교양", "주간", "MKT310", "01", "수 14:00-16:00", "신청가능", "기획/마케팅", "주임", 17, 35, "₩120,000"),
+                new Course(4, "기타", "오프라인", "경영트랙", "성과관리와 조직 운영 전략", "2026-03-14", "최현우", "교양", "야간", "MNG220", "01", "목 18:30-20:30", "신청가능", "경영", "차장", 35, 40, "₩150,000"),
+                new Course(5, "전공", "온라인", "영업트랙", "B2B 제안서 작성과 수주 전략", "2026-03-15", "정다은", "전공", "주간", "SAL210", "03", "금 09:30-11:30", "신청가능", "영업", "사원", 14, 32, "₩90,000"),
+                new Course(6, "기타", "오프라인", "영업트랙", "고객 협상 스킬 부트캠프", "2026-03-18", "한도윤", "교양", "야간", "SAL320", "01", "토 13:00-15:00", "신청가능", "영업", "부장", 24, 24, "₩210,000")
         );
     }
 
@@ -159,25 +188,18 @@ public class HomeController {
             String process,
             String title,
             String openDate,
-            int capacity,
             String professor,
             String division,
             String dayNight,
-            int grade,
             String courseCode,
             String section,
-            int credits,
             String classTime,
-            String limitText,
             String note,
             String job,
-            String position
+            String position,
+            int enrolledCount,
+            int maxCount,
+            String price
     ) {
-        public Course(int number, String category, String operation, String process, String title, String openDate,
-                      int capacity, String professor, String division, String dayNight, int grade, String courseCode,
-                      String section, int credits, String classTime, String limitText, String note) {
-            this(number, category, operation, process, title, openDate, capacity, professor, division, dayNight,
-                    grade, courseCode, section, credits, classTime, limitText, note, operation, process);
-        }
     }
 }

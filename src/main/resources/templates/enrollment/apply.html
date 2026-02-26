@@ -60,12 +60,18 @@
             <table class="data-table">
                 <thead>
                 <tr>
-                    <th>신청</th><th>주야</th><th>과목코드</th><th>분반</th><th>직군</th><th>직급</th><th>교과목명</th><th>담당교수</th><th>강의시간</th><th>인원제한</th><th>비고(기타)</th>
+                    <th>신청</th><th>주야</th><th>과목코드</th><th>분반</th><th>직군</th><th>직급</th><th>교과목명</th><th>담당교수</th><th>강의시간</th><th>가격</th><th>인원제한</th><th>비고(기타)</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="course : ${courses}">
-                    <td><button type="button" class="apply-btn" th:attr="data-code=${course.courseCode},data-section=${course.section}" onclick="submitApply(this)">신청</button></td>
+                    <td>
+                        <button type="button" class="apply-btn"
+                                th:attr="data-code=${course.courseCode},data-section=${course.section}"
+                                th:disabled="${course.enrolledCount >= course.maxCount}"
+                                onclick="submitApply(this)"
+                                th:text="${course.enrolledCount >= course.maxCount} ? '신청불가' : '신청'">신청</button>
+                    </td>
                     <td th:text="${course.dayNight}"></td>
                     <td th:text="${course.courseCode}"></td>
                     <td th:text="${course.section}"></td>
@@ -74,10 +80,11 @@
                     <td th:text="${course.title}"></td>
                     <td th:text="${course.professor}"></td>
                     <td th:text="${course.classTime}"></td>
-                    <td th:text="${course.limitText}"></td>
+                    <td th:text="${course.price}"></td>
+                    <td th:text="|${course.enrolledCount}/${course.maxCount}|"></td>
                     <td th:text="${course.note}"></td>
                 </tr>
-                <tr th:if="${#lists.isEmpty(courses)}"><td colspan="11">검색 결과가 없습니다.</td></tr>
+                <tr th:if="${#lists.isEmpty(courses)}"><td colspan="12">검색 결과가 없습니다.</td></tr>
                 </tbody>
             </table>
         </div>
@@ -86,32 +93,33 @@
     <section id="historyPanel" style="display:none;">
         <div class="table-wrap">
             <table class="data-table">
-                <thead><tr><th>신청일</th><th>과목코드</th><th>교과목명</th><th>상태</th></tr></thead>
+                <thead><tr><th>신청일</th><th>과목코드</th><th>교과목명</th><th>가격</th><th>상태</th></tr></thead>
                 <tbody>
-                <tr><td>2026-02-25</td><td>CSE201</td><td>웹프로그래밍</td><td>신청완료</td></tr>
-                <tr><td>2026-02-24</td><td>CSE301</td><td>데이터베이스</td><td>신청완료</td></tr>
+                <tr th:each="course : ${courses}">
+                    <td>2026-02-26</td>
+                    <td th:text="${course.courseCode}"></td>
+                    <td th:text="${course.title}"></td>
+                    <td th:text="${course.price}"></td>
+                    <td th:text="${course.enrolledCount >= course.maxCount} ? '신청불가(정원마감)' : '신청가능'"></td>
+                </tr>
                 </tbody>
             </table>
         </div>
     </section>
 
     <section id="timePanel" style="display:none;">
-        <div class="table-wrap" style="display:grid; grid-template-columns: 180px 1fr;">
+        <div class="table-wrap">
             <table class="data-table">
-                <thead><tr><th>시간</th></tr></thead>
+                <thead><tr><th>주야</th><th>과목코드</th><th>교과목명</th><th>강의시간</th><th>직급</th><th>인원제한</th></tr></thead>
                 <tbody>
-                <tr><td>09:00</td></tr><tr><td>10:00</td></tr><tr><td>11:00</td></tr><tr><td>13:00</td></tr><tr><td>14:00</td></tr><tr><td>19:00</td></tr>
-                </tbody>
-            </table>
-            <table class="data-table">
-                <thead><tr><th>해당 시간 강의</th></tr></thead>
-                <tbody>
-                <tr><td>09:00 - 알고리즘 (목)</td></tr>
-                <tr><td>10:00 - 웹프로그래밍 (월)</td></tr>
-                <tr><td>11:00 - 웹프로그래밍 (월)</td></tr>
-                <tr><td>13:00 - 데이터베이스 (화)</td></tr>
-                <tr><td>14:00 - 데이터베이스 (화)</td></tr>
-                <tr><td>19:00 - 커뮤니케이션 스킬 (수)</td></tr>
+                <tr th:each="course : ${courses}">
+                    <td th:text="${course.dayNight}"></td>
+                    <td th:text="${course.courseCode}"></td>
+                    <td th:text="${course.title}"></td>
+                    <td th:text="${course.classTime}"></td>
+                    <td th:text="${course.position}"></td>
+                    <td th:text="|${course.enrolledCount}/${course.maxCount}|"></td>
+                </tr>
                 </tbody>
             </table>
         </div>

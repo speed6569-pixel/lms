@@ -54,7 +54,8 @@
                         <th>교육 형태</th>
                         <th>교수</th>
                         <th>강의시간</th>
-                        <th>진도율</th>
+                        <th>가격</th>
+                        <th>인원제한</th>
                         <th>신청</th>
                     </tr>
                     </thead>
@@ -68,19 +69,18 @@
                         </td>
                         <td th:text="${course.professor}"></td>
                         <td th:text="${course.classTime}"></td>
-                        <td>
-                            <div class="table-progress">
-                                <span class="progress-track"><span th:style="|width:${(course.number * 17) % 100}%|"></span></span>
-                            </div>
-                        </td>
+                        <td th:text="${course.price}"></td>
+                        <td th:text="|${course.enrolledCount}/${course.maxCount}|"></td>
                         <td>
                             <button type="button" class="apply-btn"
                                     th:attr="data-code=${course.courseCode},data-section=${course.section}"
+                                    th:disabled="${course.enrolledCount >= course.maxCount}"
+                                    th:text="${course.enrolledCount >= course.maxCount} ? '신청불가' : '신청'"
                                     onclick="submitApply(this)">신청</button>
                         </td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(courses)}">
-                        <td colspan="6">표시할 강의가 없습니다.</td>
+                        <td colspan="7">표시할 강의가 없습니다.</td>
                     </tr>
                     </tbody>
                 </table>
@@ -92,9 +92,9 @@
                 <div class="lecture-thumb" th:text="${course.courseCode}"></div>
                 <div class="lecture-body">
                     <h3 th:text="${course.title}"></h3>
-                    <p th:text="|${course.professor} · ${course.classTime}|"></p>
-                    <div class="status-head"><span>현재 진도율</span><strong th:text="|${(course.number * 17) % 100}%|"></strong></div>
-                    <div class="progress-track"><span th:style="|width:${(course.number * 17) % 100}%|"></span></div>
+                    <p th:text="|${course.professor} · ${course.classTime} · ${course.price}|"></p>
+                    <div class="status-head"><span>수강 인원</span><strong th:text="|${course.enrolledCount}/${course.maxCount}|"></strong></div>
+                    <div class="progress-track"><span th:style="|width:${(course.enrolledCount * 100) / course.maxCount}%|"></span></div>
                 </div>
             </article>
         </div>
