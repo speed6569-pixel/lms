@@ -124,7 +124,6 @@
     const historyEmpty = document.getElementById('historyEmpty');
     const timeEnrolledBody = document.getElementById('timeEnrolledBody');
     const timeEnrolledEmpty = document.getElementById('timeEnrolledEmpty');
-    const STORAGE_KEY = 'lms_enrolled_courses_v1';
     const enrolledMap = new Map();
 
     function activate(tab) {
@@ -143,10 +142,19 @@
     });
 
     function keyOf(code, section){ return `${code}-${section}`; }
-    function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(enrolledMap.values()))); }
-    function loadState(){
-      try { JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]').forEach(v => enrolledMap.set(keyOf(v.code, v.section), v)); }
-      catch(_) {}
+
+    async function loadState(){
+      const res = await fetch('/enroll/list');
+      const items = await res.json();
+      enrolledMap.clear();
+      items.forEach(v => enrolledMap.set(keyOf(v.courseCode, v.section), {
+        code: v.courseCode,
+        section: v.section,
+        title: v.title,
+        professor: v.professor,
+        classTime: v.classTime,
+        date: v.date
+      }));
     }
 
     function getCourseMeta(code, section) {
@@ -179,9 +187,12 @@
       timeEnrolledBody.querySelectorAll('tr[data-time-enrolled="true"]').forEach(x => x.remove());
       Array.from(enrolledMap.values()).forEach(item => {
         const meta = getCourseMeta(item.code, item.section);
+        const title = item.title || meta.title;
+        const professor = item.professor || meta.professor;
+        const classTime = item.classTime || meta.classTime;
         const tr = document.createElement('tr');
         tr.setAttribute('data-time-enrolled', 'true');
-        tr.innerHTML = `<td>${meta.title}</td><td>${meta.professor}</td><td>${meta.classTime}</td><td>수강신청 완료</td>`;
+        tr.innerHTML = `<td>${title}</td><td>${professor}</td><td>${classTime}</td><td>수강신청 완료</td>`;
         timeEnrolledBody.appendChild(tr);
       });
       timeEnrolledEmpty.style.display = enrolledMap.size ? 'none' : '';
@@ -199,34 +210,48 @@
       });
     }
 
-    window.toggleApply = function(button){
+    window.toggleApply = async function(button){
       if (button.disabled || button.dataset.full === 'true') return;
       const code = button.dataset.code;
       const section = button.dataset.section;
-      const title = button.dataset.title || '';
       const key = keyOf(code, section);
 
+      let res;
       if (!enrolledMap.has(key)) {
-        enrolledMap.set(key, { code, section, title, date: new Date().toISOString().slice(0,10) });
-        alert('신청 완료되었습니다');
+        res = await fetch('/enroll/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ courseCode: code, section }).toString()
+        });
       } else {
-        enrolledMap.delete(key);
-        alert('수강이 취소되었습니다');
+        res = await fetch('/enroll/cancel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ courseCode: code, section }).toString()
+        });
       }
+      const result = await res.json();
+      alert(result.message || '처리되었습니다.');
 
-      saveState();
+      await loadState();
       renderHistory();
       renderTimeEnrolledList();
       syncApplyButtons();
     }
 
-    window.cancelFromHistory = function(code, section){
-      enrolledMap.delete(keyOf(code, section));
-      saveState();
+    window.cancelFromHistory = async function(code, section){
+      const res = await fetch('/enroll/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ courseCode: code, section }).toString()
+      });
+      const result = await res.json();
+      alert(result.message || '수강이 취소되었습니다');
+
+      await loadState();
       renderHistory();
       renderTimeEnrolledList();
       syncApplyButtons();
-      alert('수강이 취소되었습니다');
     }
 
     window.submitApplyByInput = function(){
@@ -238,10 +263,12 @@
       window.toggleApply(btn);
     }
 
-    loadState();
-    renderHistory();
-    renderTimeEnrolledList();
-    syncApplyButtons();
+    (async function init(){
+      await loadState();
+      renderHistory();
+      renderTimeEnrolledList();
+      syncApplyButtons();
+    })();
 </script>
 </body>
 </html>
