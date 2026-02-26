@@ -9,12 +9,14 @@
 <h1>로그인</h1>
 
 <p th:if="${message}" th:text="${message}" style="color: green;"></p>
+<p th:if="${param.error}" style="color: red;">아이디 또는 비밀번호가 올바르지 않습니다.</p>
+<p th:if="${param.logout}" style="color: green;">로그아웃 되었습니다.</p>
 
 <h2 style="font-size: 18px;">운영자 로컬 로그인</h2>
 <form method="post" action="/login">
     <div>
-        <label for="username">아이디 또는 이메일</label>
-        <input id="username" name="username" type="text" required>
+        <label for="loginId">아이디</label>
+        <input id="loginId" name="loginId" type="text" required>
     </div>
 
     <div>
@@ -40,10 +42,5 @@
 <p>
     <a href="/">홈으로</a>
 </p>
-<script>
-    document.querySelector('form[action="/login"]').addEventListener('submit', function () {
-        localStorage.setItem('isLoggedIn', 'true');
-    });
-</script>
 </body>
 </html>
