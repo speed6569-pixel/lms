@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>수강신청</title>
     <link rel="stylesheet" th:href="@{/css/page.css}">
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
 <header class="topbar">
@@ -18,8 +19,6 @@
 </header>
 
 <main class="container content-wrap">
-    <p th:if="${message}" class="flash-msg" th:text="${message}"></p>
-
     <section class="tab-row">
         <button id="tabOpen" type="button" class="tab-btn active">개설과목 조회/신청</button>
         <button id="tabHistory" type="button" class="tab-btn">수강신청 내역</button>
@@ -60,7 +59,7 @@
             <table class="data-table">
                 <thead>
                 <tr>
-                    <th>신청</th><th>주야</th><th>과목코드</th><th>분반</th><th>직군</th><th>직급</th><th>교과목명</th><th>담당교수</th><th>강의시간</th><th>가격</th><th>인원제한</th><th>비고(기타)</th>
+                    <th>신청</th><th>주야</th><th>과목코드</th><th>분반</th><th>직군</th><th>직급</th><th>교과목명</th><th>담당교수</th><th>강의시간</th><th>가격</th><th>인원제한</th><th>비고</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -69,6 +68,7 @@
                         <button type="button" class="apply-btn"
                                 th:attr="data-code=${course.courseCode},data-section=${course.section},data-title=${course.title}"
                                 th:disabled="${course.enrolledCount >= course.maxCount}"
+                                th:data-full="${course.enrolledCount >= course.maxCount}"
                                 onclick="toggleApply(this)"
                                 th:text="${course.enrolledCount >= course.maxCount} ? '신청불가' : '신청'">신청</button>
                     </td>
@@ -102,46 +102,17 @@
     </section>
 
     <section id="timePanel" style="display:none;">
-        <div class="table-wrap">
-            <table class="data-table timetable-grid" id="timeGridTable">
-                <thead>
-                <tr>
-                    <th>시간</th>
-                    <th th:each="d : ${weekDays}" th:text="${d}"></th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="t : ${timeSlots}">
-                    <td th:text="${t}"></td>
-                    <td th:each="d : ${weekDays}" th:attr="data-time=${t},data-day=${d}"></td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
+        <div id="reactTimetableRoot" class="bg-white rounded-xl border border-slate-200 p-4"></div>
     </section>
 </main>
 
 <script th:inline="javascript">
-    const timetableEntries = /*[[${timetableEntries}]]*/ [];
-    const categoryColor = {
-      '개발': '#d9ecff',
-      '기획/마케팅': '#ffe8c7',
-      '경영': '#e3f7df',
-      '영업': '#f9dfff'
-    };
+    window.__TIMETABLE_ENTRIES__ = /*[[${timetableEntries}]]*/ [];
+</script>
 
-    function renderTimeGrid(enrolledTitles = null) {
-      document.querySelectorAll('#timeGridTable td[data-time][data-day]').forEach(td => td.innerHTML = '');
-
-      timetableEntries
-        .filter(item => !enrolledTitles || enrolledTitles.has(item.subject))
-        .forEach(item => {
-          const slot = document.querySelector(`[data-time="${item.start}"][data-day="${item.day}"]`);
-          if (!slot) return;
-          slot.innerHTML = `<div class="time-chip" style="background:${categoryColor[item.category] || '#eef2f7'}">`
-            + `<strong>${item.subject}</strong><small>${item.room}</small><small>${item.start}~${item.end}</small></div>`;
-        });
-    }
+<script type="module">
+    import React from 'https://esm.sh/react@18.3.1';
+    import { createRoot } from 'https://esm.sh/react-dom@18.3.1/client';
 
     const tabOpen = document.getElementById('tabOpen');
     const tabHistory = document.getElementById('tabHistory');
@@ -150,128 +121,169 @@
     const historyPanel = document.getElementById('historyPanel');
     const timePanel = document.getElementById('timePanel');
 
+    const historyBody = document.getElementById('historyBody');
+    const historyEmpty = document.getElementById('historyEmpty');
+    const STORAGE_KEY = 'lms_enrolled_courses_v1';
+    const enrolledMap = new Map();
+
+    const timetableEntries = (window.__TIMETABLE_ENTRIES__ || []).filter(e => ['월','화','수','목','금'].includes(e.day));
+    const colors = {
+      '개발': 'bg-blue-200 border-blue-300 text-blue-900',
+      '기획/마케팅': 'bg-orange-200 border-orange-300 text-orange-900',
+      '경영': 'bg-emerald-200 border-emerald-300 text-emerald-900',
+      '영업': 'bg-purple-200 border-purple-300 text-purple-900'
+    };
 
     function activate(tab) {
-        [tabOpen, tabHistory, tabTime].forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
+      [tabOpen, tabHistory, tabTime].forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
     }
 
     tabOpen.addEventListener('click', () => {
-        activate(tabOpen);
-        openPanel.style.display = '';
-        historyPanel.style.display = 'none';
-        timePanel.style.display = 'none';
-
+      activate(tabOpen); openPanel.style.display=''; historyPanel.style.display='none'; timePanel.style.display='none';
     });
     tabHistory.addEventListener('click', () => {
-        activate(tabHistory);
-        openPanel.style.display = 'none';
-        historyPanel.style.display = '';
-        timePanel.style.display = 'none';
+      activate(tabHistory); openPanel.style.display='none'; historyPanel.style.display=''; timePanel.style.display='none';
     });
     tabTime.addEventListener('click', () => {
-        activate(tabTime);
-        openPanel.style.display = 'none';
-        historyPanel.style.display = 'none';
-        timePanel.style.display = '';
+      activate(tabTime); openPanel.style.display='none'; historyPanel.style.display='none'; timePanel.style.display='';
     });
 
-    const enrolledMap = new Map();
+    function keyOf(code, section){ return `${code}-${section}`; }
 
-    function syncTimetableWithEnrollments() {
+    function saveState(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(enrolledMap.values())));
+    }
+
+    function loadState(){
+      try {
+        const items = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        items.forEach(v => enrolledMap.set(keyOf(v.code, v.section), v));
+      } catch (_) {}
+    }
+
+    function updateEmptyRow(){ historyEmpty.style.display = enrolledMap.size ? 'none' : ''; }
+
+    function addHistoryRow(item){
+      const tr = document.createElement('tr');
+      tr.id = `history-${keyOf(item.code,item.section)}`;
+      tr.innerHTML = `<td>${item.date}</td><td>${item.code}</td><td>${item.title}</td><td>신청완료</td>`+
+                     `<td><button type="button" class="apply-btn" onclick="window.cancelFromHistory('${item.code}','${item.section}')">수강 취소</button></td>`;
+      historyBody.appendChild(tr);
+    }
+
+    function renderHistory(){
+      historyBody.querySelectorAll('tr[id^="history-"]').forEach(x => x.remove());
+      Array.from(enrolledMap.values()).forEach(addHistoryRow);
+      updateEmptyRow();
+    }
+
+    function findApplyButton(code, section){
+      return document.querySelector(`button.apply-btn[data-code="${code}"][data-section="${section}"]`);
+    }
+
+    function syncApplyButtons(){
+      document.querySelectorAll('button.apply-btn[data-code]').forEach(btn => {
+        if (btn.dataset.full === 'true') return;
+        const key = keyOf(btn.dataset.code, btn.dataset.section);
+        btn.textContent = enrolledMap.has(key) ? '수강 취소' : '신청';
+      });
+    }
+
+    function parseMinutes(hm){
+      const [h,m] = hm.split(':').map(Number); return h*60+m;
+    }
+
+    function WeeklyTimetable({ enrolledTitles }) {
+      const days = ['월','화','수','목','금'];
+      const startBase = 9 * 60;
+      const endBase = 21 * 60;
+      const pxPerMin = 1.2;
+      const totalHeight = (endBase - startBase) * pxPerMin;
+
+      const items = timetableEntries
+        .filter(e => enrolledTitles.has(e.subject))
+        .map(e => {
+          const top = Math.max(0, (parseMinutes(e.start) - startBase) * pxPerMin);
+          const height = Math.max(44, (parseMinutes(e.end) - parseMinutes(e.start)) * pxPerMin);
+          return { ...e, top, height, cls: colors[e.category] || 'bg-slate-200 border-slate-300 text-slate-900' };
+        });
+
+      return React.createElement('div', { className: 'w-full overflow-x-auto' },
+        React.createElement('div', { className: 'min-w-[820px]' },
+          React.createElement('div', { className: 'grid grid-cols-6 bg-slate-50 border border-slate-200 rounded-t-lg text-sm font-semibold text-slate-700' },
+            React.createElement('div', { className: 'p-2 border-r border-slate-200' }, '시간'),
+            ...days.map(d => React.createElement('div', { key: d, className: 'p-2 border-r last:border-r-0 border-slate-200 text-center' }, d))
+          ),
+          React.createElement('div', { className: 'grid grid-cols-6 border-x border-b border-slate-200 rounded-b-lg' },
+            React.createElement('div', { className: 'relative border-r border-slate-200 bg-white', style: { height: `${totalHeight}px` } },
+              ...Array.from({length: 13}).map((_,i)=>{
+                const h = 9 + i;
+                return React.createElement('div', { key: h, className:'absolute left-0 right-0 text-xs text-slate-500 border-t border-slate-100 pl-2', style:{ top:`${i*60*pxPerMin}px`} }, `${String(h).padStart(2,'0')}:00`);
+              })
+            ),
+            ...days.map(day => React.createElement('div', { key: day, className:'relative border-r last:border-r-0 border-slate-200 bg-white', style:{height:`${totalHeight}px`} },
+              ...Array.from({length: 13}).map((_,i)=>React.createElement('div',{key:i,className:'absolute left-0 right-0 border-t border-slate-100',style:{top:`${i*60*pxPerMin}px`}})),
+              ...items.filter(x=>x.day===day).map((x,idx)=>React.createElement('div',{key:idx,className:`absolute left-1 right-1 rounded-lg border p-2 shadow-sm ${x.cls}`,style:{top:`${x.top}px`,height:`${x.height}px`}},
+                React.createElement('div',{className:'text-xs font-bold leading-tight'},x.subject),
+                React.createElement('div',{className:'text-[11px] mt-1'},x.room),
+                React.createElement('div',{className:'text-[11px]'},`${x.start}~${x.end}`)
+              ))
+            ))
+          )
+        )
+      );
+    }
+
+    const root = createRoot(document.getElementById('reactTimetableRoot'));
+    function renderTimetable(){
       const titles = new Set(Array.from(enrolledMap.values()).map(v => v.title));
-      renderTimeGrid(titles.size ? titles : new Set());
+      root.render(React.createElement(WeeklyTimetable, { enrolledTitles: titles }));
     }
 
-    syncTimetableWithEnrollments();
-    const historyBody = document.getElementById('historyBody');
-    const historyEmpty = document.getElementById('historyEmpty');
+    window.toggleApply = function(button){
+      if (button.disabled || button.dataset.full === 'true') return;
+      const code = button.dataset.code;
+      const section = button.dataset.section;
+      const title = button.dataset.title || '';
+      const key = keyOf(code, section);
 
-    function keyOf(code, section) {
-        return `${code}-${section}`;
-    }
-
-    function updateEmptyRow() {
-        historyEmpty.style.display = enrolledMap.size === 0 ? '' : 'none';
-    }
-
-    function addHistoryRow(code, section, title) {
-        const tr = document.createElement('tr');
-        tr.id = `history-${keyOf(code, section)}`;
-        const today = new Date().toISOString().slice(0, 10);
-        tr.innerHTML = `
-          <td>${today}</td>
-          <td>${code}</td>
-          <td>${title}</td>
-          <td>신청완료</td>
-          <td><button type="button" class="apply-btn" onclick="cancelFromHistory('${code}','${section}')">수강 취소</button></td>
-        `;
-        historyBody.appendChild(tr);
-        updateEmptyRow();
-    }
-
-    function removeHistoryRow(code, section) {
-        const row = document.getElementById(`history-${keyOf(code, section)}`);
-        if (row) row.remove();
-        updateEmptyRow();
-    }
-
-    function findApplyButton(code, section) {
-        return document.querySelector(`button.apply-btn[data-code="${code}"][data-section="${section}"]`);
-    }
-
-    function toggleApply(button) {
-        if (button.disabled) return;
-
-        const code = button.dataset.code;
-        const section = button.dataset.section;
-        const title = button.dataset.title || '';
-        const key = keyOf(code, section);
-
-        if (!enrolledMap.has(key)) {
-            enrolledMap.set(key, { code, section, title });
-            button.textContent = '수강 취소';
-            addHistoryRow(code, section, title);
-            syncTimetableWithEnrollments();
-            alert('신청 완료되었습니다');
-            return;
-        }
-
+      if (!enrolledMap.has(key)) {
+        enrolledMap.set(key, { code, section, title, date: new Date().toISOString().slice(0,10) });
+        alert('신청 완료되었습니다');
+      } else {
         enrolledMap.delete(key);
-        button.textContent = '신청';
-        removeHistoryRow(code, section);
-        syncTimetableWithEnrollments();
         alert('수강이 취소되었습니다');
+      }
+
+      saveState();
+      renderHistory();
+      syncApplyButtons();
+      renderTimetable();
     }
 
-    function cancelFromHistory(code, section) {
-        const key = keyOf(code, section);
-        if (!enrolledMap.has(key)) return;
-        enrolledMap.delete(key);
-        removeHistoryRow(code, section);
-
-        const btn = findApplyButton(code, section);
-        if (btn && !btn.disabled) btn.textContent = '신청';
-        syncTimetableWithEnrollments();
-
-        alert('수강이 취소되었습니다');
+    window.cancelFromHistory = function(code, section){
+      enrolledMap.delete(keyOf(code, section));
+      saveState();
+      renderHistory();
+      syncApplyButtons();
+      renderTimetable();
+      alert('수강이 취소되었습니다');
     }
 
-    function submitApplyByInput() {
-        const courseCode = document.getElementById('quickCourseCode').value.trim();
-        const section = document.getElementById('quickSection').value.trim();
-        if (!courseCode || !section) {
-            alert('과목코드와 분반을 입력하세요.');
-            return;
-        }
-
-        const btn = findApplyButton(courseCode, section);
-        if (!btn) {
-            alert('해당 과목코드/분반 강의를 찾을 수 없습니다.');
-            return;
-        }
-        toggleApply(btn);
+    window.submitApplyByInput = function(){
+      const courseCode = document.getElementById('quickCourseCode').value.trim();
+      const section = document.getElementById('quickSection').value.trim();
+      if (!courseCode || !section) return alert('과목코드와 분반을 입력하세요.');
+      const btn = findApplyButton(courseCode, section);
+      if (!btn) return alert('해당 과목코드/분반 강의를 찾을 수 없습니다.');
+      window.toggleApply(btn);
     }
+
+    loadState();
+    renderHistory();
+    syncApplyButtons();
+    renderTimetable();
 </script>
 </body>
 </html>
