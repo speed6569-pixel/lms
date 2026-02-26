@@ -130,13 +130,17 @@
       '영업': '#f9dfff'
     };
 
-    function renderTimeGrid() {
-      timetableEntries.forEach(item => {
-        const slot = document.querySelector(`[data-time="${item.start}"][data-day="${item.day}"]`);
-        if (!slot) return;
-        slot.innerHTML = `<div class="time-chip" style="background:${categoryColor[item.category] || '#eef2f7'}">`
-          + `<strong>${item.subject}</strong><small>${item.room}</small><small>${item.start}~${item.end}</small></div>`;
-      });
+    function renderTimeGrid(enrolledTitles = null) {
+      document.querySelectorAll('#timeGridTable td[data-time][data-day]').forEach(td => td.innerHTML = '');
+
+      timetableEntries
+        .filter(item => !enrolledTitles || enrolledTitles.has(item.subject))
+        .forEach(item => {
+          const slot = document.querySelector(`[data-time="${item.start}"][data-day="${item.day}"]`);
+          if (!slot) return;
+          slot.innerHTML = `<div class="time-chip" style="background:${categoryColor[item.category] || '#eef2f7'}">`
+            + `<strong>${item.subject}</strong><small>${item.room}</small><small>${item.start}~${item.end}</small></div>`;
+        });
     }
 
     const tabOpen = document.getElementById('tabOpen');
@@ -172,9 +176,14 @@
         timePanel.style.display = '';
     });
 
-    renderTimeGrid();
-
     const enrolledMap = new Map();
+
+    function syncTimetableWithEnrollments() {
+      const titles = new Set(Array.from(enrolledMap.values()).map(v => v.title));
+      renderTimeGrid(titles.size ? titles : new Set());
+    }
+
+    syncTimetableWithEnrollments();
     const historyBody = document.getElementById('historyBody');
     const historyEmpty = document.getElementById('historyEmpty');
 
@@ -223,6 +232,7 @@
             enrolledMap.set(key, { code, section, title });
             button.textContent = '수강 취소';
             addHistoryRow(code, section, title);
+            syncTimetableWithEnrollments();
             alert('신청 완료되었습니다');
             return;
         }
@@ -230,6 +240,7 @@
         enrolledMap.delete(key);
         button.textContent = '신청';
         removeHistoryRow(code, section);
+        syncTimetableWithEnrollments();
         alert('수강이 취소되었습니다');
     }
 
@@ -241,6 +252,7 @@
 
         const btn = findApplyButton(code, section);
         if (btn && !btn.disabled) btn.textContent = '신청';
+        syncTimetableWithEnrollments();
 
         alert('수강이 취소되었습니다');
     }
