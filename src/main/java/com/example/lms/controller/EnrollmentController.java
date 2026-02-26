@@ -115,14 +115,7 @@ public class EnrollmentController {
     }
 
     private List<CourseMeta> courseCatalog() {
-        return List.of(
-                new CourseMeta("DEV401", "01", "Spring Boot 실무 API 개발", "김민수", "월 10:00-12:00", "월", "10:00", "12:00", 22, 30),
-                new CourseMeta("DEV402", "02", "React 프론트엔드 아키텍처", "이서준", "화 19:00-21:00", "화", "19:00", "21:00", 28, 28),
-                new CourseMeta("MKT310", "01", "디지털 퍼널 기획과 전환 최적화", "박지윤", "수 14:00-16:00", "수", "14:00", "16:00", 17, 35),
-                new CourseMeta("MNG220", "01", "성과관리와 조직 운영 전략", "최현우", "목 18:30-20:30", "목", "18:30", "20:30", 35, 40),
-                new CourseMeta("SAL210", "03", "B2B 제안서 작성과 수주 전략", "정다은", "금 09:30-11:30", "금", "09:30", "11:30", 14, 32),
-                new CourseMeta("SAL320", "01", "고객 협상 스킬 부트캠프", "한도윤", "토 13:00-15:00", "토", "13:00", "15:00", 24, 24)
-        );
+        return List.of();
     }
 
     record CourseMeta(
