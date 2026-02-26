@@ -67,9 +67,9 @@
                 <tr th:each="course : ${courses}">
                     <td>
                         <button type="button" class="apply-btn"
-                                th:attr="data-code=${course.courseCode},data-section=${course.section}"
+                                th:attr="data-code=${course.courseCode},data-section=${course.section},data-title=${course.title}"
                                 th:disabled="${course.enrolledCount >= course.maxCount}"
-                                onclick="submitApply(this)"
+                                onclick="toggleApply(this)"
                                 th:text="${course.enrolledCount >= course.maxCount} ? '신청불가' : '신청'">신청</button>
                     </td>
                     <td th:text="${course.dayNight}"></td>
@@ -93,15 +93,9 @@
     <section id="historyPanel" style="display:none;">
         <div class="table-wrap">
             <table class="data-table">
-                <thead><tr><th>신청일</th><th>과목코드</th><th>교과목명</th><th>가격</th><th>상태</th></tr></thead>
-                <tbody>
-                <tr th:each="course : ${courses}">
-                    <td>2026-02-26</td>
-                    <td th:text="${course.courseCode}"></td>
-                    <td th:text="${course.title}"></td>
-                    <td th:text="${course.price}"></td>
-                    <td th:text="${course.enrolledCount >= course.maxCount} ? '신청불가(정원마감)' : '신청가능'"></td>
-                </tr>
+                <thead><tr><th>신청일</th><th>과목코드</th><th>교과목명</th><th>상태</th><th>관리</th></tr></thead>
+                <tbody id="historyBody">
+                <tr id="historyEmpty"><td colspan="5">수강신청 내역이 없습니다.</td></tr>
                 </tbody>
             </table>
         </div>
@@ -180,10 +174,75 @@
 
     renderTimeGrid();
 
-    function submitApply(button) {
-        const courseCode = button.dataset.code;
+    const enrolledMap = new Map();
+    const historyBody = document.getElementById('historyBody');
+    const historyEmpty = document.getElementById('historyEmpty');
+
+    function keyOf(code, section) {
+        return `${code}-${section}`;
+    }
+
+    function updateEmptyRow() {
+        historyEmpty.style.display = enrolledMap.size === 0 ? '' : 'none';
+    }
+
+    function addHistoryRow(code, section, title) {
+        const tr = document.createElement('tr');
+        tr.id = `history-${keyOf(code, section)}`;
+        const today = new Date().toISOString().slice(0, 10);
+        tr.innerHTML = `
+          <td>${today}</td>
+          <td>${code}</td>
+          <td>${title}</td>
+          <td>신청완료</td>
+          <td><button type="button" class="apply-btn" onclick="cancelFromHistory('${code}','${section}')">수강 취소</button></td>
+        `;
+        historyBody.appendChild(tr);
+        updateEmptyRow();
+    }
+
+    function removeHistoryRow(code, section) {
+        const row = document.getElementById(`history-${keyOf(code, section)}`);
+        if (row) row.remove();
+        updateEmptyRow();
+    }
+
+    function findApplyButton(code, section) {
+        return document.querySelector(`button.apply-btn[data-code="${code}"][data-section="${section}"]`);
+    }
+
+    function toggleApply(button) {
+        if (button.disabled) return;
+
+        const code = button.dataset.code;
         const section = button.dataset.section;
-        postApply(courseCode, section);
+        const title = button.dataset.title || '';
+        const key = keyOf(code, section);
+
+        if (!enrolledMap.has(key)) {
+            enrolledMap.set(key, { code, section, title });
+            button.textContent = '수강 취소';
+            addHistoryRow(code, section, title);
+            alert('신청 완료되었습니다');
+            return;
+        }
+
+        enrolledMap.delete(key);
+        button.textContent = '신청';
+        removeHistoryRow(code, section);
+        alert('수강이 취소되었습니다');
+    }
+
+    function cancelFromHistory(code, section) {
+        const key = keyOf(code, section);
+        if (!enrolledMap.has(key)) return;
+        enrolledMap.delete(key);
+        removeHistoryRow(code, section);
+
+        const btn = findApplyButton(code, section);
+        if (btn && !btn.disabled) btn.textContent = '신청';
+
+        alert('수강이 취소되었습니다');
     }
 
     function submitApplyByInput() {
@@ -193,16 +252,13 @@
             alert('과목코드와 분반을 입력하세요.');
             return;
         }
-        postApply(courseCode, section);
-    }
 
-    function postApply(courseCode, section) {
-        const form = document.createElement('form');
-        form.method = 'post';
-        form.action = '/enrollments/apply/request';
-        form.innerHTML = `<input type="hidden" name="courseCode" value="${courseCode}"><input type="hidden" name="section" value="${section}">`;
-        document.body.appendChild(form);
-        form.submit();
+        const btn = findApplyButton(courseCode, section);
+        if (!btn) {
+            alert('해당 과목코드/분반 강의를 찾을 수 없습니다.');
+            return;
+        }
+        toggleApply(btn);
     }
 </script>
 </body>
