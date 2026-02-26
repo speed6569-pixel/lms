@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<header th:fragment="siteHeader(userName, userEmail)" class="topbar">
+  <div class="container topbar-inner">
+    <h1 class="logo"><a href="/" style="text-decoration:none;color:inherit;">LMS</a></h1>
+
+    <nav class="main-nav">
+      <a href="/courses">과정안내</a>
+      <a href="/enrollments/apply">수강신청</a>
+      <a href="/enrollments/me">마이페이지</a>
+      <a href="/support">학습지원</a>
+      <a href="/customer-center">고객 센터</a>
+      <a href="/schedule">교육일정</a>
+    </nav>
+
+    <div class="top-auth" sec:authorize="isAnonymous()">
+      <a class="auth-link" href="/login">로그인</a>
+      <a class="auth-link auth-signup" href="/signup">회원가입</a>
+    </div>
+
+    <div class="profile-wrap" sec:authorize="isAuthenticated()" id="profileWrap">
+      <button class="profile-btn" id="profileBtn" type="button">
+        <span class="avatar" id="avatarText">U</span>
+        <span class="profile-text desktop-only">
+          <strong th:text="${userName} ?: ${#authentication?.name} ?: '사용자'">사용자</strong>
+          <small th:text="${userEmail} ?: '로그인 사용자'">로그인 사용자</small>
+        </span>
+      </button>
+
+      <div class="profile-dropdown" id="profileDropdown">
+        <a href="/enrollments/me">마이페이지</a>
+        <a href="/enrollments/apply">내 강의</a>
+        <a href="/settings">설정</a>
+        <form action="/logout" method="post">
+          <button type="submit" class="logout-btn">로그아웃</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</header>
+</body>
+</html>

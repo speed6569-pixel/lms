@@ -5,17 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>학습지원</title>
     <link rel="stylesheet" th:href="@{/css/page.css}">
+    <link rel="stylesheet" th:href="@{/css/header-profile.css}">
+    <script defer th:src="@{/js/header-profile.js}"></script>
 </head>
 <body>
-<header class="topbar">
-    <div class="container topbar-inner">
-        <h1 class="logo"><a href="/" style="text-decoration:none;color:inherit;">LMS</a></h1>
-        <nav class="main-nav">
-            <a href="/courses">과정안내</a><a href="/enrollments/apply">수강신청</a><a href="/enrollments/me">마이페이지</a><a href="/support">학습지원</a><a href="/customer-center">고객 센터</a><a href="/schedule">교육일정</a>
-        </nav>
-        <div class="top-auth"><a class="auth-link" href="/login">로그인</a><a class="auth-link auth-signup" href="/signup">회원가입</a></div>
-    </div>
-</header>
+<div th:replace="~{fragments/header :: siteHeader(${userName}, ${userEmail})}"></div>
+
+
 <main class="container content-wrap">
     <div class="search-row"><input id="pageSearchInput" type="text" placeholder="학습지원 검색"><button id="pageSearchBtn" type="button">검색</button></div>
     <section class="post-list" id="searchContainer">
