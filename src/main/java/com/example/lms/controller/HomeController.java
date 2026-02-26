@@ -1,5 +1,7 @@
 package com.example.lms.controller;
 
+import com.example.lms.enrollment.repo.CourseListProjection;
+import com.example.lms.enrollment.repo.CourseSessionJpaRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,6 +17,12 @@ import java.util.Map;
 @Controller
 public class HomeController {
 
+    private final CourseSessionJpaRepository courseSessionJpaRepository;
+
+    public HomeController(CourseSessionJpaRepository courseSessionJpaRepository) {
+        this.courseSessionJpaRepository = courseSessionJpaRepository;
+    }
+
     @GetMapping("/")
     public String home() {
         return "index";
@@ -27,9 +35,7 @@ public class HomeController {
             @RequestParam(required = false) String keyword,
             Model model
     ) {
-        List<Course> filtered = sampleCourses().stream()
-                .filter(c -> isBlank(category) || c.category().equalsIgnoreCase(category))
-                .filter(c -> isBlank(openedYear) || c.openDate().startsWith(openedYear))
+        List<Course> filtered = readCourses().stream()
                 .filter(c -> isBlank(keyword) || contains(c, keyword))
                 .toList();
 
@@ -48,7 +54,7 @@ public class HomeController {
             @RequestParam(required = false) String keyword,
             Model model
     ) {
-        List<Course> filtered = sampleCourses().stream()
+        List<Course> filtered = readCourses().stream()
                 .filter(c -> isBlank(job) || c.job().equalsIgnoreCase(job))
                 .filter(c -> isBlank(position) || c.position().equalsIgnoreCase(position))
                 .filter(c -> isBlank(dayNight) || c.dayNight().equalsIgnoreCase(dayNight))
@@ -60,9 +66,6 @@ public class HomeController {
         model.addAttribute("position", position);
         model.addAttribute("dayNight", dayNight);
         model.addAttribute("keyword", keyword);
-        model.addAttribute("timeSlots", List.of("09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "19:00"));
-        model.addAttribute("weekDays", List.of("월", "화", "수", "목", "금"));
-        model.addAttribute("timetableEntries", timetableEntries());
         return "enrollment/apply";
     }
 
@@ -77,7 +80,6 @@ public class HomeController {
             redirectAttributes.addFlashAttribute("message", "신청 실패: 강의를 찾을 수 없습니다.");
             return "redirect:/enrollments/apply";
         }
-
         if (target.enrolledCount() >= target.maxCount()) {
             redirectAttributes.addFlashAttribute("message", "신청 불가: 정원이 마감된 강의입니다.");
             return "redirect:/enrollments/apply";
@@ -94,7 +96,7 @@ public class HomeController {
             @RequestParam(required = false) String keyword,
             Model model
     ) {
-        List<Course> filtered = sampleCourses().stream()
+        List<Course> filtered = readCourses().stream()
                 .filter(c -> isBlank(job) || c.job().equalsIgnoreCase(job))
                 .filter(c -> isBlank(dayNight) || c.dayNight().equalsIgnoreCase(dayNight))
                 .filter(c -> isBlank(keyword) || contains(c, keyword))
@@ -126,7 +128,6 @@ public class HomeController {
             result.put("message", "신청 실패: 강의를 찾을 수 없습니다.");
             return result;
         }
-
         if (target.enrolledCount() >= target.maxCount()) {
             result.put("success", false);
             result.put("message", "신청 불가: 정원이 마감된 강의입니다.");
@@ -139,30 +140,39 @@ public class HomeController {
     }
 
     @GetMapping("/support")
-    public String learningSupportPage() {
-        return "pages/support";
-    }
+    public String learningSupportPage() { return "pages/support"; }
 
     @GetMapping("/customer-center")
-    public String customerCenterPage() {
-        return "pages/customer-center";
-    }
+    public String customerCenterPage() { return "pages/customer-center"; }
 
     @GetMapping("/schedule")
-    public String schedulePage() {
-        return "pages/schedule";
+    public String schedulePage() { return "pages/schedule"; }
+
+    private List<Course> readCourses() {
+        return courseSessionJpaRepository.findAllCourseRows().stream().map(this::toCourse).toList();
+    }
+
+    private Course toCourse(CourseListProjection p) {
+        return new Course(
+                0, "", "", "", p.getTitle(), "",
+                p.getMaxCount() == null ? 0 : p.getMaxCount(),
+                p.getProfessor(), "", p.getDayNight(),
+                p.getCourseCode(), p.getSection(), p.getClassTime(), p.getNote(),
+                p.getJob(), p.getPosition(),
+                p.getEnrolledCount() == null ? 0 : p.getEnrolledCount(),
+                p.getMaxCount() == null ? 0 : p.getMaxCount(),
+                p.getPrice()
+        );
     }
 
     private Course findCourse(String courseCode, String section) {
-        return sampleCourses().stream()
+        return readCourses().stream()
                 .filter(c -> c.courseCode().equalsIgnoreCase(courseCode) && c.section().equalsIgnoreCase(section))
                 .findFirst()
                 .orElse(null);
     }
 
-    private boolean isBlank(String v) {
-        return v == null || v.isBlank();
-    }
+    private boolean isBlank(String v) { return v == null || v.isBlank(); }
 
     private boolean contains(Course c, String keyword) {
         String k = keyword.toLowerCase();
@@ -171,14 +181,6 @@ public class HomeController {
                 || c.professor().toLowerCase().contains(k)
                 || c.position().toLowerCase().contains(k)
                 || c.job().toLowerCase().contains(k);
-    }
-
-    private List<TimetableEntry> timetableEntries() {
-        return List.of();
-    }
-
-    private List<Course> sampleCourses() {
-        return List.of();
     }
 
     public record Course(
@@ -201,18 +203,6 @@ public class HomeController {
             int enrolledCount,
             int maxCount,
             String price
-    ) {
-    }
-
-    public record TimetableEntry(
-            String courseCode,
-            String section,
-            String subject,
-            String room,
-            String day,
-            String start,
-            String end,
-            String category
     ) {
     }
 }

@@ -1,20 +1,13 @@
 package com.example.lms.controller;
 
+import com.example.lms.enrollment.repo.CourseListProjection;
+import com.example.lms.enrollment.repo.CourseSessionJpaRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
@@ -22,6 +15,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class EnrollmentController {
 
     private static final Map<String, Map<String, EnrollmentItem>> STORE = new ConcurrentHashMap<>();
+    private final CourseSessionJpaRepository courseSessionJpaRepository;
+
+    public EnrollmentController(CourseSessionJpaRepository courseSessionJpaRepository) {
+        this.courseSessionJpaRepository = courseSessionJpaRepository;
+    }
 
     @PostMapping("/apply")
     public ResponseEntity<Map<String, Object>> apply(
@@ -29,23 +27,13 @@ public class EnrollmentController {
             @RequestParam String section,
             HttpSession session
     ) {
-        CourseMeta target = courseCatalog().stream()
-                .filter(c -> c.courseCode().equalsIgnoreCase(courseCode) && c.section().equalsIgnoreCase(section))
-                .findFirst()
-                .orElse(null);
-
-        if (target == null) {
-            return ResponseEntity.ok(result(false, "신청 실패: 강의를 찾을 수 없습니다."));
-        }
-        if (target.enrolledCount() >= target.maxCount()) {
-            return ResponseEntity.ok(result(false, "신청 불가: 정원이 마감된 강의입니다."));
-        }
+        CourseMeta target = findCourse(courseCode, section);
+        if (target == null) return ResponseEntity.ok(result(false, "신청 실패: 강의를 찾을 수 없습니다."));
+        if (target.enrolledCount() >= target.maxCount()) return ResponseEntity.ok(result(false, "신청 불가: 정원이 마감된 강의입니다."));
 
         String key = keyOf(courseCode, section);
         Map<String, EnrollmentItem> userMap = STORE.computeIfAbsent(session.getId(), x -> new ConcurrentHashMap<>());
-        if (userMap.containsKey(key)) {
-            return ResponseEntity.ok(result(true, "이미 신청된 강의입니다."));
-        }
+        if (userMap.containsKey(key)) return ResponseEntity.ok(result(true, "이미 신청된 강의입니다."));
 
         List<CourseMeta> enrolledTargets = userMap.values().stream()
                 .map(v -> findCourse(v.courseCode(), v.section()))
@@ -53,9 +41,7 @@ public class EnrollmentController {
                 .toList();
 
         boolean overlapped = enrolledTargets.stream().anyMatch(e -> isTimeOverlapped(e, target));
-        if (overlapped) {
-            return ResponseEntity.ok(result(false, "신청 불가: 이미 신청한 강의와 시간이 겹칩니다."));
-        }
+        if (overlapped) return ResponseEntity.ok(result(false, "신청 불가: 이미 신청한 강의와 시간이 겹칩니다."));
 
         userMap.put(key, new EnrollmentItem(
                 target.courseCode(), target.section(), target.title(), target.professor(), target.classTime(),
@@ -83,21 +69,30 @@ public class EnrollmentController {
         return ResponseEntity.ok(items);
     }
 
-    private String keyOf(String code, String section) {
-        return (code + "-" + section).toUpperCase();
+    private CourseMeta findCourse(String courseCode, String section) {
+        return courseSessionJpaRepository.findAllCourseRows().stream()
+                .filter(c -> c.getCourseCode().equalsIgnoreCase(courseCode) && c.getSection().equalsIgnoreCase(section))
+                .findFirst()
+                .map(this::toMeta)
+                .orElse(null);
     }
+
+    private CourseMeta toMeta(CourseListProjection p) {
+        return new CourseMeta(
+                p.getCourseCode(), p.getSection(), p.getTitle(), p.getProfessor(), p.getClassTime(),
+                p.getDay(), p.getStartTime(), p.getEndTime(),
+                p.getEnrolledCount() == null ? 0 : p.getEnrolledCount(),
+                p.getMaxCount() == null ? 0 : p.getMaxCount()
+        );
+    }
+
+    private String keyOf(String code, String section) { return (code + "-" + section).toUpperCase(); }
 
     private Map<String, Object> result(boolean success, String message) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("success", success);
         m.put("message", message);
         return m;
-    }
-
-    private CourseMeta findCourse(String courseCode, String section) {
-        return courseCatalog().stream()
-                .filter(c -> c.courseCode().equalsIgnoreCase(courseCode) && c.section().equalsIgnoreCase(section))
-                .findFirst().orElse(null);
     }
 
     private boolean isTimeOverlapped(CourseMeta a, CourseMeta b) {
@@ -114,10 +109,6 @@ public class EnrollmentController {
         return Integer.parseInt(p[0]) * 60 + Integer.parseInt(p[1]);
     }
 
-    private List<CourseMeta> courseCatalog() {
-        return List.of();
-    }
-
     record CourseMeta(
             String courseCode,
             String section,
@@ -129,8 +120,7 @@ public class EnrollmentController {
             String end,
             int enrolledCount,
             int maxCount
-    ) {
-    }
+    ) { }
 
     public record EnrollmentItem(
             String courseCode,
@@ -142,6 +132,5 @@ public class EnrollmentController {
             String start,
             String end,
             String date
-    ) {
-    }
+    ) { }
 }
