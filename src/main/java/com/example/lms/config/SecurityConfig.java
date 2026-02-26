@@ -10,6 +10,9 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
 
 import java.io.IOException;
 
@@ -63,13 +66,22 @@ public class SecurityConfig {
                                      org.springframework.security.core.Authentication authentication)
             throws IOException, ServletException {
 
+        RequestCache requestCache = new HttpSessionRequestCache();
+        SavedRequest savedRequest = requestCache.getRequest(request, response);
+        if (savedRequest != null) {
+            response.sendRedirect(savedRequest.getRedirectUrl());
+            return;
+        }
+
+        String referer = request.getHeader("Referer");
+        if (referer != null && !referer.contains("/login") && !referer.contains("/signup")) {
+            response.sendRedirect(referer);
+            return;
+        }
+
         boolean isAdmin = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
-        if (isAdmin) {
-            response.sendRedirect("/admin/dashboard");
-        } else {
-            response.sendRedirect("/user/home");
-        }
+        response.sendRedirect(isAdmin ? "/admin/dashboard" : "/user/home");
     }
 }
