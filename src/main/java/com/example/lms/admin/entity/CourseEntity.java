@@ -15,6 +15,10 @@ public class CourseEntity {
     private String description;
     private String professor;
     private Integer price;
+    @Column(name = "max_count")
+    private Integer maxCount;
+    @Column(name = "class_time")
+    private String classTime;
     private Boolean active;
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -30,6 +34,10 @@ public class CourseEntity {
     public void setProfessor(String professor) { this.professor = professor; }
     public Integer getPrice() { return price; }
     public void setPrice(Integer price) { this.price = price; }
+    public Integer getMaxCount() { return maxCount; }
+    public void setMaxCount(Integer maxCount) { this.maxCount = maxCount; }
+    public String getClassTime() { return classTime; }
+    public void setClassTime(String classTime) { this.classTime = classTime; }
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
 }

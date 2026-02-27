@@ -15,4 +15,9 @@ public class PageController {
     public String adminDashboard() {
         return "admin/dashboard";
     }
+
+    @GetMapping("/admin/courses")
+    public String adminCourses() {
+        return "admin/admin_courses";
+    }
 }

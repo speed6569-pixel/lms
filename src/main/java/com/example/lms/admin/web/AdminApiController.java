@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/admin")
+@RequestMapping("/admin/api")
 public class AdminApiController {
 
     private final AdminService adminService;
@@ -111,6 +111,11 @@ public class AdminApiController {
     @GetMapping("/stats")
     public Map<String, Object> stats() {
         return adminService.stats();
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> badRequest(IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
     }
 
     private Long adminId(Authentication auth) {

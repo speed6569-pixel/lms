@@ -43,12 +43,19 @@ public class AdminService {
 
     @Transactional
     public CourseEntity createCourse(AdminDtos.CourseCreateRequest req, Long adminUserId, String ip) {
+        if (req.courseCode() == null || req.courseCode().isBlank()) throw new IllegalArgumentException("과정코드는 필수입니다.");
+        if (courseJpaRepository.existsByCourseCode(req.courseCode().trim())) throw new IllegalArgumentException("이미 존재하는 과정코드입니다.");
+        if (req.price() != null && req.price() < 0) throw new IllegalArgumentException("가격은 0 이상이어야 합니다.");
+        if (req.maxCount() != null && req.maxCount() < 0) throw new IllegalArgumentException("정원은 0 이상이어야 합니다.");
+
         CourseEntity c = new CourseEntity();
-        c.setCourseCode(req.courseCode());
+        c.setCourseCode(req.courseCode().trim());
         c.setTitle(req.title());
         c.setDescription(req.description());
         c.setProfessor(req.professor());
         c.setPrice(req.price() == null ? 0 : req.price());
+        c.setMaxCount(req.maxCount() == null ? 0 : req.maxCount());
+        c.setClassTime(req.classTime());
         c.setActive(true);
         CourseEntity saved = courseJpaRepository.save(c);
         audit(adminUserId, "CREATE_COURSE", "COURSE", saved.getId(), ip, req.toString());
@@ -61,7 +68,15 @@ public class AdminService {
         if (req.title() != null) c.setTitle(req.title());
         if (req.description() != null) c.setDescription(req.description());
         if (req.professor() != null) c.setProfessor(req.professor());
-        if (req.price() != null) c.setPrice(req.price());
+        if (req.price() != null) {
+            if (req.price() < 0) throw new IllegalArgumentException("가격은 0 이상이어야 합니다.");
+            c.setPrice(req.price());
+        }
+        if (req.maxCount() != null) {
+            if (req.maxCount() < 0) throw new IllegalArgumentException("정원은 0 이상이어야 합니다.");
+            c.setMaxCount(req.maxCount());
+        }
+        if (req.classTime() != null) c.setClassTime(req.classTime());
         if (req.active() != null) c.setActive(req.active());
         CourseEntity saved = courseJpaRepository.save(c);
         audit(adminUserId, "UPDATE_COURSE", "COURSE", id, ip, req.toString());
@@ -96,15 +111,14 @@ public class AdminService {
     public List<Map<String, Object>> getCourses() {
         List<Map<String, Object>> out = new ArrayList<>();
         for (CourseEntity c : courseJpaRepository.findAll()) {
-            CourseSessionEntity s = courseSessionJpaRepository.findByCourseId(c.getId()).stream().findFirst().orElse(null);
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("id", c.getId());
             row.put("courseCode", c.getCourseCode());
             row.put("title", c.getTitle());
-            row.put("classTime", s == null ? "-" : (s.getDayOfWeek() + " " + s.getStartTime() + "~" + s.getEndTime()));
+            row.put("classTime", c.getClassTime() == null || c.getClassTime().isBlank() ? "-" : c.getClassTime());
             row.put("professor", c.getProfessor());
             row.put("price", c.getPrice());
-            row.put("maxCount", s == null ? "-" : s.getMaxCount());
+            row.put("maxCount", c.getMaxCount() == null ? 0 : c.getMaxCount());
             out.add(row);
         }
         return out;

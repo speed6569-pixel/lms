@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 강의관리</title>
+  <link rel="stylesheet" th:href="@{/css/home.css}">
+  <link rel="stylesheet" th:href="@{/css/header-profile.css}">
+  <style>
+    .wrap{max-width:1200px;margin:24px auto;padding:0 16px}
+    .panel{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.06)}
+    .row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+    input{height:36px;border:1px solid #d1d5db;border-radius:8px;padding:0 10px}
+    button{height:36px;border:0;border-radius:8px;background:#2563eb;color:#fff;padding:0 12px;cursor:pointer}
+    table{width:100%;border-collapse:collapse} th,td{border-bottom:1px solid #e5e7eb;padding:8px;text-align:left;font-size:13px}
+  </style>
+</head>
+<body>
+<div th:replace="~{fragments/header :: siteHeader(${userName}, ${userEmail})}"></div>
+<main class="wrap">
+  <section class="panel">
+    <h2>강의 관리</h2>
+    <div class="row">
+      <input id="cCode" placeholder="과정코드">
+      <input id="cTitle" placeholder="과정명">
+      <input id="cProfessor" placeholder="교수">
+      <input id="cPrice" placeholder="가격" type="number" min="0">
+      <input id="cMax" placeholder="정원" type="number" min="0">
+      <input id="cTime" placeholder="강의시간(예: 월10:00~12:00)">
+      <button onclick="createCourse()">강의 생성</button>
+    </div>
+    <table>
+      <thead><tr><th>ID</th><th>코드</th><th>강의명</th><th>강의시간</th><th>교수</th><th>가격</th><th>정원</th><th>삭제</th></tr></thead>
+      <tbody id="courseBody"></tbody>
+    </table>
+  </section>
+</main>
+<div th:replace="~{fragments/footer :: siteFooter}"></div>
+<script>
+ async function loadCourses(){
+   const rows = await (await fetch('/admin/api/courses')).json();
+   document.getElementById('courseBody').innerHTML = rows.map(v=>`<tr><td>${v.id}</td><td>${v.courseCode||''}</td><td>${v.title||''}</td><td>${v.classTime||'-'}</td><td>${v.professor||''}</td><td>${v.price||0}</td><td>${v.maxCount||0}</td><td><button style='background:#ef4444' onclick='deleteCourse(${v.id})'>삭제</button></td></tr>`).join('');
+ }
+ async function createCourse(){
+   const payload = {courseCode:cCode.value,title:cTitle.value,professor:cProfessor.value,price:Number(cPrice.value||0),maxCount:Number(cMax.value||0),classTime:cTime.value};
+   const res = await fetch('/admin/api/courses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+   if(!res.ok){ const e = await res.json().catch(()=>({message:'생성 실패'})); alert(e.message||'생성 실패'); return; }
+   await loadCourses();
+ }
+ async function deleteCourse(id){
+   if(!confirm('삭제하시겠습니까?')) return;
+   await fetch('/admin/api/courses/'+id,{method:'DELETE'});
+   await loadCourses();
+ }
+ loadCourses();
+</script>
+</body>
+</html>
