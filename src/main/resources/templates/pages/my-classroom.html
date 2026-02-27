@@ -63,7 +63,7 @@
                         <td>
                             <span class="type-tag"
                                   th:classappend="${course.status == 'APPROVED' or course.status == 'RUNNING'} ? ' type-offline' : ' type-online'"
-                                  th:text="${course.status == 'APPROVED'} ? '신청완료' : (${course.status == 'RUNNING'} ? '진행중' : (${course.status == 'CANCEL_REQUESTED'} ? '취소요청' : (${course.status == 'CANCELLED'} ? '취소완료' : (${course.status == 'REJECTED'} ? '반려' : '신청중'))))"></span>
+                                  th:text="${tab == 'applied'} ? (${course.status == 'WAITLIST'} ? '대기중' : '신청중') : (${tab == 'closed'} ? (${course.status == 'CANCELLED'} ? '취소됨' : '완료') : (${course.status == 'APPROVED'} ? '신청완료' : '진행중'))"></span>
                         </td>
                         <td th:text="${course.professor}"></td>
                         <td th:text="${course.classTime}"></td>
@@ -158,7 +158,7 @@
         });
       }
 
-      fetch('/api/me/timetable?includeRequested=true')
+      fetch('/api/me/timetable?tab=applied')
         .then(r => r.json())
         .then(renderWeeklyGrid)
         .catch(() => renderWeeklyGrid([]));

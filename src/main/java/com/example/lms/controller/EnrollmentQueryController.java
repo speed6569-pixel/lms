@@ -81,6 +81,7 @@ public class EnrollmentQueryController {
 
     @GetMapping("/timetable")
     public List<Map<String, Object>> myTimetable(
+            @RequestParam(defaultValue = "ongoing") String tab,
             @RequestParam(defaultValue = "false") boolean includeRequested,
             Authentication authentication
     ) {
@@ -92,9 +93,17 @@ public class EnrollmentQueryController {
         var user = userJpaRepository.findByLoginId(loginId).orElse(null);
         if (user == null) return List.of();
 
-        Set<String> statuses = includeRequested
-                ? Set.of("APPROVED", "RUNNING", "APPLIED", "WAITLIST")
-                : Set.of("APPROVED", "RUNNING");
+        Set<String> statuses;
+        if ("applied".equalsIgnoreCase(tab)) {
+            statuses = Set.of("APPLIED", "WAITLIST");
+        } else if ("closed".equalsIgnoreCase(tab)) {
+            statuses = Set.of();
+        } else {
+            statuses = includeRequested
+                    ? Set.of("APPROVED", "RUNNING", "APPLIED", "WAITLIST")
+                    : Set.of("APPROVED", "RUNNING");
+        }
+        if (statuses.isEmpty()) return List.of();
 
         return enrollmentJpaRepository.findTimetableByStatuses(user.getId(), statuses).stream()
                 .map(v -> {
@@ -115,7 +124,7 @@ public class EnrollmentQueryController {
 
     @GetMapping("/enrollments")
     public Map<String, Object> myEnrollments(Authentication authentication) {
-        List<Map<String, Object>> lectures = myTimetable(true, authentication);
+        List<Map<String, Object>> lectures = myTimetable("ongoing", true, authentication);
         Map<String, Object> res = new LinkedHashMap<>();
         res.put("count", lectures.size());
         res.put("lectures", lectures);

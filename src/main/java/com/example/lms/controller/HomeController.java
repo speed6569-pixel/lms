@@ -129,7 +129,7 @@ public class HomeController {
         if ("applied".equalsIgnoreCase(tab)) {
             statuses = Set.of("APPLIED", "WAITLIST");
         } else if ("closed".equalsIgnoreCase(tab)) {
-            statuses = Set.of("REJECTED", "CANCELLED", "CANCEL_REQUESTED");
+            statuses = Set.of("APPROVED", "REJECTED", "CANCELLED");
         } else {
             statuses = Set.of("APPROVED", "RUNNING");
         }
