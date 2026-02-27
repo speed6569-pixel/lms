@@ -49,9 +49,10 @@
                 <input id="cProfessor" placeholder="교수">
                 <input id="cPrice" placeholder="가격" type="number" min="0">
                 <input id="cMax" placeholder="정원" type="number" min="0">
-                <input id="cTime" placeholder="강의시간(예: 월10:00~12:00)">
+                <button type="button" class="action" onclick="addSessionRow()">+ 세션 추가</button>
                 <button class="action" onclick="createCourse()">강의 생성</button>
             </div>
+            <div id="sessionRows" class="row"></div>
             <table><thead><tr><th>ID</th><th>코드</th><th>강의명</th><th>강의 시간</th><th>교수</th><th>가격</th><th>정원</th><th>삭제</th></tr></thead><tbody id="courseBody"></tbody></table>
         </div>
 
@@ -122,17 +123,31 @@
     const rows = await (await fetch('/admin/api/courses')).json();
     document.getElementById('courseBody').innerHTML = rows.map(v=>`<tr><td>${v.id}</td><td>${v.courseCode||''}</td><td>${v.title||''}</td><td>${v.classTime||'-'}</td><td>${v.professor||''}</td><td>${v.price||0}</td><td>${v.maxCount||'-'}</td><td><button class='action' style='background:#ef4444' onclick='deleteCourse(${v.id})'>삭제</button></td></tr>`).join('');
   }
-  function parseSessions(text){
-    if(!text || !text.trim()) return [];
-    return text.split(',').map(v=>v.trim()).filter(Boolean).map((token)=>{
-      const m = token.match(/^([월화수목금토일])\s*(\d{2}:\d{2})\s*~\s*(\d{2}:\d{2})(?:\s*\(([^)]+)\))?$/);
-      if(!m) throw new Error('강의시간 형식 오류: '+token);
-      return {dayOfWeek:m[1], startTime:m[2], endTime:m[3], room:m[4]||null};
-    });
+  function addSessionRow(v={dayOfWeek:'월',startTime:'09:00',endTime:'11:00',room:''}){
+    const wrap = document.getElementById('sessionRows');
+    const el = document.createElement('div');
+    el.className = 'row';
+    el.innerHTML = `
+      <select class='ss-day'><option ${v.dayOfWeek==='월'?'selected':''}>월</option><option ${v.dayOfWeek==='화'?'selected':''}>화</option><option ${v.dayOfWeek==='수'?'selected':''}>수</option><option ${v.dayOfWeek==='목'?'selected':''}>목</option><option ${v.dayOfWeek==='금'?'selected':''}>금</option><option ${v.dayOfWeek==='토'?'selected':''}>토</option><option ${v.dayOfWeek==='일'?'selected':''}>일</option></select>
+      <input class='ss-start' type='time' value='${v.startTime||"09:00"}'>
+      <span>~</span>
+      <input class='ss-end' type='time' value='${v.endTime||"11:00"}'>
+      <input class='ss-room' placeholder='강의실' value='${v.room||""}'>
+      <button type='button' class='action' style='background:#ef4444' onclick='this.parentElement.remove()'>세션 삭제</button>
+    `;
+    wrap.appendChild(el);
+  }
+  function readSessions(){
+    return Array.from(document.querySelectorAll('#sessionRows .row')).map(r=>({
+      dayOfWeek:r.querySelector('.ss-day').value,
+      startTime:r.querySelector('.ss-start').value,
+      endTime:r.querySelector('.ss-end').value,
+      room:r.querySelector('.ss-room').value || null
+    }));
   }
   async function createCourse(){
-    let sessions=[];
-    try{ sessions = parseSessions(cTime.value); }catch(e){ alert(e.message); return; }
+    const sessions = readSessions();
+    if(sessions.length===0){ alert('세션을 1개 이상 추가하세요.'); return; }
     await fetch('/admin/api/courses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({courseCode:cCode.value,title:cTitle.value,professor:cProfessor.value,price:Number(cPrice.value||0),maxCount:Number(cMax.value||0),sessions})});
     await loadCourses(); await loadStats();
   }
@@ -168,6 +183,7 @@
     alert('계정 상태 변경 완료');
   }
 
+  addSessionRow();
   loadStats(); loadCourses(); loadSessions(); loadEnrollments();
 </script>
 </body>
