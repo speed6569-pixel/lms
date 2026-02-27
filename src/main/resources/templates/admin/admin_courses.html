@@ -29,9 +29,20 @@
       <input id="cProfessor" placeholder="교수">
       <input id="cPrice" placeholder="가격" type="number" min="0">
       <input id="cMax" placeholder="인원제한" type="number" min="0">
-      <select id="cDayRange">
-        <option value="월~금">월~금</option><option value="월~목">월~목</option><option value="화~금">화~금</option><option value="월~수">월~수</option><option value="토~일">토~일</option><option value="수~금">수~금</option>
-      </select>
+      <label><input type="radio" name="dayMode" value="MULTI" checked> 개별 선택</label>
+      <label><input type="radio" name="dayMode" value="RANGE"> 범위 선택</label>
+      <div id="multiDayBox">
+        <label><input type="checkbox" class="day-check" value="MON">월</label>
+        <label><input type="checkbox" class="day-check" value="TUE">화</label>
+        <label><input type="checkbox" class="day-check" value="WED">수</label>
+        <label><input type="checkbox" class="day-check" value="THU">목</label>
+        <label><input type="checkbox" class="day-check" value="FRI">금</label>
+      </div>
+      <div id="rangeDayBox" style="display:none;">
+        <select id="startDay"><option value="MON">월</option><option value="TUE">화</option><option value="WED">수</option><option value="THU">목</option><option value="FRI">금</option></select>
+        ~
+        <select id="endDay"><option value="MON">월</option><option value="TUE">화</option><option value="WED">수</option><option value="THU">목</option><option value="FRI">금</option></select>
+      </div>
       <input id="cStart" type="time" value="09:00">
       <input id="cEnd" type="time" value="11:00">
       <button onclick="createCourse()">강의 생성</button>
@@ -48,8 +59,27 @@
    const rows = await (await fetch('/admin/api/courses')).json();
    document.getElementById('courseBody').innerHTML = rows.map(v=>`<tr><td><button onclick="toggleStatus(${v.id},'${v.status||'OPEN'}')">${v.applyStatus||'모집중'}</button></td><td>${v.id}</td><td>${v.subjectCode||''}</td><td>${v.jobGroup||''}</td><td>${v.jobLevel||''}</td><td>${v.subjectName||''}</td><td>${v.instructor||''}</td><td>${v.classTime||'-'}</td><td>${v.price||0}</td><td>${v.capacity||0}</td><td><button style='background:#ef4444' onclick='deleteCourse(${v.id})'>삭제</button></td></tr>`).join('');
  }
+ function currentDayMode(){ return document.querySelector('input[name="dayMode"]:checked')?.value || 'MULTI'; }
+ function toggleDayMode(){
+   const mode = currentDayMode();
+   document.getElementById('multiDayBox').style.display = mode==='MULTI' ? '' : 'none';
+   document.getElementById('rangeDayBox').style.display = mode==='RANGE' ? '' : 'none';
+ }
+
  async function createCourse(){
-   const payload = {subjectCode:cCode.value,jobGroup:cJobGroup.value,jobLevel:cJobLevel.value,subjectName:cTitle.value,instructor:cProfessor.value,price:Number(cPrice.value||0),capacity:Number(cMax.value||0),status:cStatus.value,dayRange:cDayRange.value,startTime:cStart.value,endTime:cEnd.value};
+   const mode = currentDayMode();
+   const days = [...document.querySelectorAll('.day-check:checked')].map(v=>v.value);
+   if(mode==='MULTI' && days.length===0){ alert('요일을 1개 이상 선택하세요.'); return; }
+
+   const payload = {
+     subjectCode:cCode.value,jobGroup:cJobGroup.value,jobLevel:cJobLevel.value,subjectName:cTitle.value,instructor:cProfessor.value,
+     price:Number(cPrice.value||0),capacity:Number(cMax.value||0),status:cStatus.value,
+     dayMode:mode, days,
+     startDay:document.getElementById('startDay').value,
+     endDay:document.getElementById('endDay').value,
+     startTime:cStart.value,endTime:cEnd.value
+   };
+
    const res = await fetch('/admin/api/courses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
    if(!res.ok){ const e = await res.json().catch(()=>({message:'생성 실패'})); alert(e.message||'생성 실패'); return; }
    await loadCourses();
@@ -64,6 +94,8 @@
    await fetch('/admin/api/courses/'+id,{method:'DELETE'});
    await loadCourses();
  }
+ document.querySelectorAll('input[name="dayMode"]').forEach(v=>v.addEventListener('change', toggleDayMode));
+ toggleDayMode();
  loadCourses();
 </script>
 </body>

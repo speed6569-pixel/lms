@@ -73,11 +73,11 @@ public class AdminService {
 
         List<AdminDtos.CourseSessionInput> sessions = req.sessions() == null ? List.of() : req.sessions();
         if (sessions.isEmpty()) {
-            if (req.dayRange() == null || req.dayRange().isBlank() || req.startTime() == null || req.endTime() == null) {
-                throw new IllegalArgumentException("요일 범위와 시작/종료 시간을 입력해 주세요.");
+            if (req.startTime() == null || req.endTime() == null) {
+                throw new IllegalArgumentException("시작/종료 시간을 입력해 주세요.");
             }
-            List<String> days = expandDayRange(req.dayRange());
-            sessions = days.stream()
+            List<String> selectedDays = resolveSelectedDays(req.dayMode(), req.days(), req.startDay(), req.endDay());
+            sessions = selectedDays.stream()
                     .map(d -> new AdminDtos.CourseSessionInput(d, req.startTime(), req.endTime(), null))
                     .toList();
         }
@@ -88,10 +88,15 @@ public class AdminService {
             LocalTime end = LocalTime.parse(input.endTime());
             if (!start.isBefore(end)) throw new IllegalArgumentException("세션 시작시간은 종료시간보다 빨라야 합니다.");
 
+            String normalizedDay = normalizeDay(input.dayOfWeek());
+            if (adminCourseSessionJpaRepository.existsByCourse_IdAndDayOfWeekAndStartTimeAndEndTime(saved.getId(), normalizedDay, start, end)) {
+                throw new IllegalArgumentException("중복 세션이 이미 존재합니다: " + normalizedDay + " " + start + "~" + end);
+            }
+
             AdminCourseSessionEntity s = new AdminCourseSessionEntity();
             s.setCourse(saved);
             s.setSection(String.format("%02d", sectionNo++));
-            s.setDayOfWeek(input.dayOfWeek());
+            s.setDayOfWeek(normalizedDay);
             s.setStartTime(start);
             s.setEndTime(end);
             s.setRoom(input.room());
@@ -286,14 +291,39 @@ public class AdminService {
         audit(adminUserId, "DELETE_COURSE", "COURSE", courseId, ip, "deleted");
     }
 
-    private List<String> expandDayRange(String range) {
+    private List<String> resolveSelectedDays(String dayMode, List<String> days, String startDay, String endDay) {
+        if ("MULTI".equalsIgnoreCase(dayMode)) {
+            if (days == null || days.isEmpty()) throw new IllegalArgumentException("개별 선택 요일을 1개 이상 선택해 주세요.");
+            return days.stream().map(this::normalizeDay).distinct().toList();
+        }
+        if ("RANGE".equalsIgnoreCase(dayMode)) {
+            if (startDay == null || endDay == null) throw new IllegalArgumentException("범위 시작/종료 요일을 선택해 주세요.");
+            return expandDayRange(startDay, endDay);
+        }
+        throw new IllegalArgumentException("요일 선택 모드가 올바르지 않습니다.");
+    }
+
+    private List<String> expandDayRange(String startDay, String endDay) {
         List<String> week = List.of("월", "화", "수", "목", "금", "토", "일");
-        String[] parts = range.replace(" ", "").split("~");
-        if (parts.length == 1) return List.of(parts[0]);
-        int s = week.indexOf(parts[0]);
-        int e = week.indexOf(parts[1]);
-        if (s < 0 || e < 0 || s > e) throw new IllegalArgumentException("요일 범위 형식이 올바르지 않습니다. 예: 월~금");
+        String sNorm = normalizeDay(startDay);
+        String eNorm = normalizeDay(endDay);
+        int s = week.indexOf(sNorm);
+        int e = week.indexOf(eNorm);
+        if (s < 0 || e < 0 || s > e) throw new IllegalArgumentException("요일 범위 형식이 올바르지 않습니다. 예: MON~FRI 또는 월~금");
         return week.subList(s, e + 1);
+    }
+
+    private String normalizeDay(String day) {
+        return switch (day) {
+            case "MON", "월" -> "월";
+            case "TUE", "화" -> "화";
+            case "WED", "수" -> "수";
+            case "THU", "목" -> "목";
+            case "FRI", "금" -> "금";
+            case "SAT", "토" -> "토";
+            case "SUN", "일" -> "일";
+            default -> throw new IllegalArgumentException("지원하지 않는 요일: " + day);
+        };
     }
 
     private String toDayDurationText(List<AdminCourseSessionEntity> sessions) {
