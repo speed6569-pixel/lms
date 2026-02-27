@@ -22,7 +22,7 @@ public class AdminUserController {
 
     @GetMapping("/users")
     public List<Map<String, Object>> users(@RequestParam(required = false) String q) {
-        return adminUserService.searchUsers(q).stream().map(adminUserService::toRow).toList();
+        return adminUserService.searchUsers(q);
     }
 
     @PatchMapping("/users/{id}")

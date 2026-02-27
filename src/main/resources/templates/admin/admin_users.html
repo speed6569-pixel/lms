@@ -23,7 +23,7 @@
       <button onclick="loadUsers()">검색</button>
     </div>
     <table>
-      <thead><tr><th>ID</th><th>username</th><th>name</th><th>email</th><th>role</th><th>status</th><th>생성일</th><th>변경</th></tr></thead>
+      <thead><tr><th>ID</th><th>username</th><th>name</th><th>email</th><th>role</th><th>status</th><th>이용기간</th><th>총결제액</th><th>참여강의수</th><th>변경</th></tr></thead>
       <tbody id="userBody"></tbody>
     </table>
   </section>
@@ -34,6 +34,10 @@
    const q = document.getElementById('q').value || '';
    const rows = await (await fetch('/admin/api/users?q='+encodeURIComponent(q))).json();
    const body = document.getElementById('userBody');
+   if(!rows || rows.length===0){
+     body.innerHTML = `<tr><td colspan='10'>검색 결과가 없습니다.</td></tr>`;
+     return;
+   }
    body.innerHTML = rows.map(v => `
     <tr>
       <td>${v.id}</td>
@@ -52,7 +56,9 @@
           <option value='BLOCKED' ${v.status==='BLOCKED'?'selected':''}>BLOCKED</option>
         </select>
       </td>
-      <td>${v.createdAt||''}</td>
+      <td>${v.usagePeriod||''}</td>
+      <td>${Number(v.totalPayment||0).toLocaleString()}원</td>
+      <td>${v.runningCourseCount||0}</td>
       <td><button onclick='saveUser(${v.id})'>저장</button></td>
     </tr>
    `).join('');

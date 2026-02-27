@@ -1,11 +1,14 @@
 package com.example.lms.admin.service;
 
 import com.example.lms.admin.dto.AdminUserDtos;
+import com.example.lms.admin.repo.AdminUserStatsProjection;
 import com.example.lms.enrollment.entity.UserEntity;
 import com.example.lms.enrollment.repo.UserJpaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
@@ -19,9 +22,10 @@ public class AdminUserService {
     }
 
     @Transactional(readOnly = true)
-    public List<UserEntity> searchUsers(String q) {
-        if (q == null || q.isBlank()) return userJpaRepository.findAll().stream().sorted((a,b)->Long.compare(b.getId(), a.getId())).toList();
-        return userJpaRepository.findByLoginIdContainingIgnoreCaseOrNameContainingIgnoreCaseOrderByIdDesc(q.trim(), q.trim());
+    public List<Map<String, Object>> searchUsers(String q) {
+        return userJpaRepository.searchAdminUserStats(q == null ? null : q.trim()).stream()
+                .map(this::toRow)
+                .toList();
     }
 
     @Transactional
@@ -60,6 +64,8 @@ public class AdminUserService {
     }
 
     public Map<String, Object> toRow(UserEntity u) {
+        long days = u.getCreatedAt() == null ? 0 : ChronoUnit.DAYS.between(u.getCreatedAt().toLocalDate(), LocalDate.now());
+        String usagePeriod = u.getCreatedAt() == null ? "-" : u.getCreatedAt().toLocalDate() + " ~ 오늘 (가입 후 " + days + "일)";
         return Map.of(
                 "id", u.getId(),
                 "username", u.getLoginId(),
@@ -67,7 +73,27 @@ public class AdminUserService {
                 "email", u.getEmail() == null ? "" : u.getEmail(),
                 "role", u.getRole(),
                 "status", u.getStatus() == null ? (Boolean.TRUE.equals(u.getEnabled()) ? "ACTIVE" : "BLOCKED") : u.getStatus(),
-                "createdAt", u.getCreatedAt() == null ? "" : u.getCreatedAt().toString()
+                "createdAt", u.getCreatedAt() == null ? "" : u.getCreatedAt().toString(),
+                "usagePeriod", usagePeriod,
+                "totalPayment", 0,
+                "runningCourseCount", 0
+        );
+    }
+
+    private Map<String, Object> toRow(AdminUserStatsProjection p) {
+        long days = p.getCreatedAt() == null ? 0 : ChronoUnit.DAYS.between(p.getCreatedAt().toLocalDate(), LocalDate.now());
+        String usagePeriod = p.getCreatedAt() == null ? "-" : p.getCreatedAt().toLocalDate() + " ~ 오늘 (가입 후 " + days + "일)";
+        return Map.of(
+                "id", p.getId(),
+                "username", p.getLoginId(),
+                "name", p.getName() == null ? "" : p.getName(),
+                "email", "",
+                "role", p.getRole(),
+                "status", p.getStatus(),
+                "createdAt", p.getCreatedAt() == null ? "" : p.getCreatedAt().toString(),
+                "usagePeriod", usagePeriod,
+                "totalPayment", p.getTotalPayment() == null ? 0 : p.getTotalPayment(),
+                "runningCourseCount", p.getRunningCourseCount() == null ? 0 : p.getRunningCourseCount()
         );
     }
 }
