@@ -9,8 +9,8 @@
     <style>
         .admin-wrap{max-width:1200px;margin:24px auto;padding:0 16px;display:grid;grid-template-columns:220px 1fr;gap:16px}
         .side,.panel{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.06)}
-        .side button{display:block;width:100%;text-align:left;padding:9px 10px;border-radius:10px;text-decoration:none;color:#1f2937;border:0;background:#fff;cursor:pointer}
-        .side button:hover,.side button.active{background:#eff6ff}
+        .side .nav-btn{display:block;width:100%;text-align:left;padding:9px 10px;border-radius:10px;text-decoration:none;color:#1f2937;border:0;background:#fff;cursor:pointer}
+        .side .nav-btn:hover,.side .nav-btn.active{background:#eff6ff}
         .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
         .card{background:#f8fbff;border:1px solid #dbeafe;border-radius:12px;padding:12px}
         .section{display:none}.section.active{display:block}
@@ -32,6 +32,7 @@
         <button class="nav-btn" data-target="enrollments">수강신청 관리</button>
         <button class="nav-btn" data-target="attendance">출석 관리</button>
         <button class="nav-btn" data-target="users">사용자 관리</button>
+        <a class="nav-btn" href="/admin/posts" style="display:block;text-decoration:none;">게시물 관리</a>
     </aside>
 
     <section class="panel">
@@ -112,8 +113,8 @@
 
 <script>
   const sections = ['stats','courses','enrollments','attendance','users'];
-  document.querySelectorAll('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>{
-    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+  document.querySelectorAll('.nav-btn[data-target]').forEach(btn=>btn.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-btn[data-target]').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
     sections.forEach(s=>document.getElementById('sec-'+s).classList.remove('active'));
     document.getElementById('sec-'+btn.dataset.target).classList.add('active');
   }));
