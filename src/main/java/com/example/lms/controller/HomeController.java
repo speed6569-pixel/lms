@@ -58,21 +58,18 @@ public class HomeController {
     public String enrollmentApplyPage(
             @RequestParam(required = false) String job,
             @RequestParam(required = false) String position,
-            @RequestParam(required = false) String dayNight,
             @RequestParam(required = false) String keyword,
             Model model
     ) {
         List<Course> filtered = readCourses().stream()
                 .filter(c -> isBlank(job) || c.job().equalsIgnoreCase(job))
                 .filter(c -> isBlank(position) || c.position().equalsIgnoreCase(position))
-                .filter(c -> isBlank(dayNight) || c.dayNight().equalsIgnoreCase(dayNight))
                 .filter(c -> isBlank(keyword) || contains(c, keyword))
                 .toList();
 
         model.addAttribute("courses", filtered);
         model.addAttribute("job", job);
         model.addAttribute("position", position);
-        model.addAttribute("dayNight", dayNight);
         model.addAttribute("keyword", keyword);
         return "enrollment/apply";
     }

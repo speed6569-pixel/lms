@@ -39,11 +39,6 @@
                 <option value="차장" th:selected="${position == '차장'}">차장</option>
                 <option value="부장" th:selected="${position == '부장'}">부장</option>
             </select>
-            <select name="dayNight">
-                <option value="">주야 전체</option>
-                <option value="주간" th:selected="${dayNight == '주간'}">주간</option>
-                <option value="야간" th:selected="${dayNight == '야간'}">야간</option>
-            </select>
             <input type="text" name="keyword" placeholder="키워드 검색" th:value="${keyword}" style="min-width:180px;">
             <button type="button" id="searchBtn" class="btn-primary">검색</button>
             <button type="button" id="resetFilterBtn" class="btn-primary" style="background:#6b7280;">필터 초기화</button>
@@ -54,12 +49,12 @@
             <table class="data-table">
                 <thead>
                 <tr>
-                    <th>신청</th><th>주야</th><th>과목코드</th><th>직군</th><th>직급</th><th>교과목명</th><th>담당교수</th><th>강의시간</th><th>가격</th><th>인원제한</th><th>비고</th>
+                    <th>신청</th><th>과목코드</th><th>직군</th><th>직급</th><th>교과목명</th><th>담당교수</th><th>강의시간</th><th>가격</th><th>인원제한</th><th>비고</th>
                 </tr>
                 </thead>
                 <tbody id="courseTableBody">
                 <tr th:each="course : ${courses}" class="course-row"
-                    th:attr="data-code=${course.courseCode},data-job=${course.job},data-position=${course.position},data-daynight=${course.dayNight}">
+                    th:attr="data-code=${course.courseCode},data-job=${course.job},data-position=${course.position}">
                     <td>
                         <button type="button" class="apply-btn"
                                 th:attr="data-code=${course.courseCode},data-section=${course.section},data-title=${course.title}"
@@ -68,7 +63,6 @@
                                 onclick="toggleApply(this)"
                                 th:text="${course.enrolledCount >= course.maxCount} ? '신청불가' : '신청'">신청</button>
                     </td>
-                    <td th:text="${course.dayNight}"></td>
                     <td th:text="${course.courseCode}"></td>
                     <td th:text="${course.job}"></td>
                     <td th:text="${course.position}"></td>
@@ -130,7 +124,6 @@
       const code = document.getElementById('quickCourseCode').value.trim().toLowerCase();
       const job = filterForm.querySelector('select[name="job"]').value.trim().toLowerCase();
       const position = filterForm.querySelector('select[name="position"]').value.trim().toLowerCase();
-      const dayNight = filterForm.querySelector('select[name="dayNight"]').value.trim().toLowerCase();
       const keyword = filterForm.querySelector('input[name="keyword"]').value.trim().toLowerCase();
 
       let visibleCount = 0;
@@ -138,13 +131,11 @@
         const rowCode = (row.dataset.code || '').toLowerCase();
         const rowJob = (row.dataset.job || '').toLowerCase();
         const rowPosition = (row.dataset.position || '').toLowerCase();
-        const rowDayNight = (row.dataset.daynight || '').toLowerCase();
         const rowText = row.textContent.toLowerCase();
 
         const match = (!code || rowCode.includes(code))
           && (!job || rowJob === job)
           && (!position || rowPosition === position)
-          && (!dayNight || rowDayNight === dayNight)
           && (!keyword || rowText.includes(keyword));
 
         row.style.display = match ? '' : 'none';
@@ -158,7 +149,6 @@
       document.getElementById('quickCourseCode').value = '';
       filterForm.querySelector('select[name="job"]').value = '';
       filterForm.querySelector('select[name="position"]').value = '';
-      filterForm.querySelector('select[name="dayNight"]').value = '';
       filterForm.querySelector('input[name="keyword"]').value = '';
       applyCourseFilters();
     }
@@ -190,7 +180,6 @@
     document.getElementById('quickCourseCode').addEventListener('input', applyCourseFilters);
     filterForm.querySelector('select[name="job"]').addEventListener('change', applyCourseFilters);
     filterForm.querySelector('select[name="position"]').addEventListener('change', applyCourseFilters);
-    filterForm.querySelector('select[name="dayNight"]').addEventListener('change', applyCourseFilters);
     filterForm.querySelector('input[name="keyword"]').addEventListener('input', applyCourseFilters);
 
     function keyOf(code, section){ return `${code}-${section}`; }
