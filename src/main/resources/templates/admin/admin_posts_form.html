@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>게시물 작성</title>
-<link rel="stylesheet" th:href="@{/css/home.css}"><link rel="stylesheet" th:href="@{/css/header-profile.css}">
+<link rel="stylesheet" th:href="@{/css/home.css}"><link rel="stylesheet" th:href="@{/css/header-profile.css}"><script defer th:src="@{/js/header-profile.js}"></script>
 <style>.wrap{max-width:900px;margin:24px auto;padding:0 16px}.panel{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px}.row{display:grid;gap:8px;margin-bottom:10px}input,select,textarea{border:1px solid #d1d5db;border-radius:8px;padding:8px}button{height:36px;border:0;border-radius:8px;background:#2563eb;color:#fff;padding:0 12px}</style></head>
 <body><div th:replace="~{fragments/header :: siteHeader(${userName}, ${userEmail})}"></div>
 <main class="wrap"><section class="panel">
