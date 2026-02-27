@@ -23,7 +23,7 @@ public class HomeController {
         this.courseSessionJpaRepository = courseSessionJpaRepository;
     }
 
-    @GetMapping("/")
+    @GetMapping({"/", "/homepage"})
     public String home() {
         return "index";
     }
@@ -144,6 +144,9 @@ public class HomeController {
 
     @GetMapping("/customer-center")
     public String customerCenterPage() { return "pages/customer-center"; }
+
+    @GetMapping("/payments")
+    public String paymentsPage() { return "pages/payments"; }
 
     @GetMapping("/schedule")
     public String schedulePage() { return "pages/schedule"; }

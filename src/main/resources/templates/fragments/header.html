@@ -23,14 +23,14 @@
       <button class="profile-btn" id="profileBtn" type="button">
         <span class="avatar" id="avatarText">U</span>
         <span class="profile-text desktop-only">
-          <strong th:text="${userName} ?: ${#authentication?.name} ?: '사용자'">사용자</strong>
-          <small th:text="${userEmail} ?: '로그인 사용자'">로그인 사용자</small>
+          <strong th:text="${userName != null ? userName : #authentication.name}">사용자</strong>
+          <small th:text="${userEmail != null ? userEmail : '로그인 사용자'}">로그인 사용자</small>
         </span>
       </button>
 
       <div class="profile-dropdown" id="profileDropdown">
         <a href="/enrollments/me">마이페이지</a>
-        <a href="/enrollments/apply">내 강의</a>
+        <a href="/payments">결재내역</a>
         <a href="/settings">설정</a>
         <form action="/logout" method="post">
           <button type="submit" class="logout-btn">로그아웃</button>

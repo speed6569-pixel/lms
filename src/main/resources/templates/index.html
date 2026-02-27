@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,18 +26,62 @@
                 </p>
             </div>
             <div class="card preview-card" id="customer">
-                <h3>로그인</h3>
-                <form method="get" action="/login" class="login-mini-form">
-                    <label for="miniUser">아이디 또는 이메일</label>
-                    <input id="miniUser" type="text" placeholder="아이디 또는 이메일을 입력하세요">
-                    <label for="miniPassword">비밀번호</label>
-                    <input id="miniPassword" type="password" placeholder="비밀번호를 입력하세요">
-                    <button class="btn btn-primary" type="submit">로그인</button>
-                </form>
-                <div class="account-links">
-                    <a href="#">아이디 찾기</a>
-                    <a href="#">비밀번호 찾기</a>
-                    <a href="/signup">회원가입</a>
+                <div sec:authorize="isAnonymous()">
+                    <h3>로그인</h3>
+                    <form method="post" action="/login" class="login-mini-form">
+                        <label for="miniLoginId">아이디 또는 이메일</label>
+                        <input id="miniLoginId" name="loginId" type="text" placeholder="아이디 또는 이메일을 입력하세요" required>
+                        <label for="miniPassword">비밀번호</label>
+                        <input id="miniPassword" name="password" type="password" placeholder="비밀번호를 입력하세요" required>
+                        <label style="font-size:13px; color:#4b5563;"><input type="checkbox" name="remember-me"> 로그인 유지(14일)</label>
+                        <button class="btn btn-primary" type="submit">로그인</button>
+                    </form>
+                    <div class="account-links">
+                        <a href="#">아이디 찾기</a>
+                        <a href="#">비밀번호 찾기</a>
+                        <a href="/signup">회원가입</a>
+                    </div>
+                </div>
+
+                <div sec:authorize="isAuthenticated()" class="naver-like-card" id="miniProfileWrap">
+                    <div class="nl-top">
+                        <div class="nl-avatar" id="miniAvatar">U</div>
+
+                        <div class="nl-main">
+                            <div class="nl-name-row">
+                                <strong class="nl-name" th:text="${userName != null ? userName : #authentication.name}">사용자</strong>
+                                <span class="nl-id-badge">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                                        <rect x="5" y="11" width="14" height="10" rx="2"></rect>
+                                        <path d="M8 11V8a4 4 0 1 1 8 0v3"></path>
+                                    </svg>
+                                    네이버ID
+                                </span>
+                            </div>
+                            <p class="nl-email" th:text="${userEmail != null ? userEmail : #authentication.name}">email</p>
+
+
+                        </div>
+
+                        <div class="nl-logout-area">
+                            <form action="/logout" method="post" class="nl-logout-form">
+                                <button class="nl-logout-btn" type="submit">로그아웃</button>
+                            </form>
+                            <button class="nl-menu-btn" type="button" id="nlMenuBtn">⋯</button>
+                            <div class="nl-menu" id="nlMenu">
+                                <a href="/enrollments/me">마이페이지</a>
+                                <a href="/payments">결재내역</a>
+                                <a href="/settings">설정</a>
+                                <form action="/logout" method="post"><button type="submit">로그아웃</button></form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="nl-tabs">
+                        <a class="nl-tab" href="/enrollments/me"><span>마이페이지</span></a>
+                        <a class="nl-tab" href="/payments"><span>결재내역</span></a>
+                        <a class="nl-tab" href="/settings"><span>설정</span></a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -115,20 +159,44 @@
             lectureCarousel.scrollBy({ left: 340, behavior: 'smooth' });
         });
 
+        const isAuthenticated = document.body.querySelector('.profile-wrap') !== null;
         document.querySelectorAll('.lecture-card').forEach((card) => {
             card.addEventListener('click', () => {
-                const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
                 const courseId = card.dataset.courseId;
 
-                if (isLoggedIn) {
+                if (isAuthenticated) {
                     location.href = `/enrollments/apply?course=${encodeURIComponent(courseId)}`;
                     return;
                 }
 
-                alert('로그인 해야합니다.');
                 location.href = '/login';
             });
         });
+
+        const miniWrap = document.getElementById('miniProfileWrap');
+        const miniAvatar = document.getElementById('miniAvatar');
+        const nlMenuBtn = document.getElementById('nlMenuBtn');
+        const nlMenu = document.getElementById('nlMenu');
+
+        if (miniWrap) {
+            const nameText = miniWrap.querySelector('.nl-name')?.textContent?.trim() || '';
+            if (miniAvatar && nameText) miniAvatar.textContent = nameText.substring(0, 1).toUpperCase();
+
+            if (nlMenuBtn && nlMenu) {
+                nlMenuBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    nlMenu.classList.toggle('open');
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!miniWrap.contains(e.target)) nlMenu.classList.remove('open');
+                });
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') nlMenu.classList.remove('open');
+                });
+            }
+        }
     })();
 </script>
 </body>
