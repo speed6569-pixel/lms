@@ -14,6 +14,8 @@ public interface EnrollmentJpaRepository extends JpaRepository<EnrollmentEntity,
 
     boolean existsByUserIdAndCourseSessionIdAndStatus(Long userId, Long courseSessionId, String status);
 
+    boolean existsByUserIdAndCourseId(Long userId, Long courseId);
+
     boolean existsByUserIdAndCourseIdAndStatusIn(Long userId, Long courseId, java.util.Collection<String> statuses);
 
     @Query("select distinct e.courseId from EnrollmentEntity e where e.userId = :userId and e.status in :statuses")

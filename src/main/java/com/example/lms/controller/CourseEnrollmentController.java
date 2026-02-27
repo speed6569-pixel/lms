@@ -55,8 +55,8 @@ public class CourseEnrollmentController {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "모집 마감 강의입니다."));
         }
 
-        if (enrollmentJpaRepository.existsByUserIdAndCourseIdAndStatusIn(userId, courseId, List.of("APPLIED", "WAITLIST", "APPROVED", "RUNNING"))) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "이미 신청한 강의입니다."));
+        if (enrollmentJpaRepository.existsByUserIdAndCourseId(userId, courseId)) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "이미 신청 이력이 있는 강의입니다. 중복 신청할 수 없습니다."));
         }
 
         List<CourseSessionEntity> newSessions = courseSessionJpaRepository.findByCourseId(courseId);
