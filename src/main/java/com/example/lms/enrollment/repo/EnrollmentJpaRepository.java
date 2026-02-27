@@ -46,17 +46,27 @@ public interface EnrollmentJpaRepository extends JpaRepository<EnrollmentEntity,
 
     @Query(value = """
             SELECT c.course_code AS courseCode,
-                   cs.section AS section,
-                   c.title AS title,
-                   c.professor AS professor,
-                   CONCAT(cs.day_of_week, ' ', TIME_FORMAT(cs.start_time, '%H:%i'), '-', TIME_FORMAT(cs.end_time, '%H:%i')) AS classTime,
+                   COALESCE(cs.section, '01') AS section,
+                   COALESCE(c.subject_name, c.title) AS title,
+                   COALESCE(c.instructor, c.professor) AS professor,
+                   (
+                     SELECT GROUP_CONCAT(CONCAT(cs2.day_of_week, ' ', TIME_FORMAT(cs2.start_time, '%H:%i'), '-', TIME_FORMAT(cs2.end_time, '%H:%i'))
+                            ORDER BY FIELD(cs2.day_of_week,'월','화','수','목','금','토','일'), cs2.start_time SEPARATOR ', ')
+                     FROM course_sessions cs2
+                     WHERE cs2.course_id = c.id
+                   ) AS classTime,
                    CASE WHEN c.price = 0 THEN '무료' ELSE CONCAT('₩', FORMAT(c.price, 0)) END AS price,
-                   cs.enrolled_count AS enrolledCount,
-                   cs.max_count AS maxCount,
+                   (
+                     SELECT COUNT(*)
+                     FROM enrollments e2
+                     WHERE e2.course_id = c.id
+                       AND e2.status IN ('APPROVED','RUNNING')
+                   ) AS enrolledCount,
+                   COALESCE(c.capacity, cs.max_count, 0) AS maxCount,
                    e.status AS status
             FROM enrollments e
-            JOIN course_sessions cs ON e.course_session_id = cs.id
-            JOIN courses c ON cs.course_id = c.id
+            JOIN courses c ON c.id = e.course_id
+            LEFT JOIN course_sessions cs ON cs.id = e.course_session_id
             WHERE e.user_id = :userId
               AND e.status IN (:statuses)
             ORDER BY e.id DESC
