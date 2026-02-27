@@ -11,6 +11,7 @@ import java.util.List;
 public interface CourseSessionJpaRepository extends JpaRepository<CourseSessionEntity, Long> {
 
     List<CourseSessionEntity> findByCourseId(Long courseId);
+    List<CourseSessionEntity> findByCourseIdIn(java.util.Collection<Long> courseIds);
 
     @Query("""
             select count(cs) > 0 from CourseSessionEntity cs

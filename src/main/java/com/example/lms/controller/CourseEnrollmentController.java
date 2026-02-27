@@ -1,6 +1,7 @@
 package com.example.lms.controller;
 
 import com.example.lms.admin.repo.CourseJpaRepository;
+import com.example.lms.enrollment.entity.CourseSessionEntity;
 import com.example.lms.enrollment.entity.EnrollmentEntity;
 import com.example.lms.enrollment.repo.CourseSessionJpaRepository;
 import com.example.lms.enrollment.repo.EnrollmentJpaRepository;
@@ -13,8 +14,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalTime;
+import java.util.*;
 
 @RestController
 @RequestMapping("/courses")
@@ -58,13 +59,24 @@ public class CourseEnrollmentController {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "이미 신청한 강의입니다."));
         }
 
-        Long sessionId = courseSessionJpaRepository.findByCourseId(courseId).stream().findFirst().map(s -> s.getId()).orElse(null);
+        List<CourseSessionEntity> newSessions = courseSessionJpaRepository.findByCourseId(courseId);
+        Long sessionId = newSessions.stream().findFirst().map(CourseSessionEntity::getId).orElse(null);
         if (sessionId == null) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "해당 강의의 세션이 없습니다."));
         }
 
+        List<Long> existingCourseIds = enrollmentJpaRepository.findCourseIdsByUserIdAndStatuses(userId,
+                List.of("APPLIED", "WAITLIST", "APPROVED", "RUNNING"));
+        if (!existingCourseIds.isEmpty()) {
+            List<CourseSessionEntity> existingSessions = courseSessionJpaRepository.findByCourseIdIn(existingCourseIds);
+            String conflict = findConflictMessage(existingSessions, newSessions);
+            if (conflict != null) {
+                return ResponseEntity.badRequest().body(Map.of("success", false, "message", conflict));
+            }
+        }
+
         long current = enrollmentJpaRepository.countByCourseIdAndStatusIn(courseId, List.of("APPLIED", "WAITLIST", "APPROVED", "RUNNING"));
-        int capacity = courseSessionJpaRepository.findByCourseId(courseId).stream().findFirst().map(s -> s.getMaxCount() == null ? 0 : s.getMaxCount()).orElse(0);
+        int capacity = Optional.ofNullable(course.getCapacity()).orElseGet(() -> newSessions.stream().findFirst().map(s -> s.getMaxCount() == null ? 0 : s.getMaxCount()).orElse(0));
         String status = (capacity > 0 && current >= capacity) ? "WAITLIST" : "APPLIED";
 
         EnrollmentEntity entity = new EnrollmentEntity();
@@ -77,4 +89,31 @@ public class CourseEnrollmentController {
 
         return ResponseEntity.ok(Map.of("success", true, "message", "WAITLIST".equals(status) ? "대기 신청되었습니다." : "신청 완료되었습니다."));
     }
+
+    private String findConflictMessage(List<CourseSessionEntity> existingSessions, List<CourseSessionEntity> newSessions) {
+        for (CourseSessionEntity n : newSessions) {
+            for (CourseSessionEntity e : existingSessions) {
+                if (!Objects.equals(nullSafe(n.getDayOfWeek()), nullSafe(e.getDayOfWeek()))) continue;
+                if (isOverlapped(e.getStartTime(), e.getEndTime(), n.getStartTime(), n.getEndTime())) {
+                    return "시간이 겹쳐 신청할 수 없습니다. "
+                            + nullSafe(n.getDayOfWeek()) + " "
+                            + formatTime(n.getStartTime()) + "~" + formatTime(n.getEndTime())
+                            + " 이 기존 강의와 겹칩니다.";
+                }
+            }
+        }
+        return null;
+    }
+
+    private boolean isOverlapped(LocalTime existingStart, LocalTime existingEnd, LocalTime newStart, LocalTime newEnd) {
+        if (existingStart == null || existingEnd == null || newStart == null || newEnd == null) return false;
+        return existingStart.isBefore(newEnd) && newStart.isBefore(existingEnd);
+    }
+
+    private String formatTime(LocalTime t) {
+        if (t == null) return "--:--";
+        return String.format("%02d:%02d", t.getHour(), t.getMinute());
+    }
+
+    private String nullSafe(String v) { return v == null ? "" : v; }
 }
