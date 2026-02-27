@@ -37,8 +37,38 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   INDEX idx_audit_actor_time (actor_user_id, created_at)
 );
 
-ALTER TABLE enrollments
-  ADD COLUMN IF NOT EXISTS requested_at DATETIME NULL,
-  ADD COLUMN IF NOT EXISTS processed_at DATETIME NULL,
-  ADD COLUMN IF NOT EXISTS processed_by BIGINT NULL,
-  ADD COLUMN IF NOT EXISTS reason VARCHAR(255) NULL;
+SET @has_requested_at := (
+  SELECT COUNT(*) FROM information_schema.columns
+  WHERE table_schema = DATABASE() AND table_name = 'enrollments' AND column_name = 'requested_at'
+);
+SET @sql := IF(@has_requested_at = 0,
+  'ALTER TABLE enrollments ADD COLUMN requested_at DATETIME NULL',
+  'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @has_processed_at := (
+  SELECT COUNT(*) FROM information_schema.columns
+  WHERE table_schema = DATABASE() AND table_name = 'enrollments' AND column_name = 'processed_at'
+);
+SET @sql := IF(@has_processed_at = 0,
+  'ALTER TABLE enrollments ADD COLUMN processed_at DATETIME NULL',
+  'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @has_processed_by := (
+  SELECT COUNT(*) FROM information_schema.columns
+  WHERE table_schema = DATABASE() AND table_name = 'enrollments' AND column_name = 'processed_by'
+);
+SET @sql := IF(@has_processed_by = 0,
+  'ALTER TABLE enrollments ADD COLUMN processed_by BIGINT NULL',
+  'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @has_reason := (
+  SELECT COUNT(*) FROM information_schema.columns
+  WHERE table_schema = DATABASE() AND table_name = 'enrollments' AND column_name = 'reason'
+);
+SET @sql := IF(@has_reason = 0,
+  'ALTER TABLE enrollments ADD COLUMN reason VARCHAR(255) NULL',
+  'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
