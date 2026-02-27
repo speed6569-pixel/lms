@@ -1,8 +1,9 @@
 package com.example.lms.config;
 
 import com.example.lms.auth.service.CustomUserDetailsService;
+import com.example.lms.enrollment.entity.LoginHistoryEntity;
+import com.example.lms.enrollment.repo.LoginHistoryJpaRepository;
 import com.example.lms.enrollment.repo.UserJpaRepository;
-import com.example.lms.settings.service.SettingsService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -24,14 +25,14 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
     private final UserJpaRepository userJpaRepository;
-    private final SettingsService settingsService;
+    private final LoginHistoryJpaRepository loginHistoryJpaRepository;
 
     public SecurityConfig(CustomUserDetailsService userDetailsService,
                           UserJpaRepository userJpaRepository,
-                          SettingsService settingsService) {
+                          LoginHistoryJpaRepository loginHistoryJpaRepository) {
         this.userDetailsService = userDetailsService;
         this.userJpaRepository = userJpaRepository;
-        this.settingsService = settingsService;
+        this.loginHistoryJpaRepository = loginHistoryJpaRepository;
     }
 
     @Bean
@@ -93,7 +94,14 @@ public class SecurityConfig {
 
         String xff = request.getHeader("X-Forwarded-For");
         String ipAddress = (xff != null && !xff.isBlank()) ? xff.split(",")[0].trim() : request.getRemoteAddr();
-        settingsService.saveLoginHistory(loginId, ipAddress, request.getHeader("User-Agent"));
+        userJpaRepository.findByLoginId(loginId).ifPresent(u -> {
+            LoginHistoryEntity h = new LoginHistoryEntity();
+            h.setUserId(u.getId());
+            h.setLoginTime(java.time.LocalDateTime.now());
+            h.setIpAddress(ipAddress);
+            h.setUserAgent(request.getHeader("User-Agent"));
+            loginHistoryJpaRepository.save(h);
+        });
 
         RequestCache requestCache = new HttpSessionRequestCache();
         SavedRequest savedRequest = requestCache.getRequest(request, response);
