@@ -60,8 +60,8 @@
                         <td th:text="${course.title}"></td>
                         <td>
                             <span class="type-tag"
-                                  th:classappend="${course.status == 'ENROLLED'} ? ' type-offline' : ' type-online'"
-                                  th:text="${course.status == 'ENROLLED'} ? '진행중' : '신청중'"></span>
+                                  th:classappend="${course.status == 'APPROVED' or course.status == 'RUNNING'} ? ' type-offline' : ' type-online'"
+                                  th:text="${course.status == 'APPROVED'} ? '신청완료' : (${course.status == 'RUNNING'} ? '진행중' : '신청중')"></span>
                         </td>
                         <td th:text="${course.professor}"></td>
                         <td th:text="${course.classTime}"></td>
