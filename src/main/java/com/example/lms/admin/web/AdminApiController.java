@@ -42,6 +42,14 @@ public class AdminApiController {
         return ResponseEntity.ok(adminService.updateCourse(id, req, adminId(auth), request.getRemoteAddr()));
     }
 
+    @DeleteMapping("/courses/{id}")
+    public ResponseEntity<?> deleteCourse(@PathVariable Long id,
+                                          Authentication auth,
+                                          HttpServletRequest request) {
+        adminService.deleteCourse(id, adminId(auth), request.getRemoteAddr());
+        return ResponseEntity.ok(Map.of("success", true));
+    }
+
     @PostMapping("/courses/{id}/sessions")
     public ResponseEntity<?> createSession(@PathVariable Long id,
                                            @RequestBody AdminDtos.SessionCreateRequest req,

@@ -2,6 +2,7 @@ package com.example.lms.enrollment.repo;
 
 import com.example.lms.enrollment.entity.CourseSessionEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalTime;
@@ -18,6 +19,10 @@ public interface CourseSessionJpaRepository extends JpaRepository<CourseSessionE
               and (:excludeId is null or cs.id <> :excludeId)
             """)
     boolean existsRoomTimeConflict(String room, String dayOfWeek, LocalTime startTime, LocalTime endTime, Long excludeId);
+
+    @Modifying
+    @Query("delete from CourseSessionEntity cs where cs.courseId = :courseId")
+    int deleteByCourseId(Long courseId);
 
     @Query(value = """
             SELECT cs.id AS sessionId,

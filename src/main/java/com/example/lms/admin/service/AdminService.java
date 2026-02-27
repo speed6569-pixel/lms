@@ -93,8 +93,21 @@ public class AdminService {
     }
 
     @Transactional(readOnly = true)
-    public List<CourseEntity> getCourses() {
-        return courseJpaRepository.findAll();
+    public List<Map<String, Object>> getCourses() {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (CourseEntity c : courseJpaRepository.findAll()) {
+            CourseSessionEntity s = courseSessionJpaRepository.findByCourseId(c.getId()).stream().findFirst().orElse(null);
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("id", c.getId());
+            row.put("courseCode", c.getCourseCode());
+            row.put("title", c.getTitle());
+            row.put("classTime", s == null ? "-" : (s.getDayOfWeek() + " " + s.getStartTime() + "~" + s.getEndTime()));
+            row.put("professor", c.getProfessor());
+            row.put("price", c.getPrice());
+            row.put("maxCount", s == null ? "-" : s.getMaxCount());
+            out.add(row);
+        }
+        return out;
     }
 
     @Transactional(readOnly = true)
@@ -188,6 +201,16 @@ public class AdminService {
         m.put("waitlist", enrollmentJpaRepository.findByStatusOrderByIdAsc("WAITLIST").size());
         m.put("applied", enrollmentJpaRepository.findByStatusOrderByIdAsc("REQUESTED").size());
         return m;
+    }
+
+    @Transactional
+    public void deleteCourse(Long courseId, Long adminUserId, String ip) {
+        enrollmentJpaRepository.deleteAttendanceByCourseId(courseId);
+        enrollmentJpaRepository.deleteProgressByCourseId(courseId);
+        enrollmentJpaRepository.deleteEnrollmentsByCourseId(courseId);
+        courseSessionJpaRepository.deleteByCourseId(courseId);
+        courseJpaRepository.deleteById(courseId);
+        audit(adminUserId, "DELETE_COURSE", "COURSE", courseId, ip, "deleted");
     }
 
     private void audit(Long actorUserId, String action, String targetType, Long targetId, String ip, String afterJson) {

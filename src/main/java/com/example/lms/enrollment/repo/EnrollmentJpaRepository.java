@@ -129,5 +129,31 @@ public interface EnrollmentJpaRepository extends JpaRepository<EnrollmentEntity,
     @Modifying
     @Query(value = "DELETE FROM enrollments WHERE user_id = :userId", nativeQuery = true)
     int deleteEnrollmentsByUserId(@Param("userId") Long userId);
+
+    @Modifying
+    @Query(value = """
+            DELETE ar FROM attendance_records ar
+            JOIN enrollments e ON e.id = ar.enrollment_id
+            JOIN course_sessions cs ON cs.id = e.course_session_id
+            WHERE cs.course_id = :courseId
+            """, nativeQuery = true)
+    int deleteAttendanceByCourseId(@Param("courseId") Long courseId);
+
+    @Modifying
+    @Query(value = """
+            DELETE pr FROM progress_records pr
+            JOIN enrollments e ON e.id = pr.enrollment_id
+            JOIN course_sessions cs ON cs.id = e.course_session_id
+            WHERE cs.course_id = :courseId
+            """, nativeQuery = true)
+    int deleteProgressByCourseId(@Param("courseId") Long courseId);
+
+    @Modifying
+    @Query(value = """
+            DELETE e FROM enrollments e
+            JOIN course_sessions cs ON cs.id = e.course_session_id
+            WHERE cs.course_id = :courseId
+            """, nativeQuery = true)
+    int deleteEnrollmentsByCourseId(@Param("courseId") Long courseId);
 }
 
