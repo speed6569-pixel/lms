@@ -109,6 +109,10 @@ public class HomeController {
         if (authentication == null || !authentication.isAuthenticated()) {
             model.addAttribute("courses", List.of());
             model.addAttribute("tab", tab);
+            model.addAttribute("attendanceRate", 0.0);
+            model.addAttribute("progressRate", 0.0);
+            model.addAttribute("hasEnrolledCourses", false);
+            model.addAttribute("summaryMessage", "현재 수강 중인 강의가 없습니다.");
             return "pages/my-classroom";
         }
 
@@ -120,6 +124,10 @@ public class HomeController {
         if (userId == null) {
             model.addAttribute("courses", List.of());
             model.addAttribute("tab", tab);
+            model.addAttribute("attendanceRate", 0.0);
+            model.addAttribute("progressRate", 0.0);
+            model.addAttribute("hasEnrolledCourses", false);
+            model.addAttribute("summaryMessage", "사용자 정보를 찾을 수 없습니다.");
             return "pages/my-classroom";
         }
 
@@ -131,8 +139,29 @@ public class HomeController {
                 .map(this::toMyCourseItem)
                 .toList();
 
+        long enrolledCount = enrollmentJpaRepository.countEnrolledCourses(userId);
+        boolean hasEnrolledCourses = enrolledCount > 0;
+
+        double attendanceRate = 0.0;
+        double progressRate = 0.0;
+        String summaryMessage = null;
+
+        if (hasEnrolledCourses) {
+            attendanceRate = safeRate(enrollmentJpaRepository.findAttendanceRate(userId));
+            progressRate = safeRate(enrollmentJpaRepository.findProgressRate(userId));
+            if (attendanceRate == 0.0 && progressRate == 0.0) {
+                summaryMessage = "출석/진도 데이터가 아직 없습니다.";
+            }
+        } else {
+            summaryMessage = "현재 수강 중인 강의가 없습니다.";
+        }
+
         model.addAttribute("courses", courses);
         model.addAttribute("tab", tab);
+        model.addAttribute("attendanceRate", attendanceRate);
+        model.addAttribute("progressRate", progressRate);
+        model.addAttribute("hasEnrolledCourses", hasEnrolledCourses);
+        model.addAttribute("summaryMessage", summaryMessage);
         return "pages/my-classroom";
     }
 
@@ -214,6 +243,11 @@ public class HomeController {
                 .filter(c -> c.courseCode().equalsIgnoreCase(courseCode) && c.section().equalsIgnoreCase(section))
                 .findFirst()
                 .orElse(null);
+    }
+
+    private double safeRate(Double value) {
+        if (value == null || value.isNaN() || value.isInfinite()) return 0.0;
+        return Math.max(0.0, Math.min(100.0, value));
     }
 
     private boolean isBlank(String v) { return v == null || v.isBlank(); }

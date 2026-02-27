@@ -16,17 +16,18 @@
 <main class="container content-wrap modern-mypage">
     <aside class="profile-sidebar card-surface">
         <div class="profile-avatar">U</div>
-        <h2 class="profile-name">학습자 님</h2>
+        <h2 class="profile-name" th:text="|${userName != null ? userName : '학습자'} 님|">학습자 님</h2>
         <p class="profile-sub">LMS 마이페이지</p>
 
-        <div class="status-item">
-            <div class="status-head"><span>출석률</span><strong>92%</strong></div>
-            <div class="progress-track"><span style="width:92%"></span></div>
+        <div th:if="${hasEnrolledCourses}" class="status-item">
+            <div class="status-head"><span>출석률</span><strong th:text="|${#numbers.formatDecimal(attendanceRate, 1, 1)}%|">0.0%</strong></div>
+            <div class="progress-track"><span th:style="|width:${attendanceRate}%|"></span></div>
         </div>
-        <div class="status-item">
-            <div class="status-head"><span>진도율</span><strong>68%</strong></div>
-            <div class="progress-track"><span style="width:68%"></span></div>
+        <div th:if="${hasEnrolledCourses}" class="status-item">
+            <div class="status-head"><span>진도율</span><strong th:text="|${#numbers.formatDecimal(progressRate, 1, 1)}%|">0.0%</strong></div>
+            <div class="progress-track"><span th:style="|width:${progressRate}%|"></span></div>
         </div>
+        <p th:if="${summaryMessage != null}" class="profile-sub" th:text="${summaryMessage}"></p>
 
         <nav class="side-nav">
             <a href="/enrollments/me" th:classappend="${tab == 'ongoing'} ? ' active' : ''">마이페이지 홈</a>
@@ -38,8 +39,8 @@
     <section class="mypage-dashboard">
         <div class="card-surface">
             <div class="tab-row">
-                <button type="button" class="tab-btn active">진행중 교육</button>
-                <button type="button" class="tab-btn">신청중 교육</button>
+                <a href="/enrollments/me?tab=ongoing" th:class="${tab == 'ongoing'} ? 'tab-btn active' : 'tab-btn'">진행중 교육</a>
+                <a href="/enrollments/me?tab=applied" th:class="${tab == 'applied'} ? 'tab-btn active' : 'tab-btn'">신청중 교육</a>
             </div>
 
             <div class="table-wrap">
@@ -82,12 +83,85 @@
                     <h3 th:text="${course.title}"></h3>
                     <p th:text="|${course.professor} · ${course.classTime} · ${course.price}|"></p>
                     <div class="status-head"><span>수강 인원</span><strong th:text="|${course.enrolledCount}/${course.maxCount}|"></strong></div>
-                    <div class="progress-track"><span th:style="|width:${(course.enrolledCount * 100) / course.maxCount}%|"></span></div>
+                    <div class="progress-track"><span th:style="|width:${course.maxCount > 0 ? (course.enrolledCount * 100) / course.maxCount : 0}%|"></span></div>
                 </div>
             </article>
         </div>
+
+        <div class="card-surface" th:if="${tab == 'applied'}">
+            <h3 style="margin-bottom:10px;">시간표 조회</h3>
+            <div id="weeklyTimetable" class="weekly-wrap">
+                <div class="weekly-head">
+                    <div>시간</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div>
+                </div>
+                <div class="weekly-body" id="weeklyBody"></div>
+                <div id="weeklyEvents" class="weekly-events"></div>
+            </div>
+        </div>
     </section>
 </main>
+
+<script>
+    (function(){
+      const weeklyBody = document.getElementById('weeklyBody');
+      const weeklyEvents = document.getElementById('weeklyEvents');
+      if (!weeklyBody || !weeklyEvents) return;
+
+      function toMin(hm){ const [h,m] = hm.split(':').map(Number); return h*60+m; }
+      function colorFor(title){
+        let hash = 0;
+        for (let i=0;i<title.length;i++) hash = (hash*31 + title.charCodeAt(i)) >>> 0;
+        const hue = hash % 360;
+        return `hsl(${hue} 70% 85%)`;
+      }
+
+      function renderWeeklyGrid(lectures){
+        const days = ['월','화','수','목','금'];
+        const startMin = 9*60, endMin = 22*60, step=30;
+        const rows = (endMin-startMin)/step;
+
+        weeklyBody.innerHTML = '';
+        weeklyEvents.innerHTML = '';
+
+        for(let r=0; r<rows; r++){
+          const t = startMin + r*step;
+          const th = document.createElement('div');
+          th.className='t';
+          th.textContent = t%60===0 ? `${String(Math.floor(t/60)).padStart(2,'0')}:00` : '';
+          weeklyBody.appendChild(th);
+          for(let d=0; d<5; d++){
+            const c=document.createElement('div'); c.className='c'; weeklyBody.appendChild(c);
+          }
+        }
+
+        const dayWidth = weeklyEvents.clientWidth/5;
+        lectures.forEach((l)=>{
+          if(!days.includes(l.day)) return;
+          const s=Math.max(toMin(l.startTime),startMin), e=Math.min(toMin(l.endTime),endMin);
+          if(e<=s) return;
+          const dayIdx=days.indexOf(l.day);
+          const top=((s-startMin)/step)*24 + 2;
+          const height=((e-s)/step)*24 - 4;
+
+          const div=document.createElement('div');
+          const requested = l.status === 'REQUESTED';
+          div.className='lecture-block' + (requested ? ' conflict' : '');
+          div.style.left = `${dayIdx*dayWidth + 4}px`;
+          div.style.top = `${top}px`;
+          div.style.width = `${dayWidth - 8}px`;
+          div.style.height = `${Math.max(height,24)}px`;
+          div.style.background = colorFor(l.title || '강의');
+          div.innerHTML = `<strong>${l.title}</strong><div>${l.room || '-'}</div><div>${l.startTime}~${l.endTime}</div><div>${requested ? '신청중' : '수강중'}</div>`;
+          weeklyEvents.appendChild(div);
+        });
+      }
+
+      fetch('/api/me/timetable?includeRequested=true')
+        .then(r => r.json())
+        .then(renderWeeklyGrid)
+        .catch(() => renderWeeklyGrid([]));
+    })();
+</script>
 
 </body>
 </html>
