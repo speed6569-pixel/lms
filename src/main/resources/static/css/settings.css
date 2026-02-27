@@ -1,12 +1,6 @@
 .settings-wrap{max-width:1200px;margin:28px auto;padding:0 16px;display:grid;grid-template-columns:280px 1fr;gap:18px}
 .card{background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(15,23,42,.08);padding:18px}
-.settings-left{display:grid;gap:12px}
 .profile-card{text-align:center;border-bottom:1px solid #eef2f7;padding-bottom:14px;margin-bottom:14px}
-.quick-nav{display:grid;gap:8px}
-.quick-nav h4{margin:2px 0 6px;color:#334155}
-.card-lite{border:1px solid #e5e7eb;border-radius:12px;padding:12px;background:#f8fbff}
-.quick-nav a{text-decoration:none;color:#1e3a8a;background:#fff;border:1px solid #dbeafe;border-radius:10px;padding:8px 10px}
-.quick-nav a:hover{background:#eff6ff}
 .avatar{width:72px;height:72px;border-radius:50%;background:#2563eb;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;margin-bottom:10px}
 .profile-card h2{margin:0 0 4px}
 .profile-card p{margin:0;color:#6b7280}
