@@ -1,6 +1,7 @@
 package com.example.lms.web;
 
 import com.example.lms.enrollment.repo.UserJpaRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -34,5 +35,10 @@ public class GlobalUserModelAdvice {
             return auth.getName();
         }
         return null;
+    }
+
+    @ModelAttribute("requestUri")
+    public String requestUri(HttpServletRequest request) {
+        return request == null ? null : request.getRequestURI();
     }
 }

@@ -21,7 +21,7 @@
     </div>
 
     <div class="profile-wrap" sec:authorize="isAuthenticated()"
-         th:if="${#httpServletRequest.requestURI == null or !#strings.startsWith(#httpServletRequest.requestURI, '/settings')}"
+         th:if="${requestUri == null or !#strings.startsWith(requestUri, '/settings')}"
          id="profileWrap">
       <button class="profile-btn" id="profileBtn" type="button">
         <span class="avatar" id="avatarText">U</span>
