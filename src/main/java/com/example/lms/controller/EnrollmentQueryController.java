@@ -3,11 +3,9 @@ package com.example.lms.controller;
 import com.example.lms.enrollment.repo.EnrollmentJpaRepository;
 import com.example.lms.enrollment.repo.MyPageCourseProjection;
 import com.example.lms.enrollment.repo.UserJpaRepository;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -122,6 +120,48 @@ public class EnrollmentQueryController {
         res.put("count", lectures.size());
         res.put("lectures", lectures);
         return res;
+    }
+
+    @GetMapping("/enrollments/history")
+    public List<Map<String, Object>> myEnrollmentHistory(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) return List.of();
+        var user = userJpaRepository.findByLoginId(authentication.getName()).orElse(null);
+        if (user == null) return List.of();
+
+        return enrollmentJpaRepository.findMyEnrollmentHistory(user.getId()).stream().map(v -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("enrollmentId", v.getEnrollmentId());
+            m.put("courseCode", v.getCourseCode());
+            m.put("title", v.getTitle());
+            m.put("status", v.getStatus());
+            m.put("appliedAt", v.getAppliedAt());
+            return m;
+        }).toList();
+    }
+
+    @PostMapping("/enrollments/{id}/cancel")
+    public ResponseEntity<Map<String, Object>> cancelEnrollment(@PathVariable Long id, Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "로그인이 필요합니다."));
+        }
+        var user = userJpaRepository.findByLoginId(authentication.getName()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "사용자를 찾을 수 없습니다."));
+        }
+
+        var target = enrollmentJpaRepository.findByIdAndUserId(id, user.getId()).orElse(null);
+        if (target == null) {
+            return ResponseEntity.status(403).body(Map.of("success", false, "message", "본인 신청만 취소할 수 있습니다."));
+        }
+
+        String next;
+        if (Set.of("APPLIED", "WAITLIST").contains(target.getStatus())) next = "CANCELLED";
+        else if (Set.of("APPROVED", "RUNNING").contains(target.getStatus())) next = "CANCEL_REQUESTED";
+        else return ResponseEntity.badRequest().body(Map.of("success", false, "message", "현재 상태에서는 취소할 수 없습니다."));
+
+        target.setStatus(next);
+        enrollmentJpaRepository.save(target);
+        return ResponseEntity.ok(Map.of("success", true, "message", "CANCELLED".equals(next) ? "신청이 취소되었습니다." : "취소 요청이 접수되었습니다."));
     }
 
     private double safeRate(Double value) {

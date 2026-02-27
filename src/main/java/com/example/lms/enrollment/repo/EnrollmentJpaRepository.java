@@ -23,6 +23,8 @@ public interface EnrollmentJpaRepository extends JpaRepository<EnrollmentEntity,
 
     EnrollmentEntity findTopByUserIdAndCourseSessionIdAndStatusOrderByIdDesc(Long userId, Long courseSessionId, String status);
 
+    java.util.Optional<EnrollmentEntity> findByIdAndUserId(Long id, Long userId);
+
     @Query(value = """
             SELECT c.course_code AS courseCode,
                    cs.section AS section,
@@ -97,16 +99,16 @@ public interface EnrollmentJpaRepository extends JpaRepository<EnrollmentEntity,
     @Query(value = """
             SELECT c.course_code AS courseCode,
                    cs.section AS section,
-                   c.title AS title,
-                   c.professor AS professor,
+                   COALESCE(c.subject_name, c.title) AS title,
+                   COALESCE(c.instructor, c.professor) AS professor,
                    cs.room AS room,
                    cs.day_of_week AS day,
                    TIME_FORMAT(cs.start_time, '%H:%i') AS startTime,
                    TIME_FORMAT(cs.end_time, '%H:%i') AS endTime,
                    e.status AS status
             FROM enrollments e
-            JOIN course_sessions cs ON e.course_session_id = cs.id
-            JOIN courses c ON cs.course_id = c.id
+            JOIN courses c ON c.id = e.course_id
+            JOIN course_sessions cs ON cs.course_id = e.course_id
             WHERE e.user_id = :userId
               AND e.status IN (:statuses)
             ORDER BY FIELD(cs.day_of_week, '월','화','수','목','금'), cs.start_time
@@ -133,6 +135,20 @@ public interface EnrollmentJpaRepository extends JpaRepository<EnrollmentEntity,
     @Modifying
     @Query(value = "DELETE FROM enrollments WHERE user_id = :userId", nativeQuery = true)
     int deleteEnrollmentsByUserId(@Param("userId") Long userId);
+
+    @Query(value = """
+            SELECT e.id AS enrollmentId,
+                   c.course_code AS courseCode,
+                   COALESCE(c.subject_name, c.title) AS title,
+                   e.status AS status,
+                   DATE_FORMAT(e.applied_at, '%Y-%m-%d %H:%i') AS appliedAt
+            FROM enrollments e
+            JOIN courses c ON c.id = e.course_id
+            WHERE e.user_id = :userId
+              AND e.status IN ('APPLIED','WAITLIST','APPROVED','RUNNING','CANCEL_REQUESTED')
+            ORDER BY e.id DESC
+            """, nativeQuery = true)
+    List<MyEnrollmentHistoryProjection> findMyEnrollmentHistory(@Param("userId") Long userId);
 
     @Modifying
     @Query(value = """
