@@ -1,6 +1,7 @@
 package com.example.lms.admin.service;
 
 import com.example.lms.admin.dto.AdminDtos;
+import com.example.lms.admin.dto.AdminEnrollmentRowDto;
 import com.example.lms.admin.entity.*;
 import com.example.lms.admin.repo.*;
 import com.example.lms.enrollment.entity.CourseSessionEntity;
@@ -185,8 +186,31 @@ public class AdminService {
     }
 
     @Transactional(readOnly = true)
-    public List<EnrollmentEntity> getEnrollmentsByStatus(String status) {
-        return enrollmentJpaRepository.findByStatusOrderByIdAsc(status);
+    public List<AdminEnrollmentRowDto> getEnrollmentsByStatus(String status) {
+        Map<Long, java.util.List<AdminEnrollmentFlatProjection>> grouped = new LinkedHashMap<>();
+        for (AdminEnrollmentFlatProjection r : enrollmentJpaRepository.findAdminEnrollmentRowsByStatus(status)) {
+            grouped.computeIfAbsent(r.getEnrollmentId(), k -> new ArrayList<>()).add(r);
+        }
+
+        List<AdminEnrollmentRowDto> out = new ArrayList<>();
+        for (var e : grouped.entrySet()) {
+            var rows = e.getValue();
+            var first = rows.get(0);
+            String scheduleText = buildScheduleTextFromFlat(rows);
+            out.add(new AdminEnrollmentRowDto(
+                    first.getEnrollmentId(),
+                    first.getUsername(),
+                    first.getName(),
+                    first.getSubjectCode(),
+                    first.getCourseName(),
+                    scheduleText,
+                    first.getPrice() == null ? 0 : first.getPrice(),
+                    first.getPaymentStatus(),
+                    first.getStatus(),
+                    first.getAppliedAt()
+            ));
+        }
+        return out;
     }
 
     @Transactional
@@ -197,7 +221,7 @@ public class AdminService {
         if (s.getEnrolledCount() != null && s.getMaxCount() != null && s.getEnrolledCount() >= s.getMaxCount()) {
             e.setStatus("WAITLIST");
         } else {
-            e.setStatus("ENROLLED");
+            e.setStatus("APPROVED");
             e.setEnrolledAt(java.time.LocalDateTime.now());
             s.setEnrolledCount((s.getEnrolledCount() == null ? 0 : s.getEnrolledCount()) + 1);
             courseSessionJpaRepository.save(s);
@@ -266,9 +290,10 @@ public class AdminService {
         m.put("courses", courseJpaRepository.count());
         m.put("sessions", courseSessionJpaRepository.count());
         m.put("users", userJpaRepository.count());
-        m.put("enrolled", enrollmentJpaRepository.findByStatusOrderByIdAsc("ENROLLED").size());
+        m.put("approved", enrollmentJpaRepository.findByStatusOrderByIdAsc("APPROVED").size());
         m.put("waitlist", enrollmentJpaRepository.findByStatusOrderByIdAsc("WAITLIST").size());
-        m.put("applied", enrollmentJpaRepository.findByStatusOrderByIdAsc("REQUESTED").size());
+        m.put("applied", enrollmentJpaRepository.findByStatusOrderByIdAsc("APPLIED").size());
+        m.put("pendingRequests", enrollmentJpaRepository.findByStatusOrderByIdAsc("APPLIED").size() + enrollmentJpaRepository.findByStatusOrderByIdAsc("WAITLIST").size());
         return m;
     }
 
@@ -324,6 +349,42 @@ public class AdminService {
             case "SUN", "일" -> "일";
             default -> throw new IllegalArgumentException("지원하지 않는 요일: " + day);
         };
+    }
+
+    private String buildScheduleTextFromFlat(List<AdminEnrollmentFlatProjection> sessions) {
+        if (sessions == null || sessions.isEmpty()) return "-";
+        List<String> order = List.of("월", "화", "수", "목", "금", "토", "일");
+        Map<String, List<String>> timeToDays = new LinkedHashMap<>();
+        for (AdminEnrollmentFlatProjection s : sessions) {
+            String time = s.getStartTime() + "~" + s.getEndTime();
+            timeToDays.computeIfAbsent(time, k -> new ArrayList<>()).add(s.getDay());
+        }
+        List<String> parts = new ArrayList<>();
+        for (var en : timeToDays.entrySet()) {
+            List<String> days = en.getValue().stream().distinct()
+                    .sorted(Comparator.comparingInt(order::indexOf)).toList();
+            parts.add(compressDays(days, order) + " " + en.getKey());
+        }
+        return String.join("; ", parts);
+    }
+
+    private String compressDays(List<String> days, List<String> order) {
+        if (days.isEmpty()) return "";
+        if (days.size() == 1) return days.get(0);
+        List<String> chunks = new ArrayList<>();
+        int start = 0;
+        for (int i = 1; i <= days.size(); i++) {
+            boolean broken = (i == days.size()) || (order.indexOf(days.get(i)) - order.indexOf(days.get(i - 1)) != 1);
+            if (broken) {
+                String from = days.get(start);
+                String to = days.get(i - 1);
+                if (start == i - 1) chunks.add(from);
+                else if (i - start == 2) chunks.add(from + "/" + to);
+                else chunks.add(from + "~" + to);
+                start = i;
+            }
+        }
+        return String.join("/", chunks);
     }
 
     private String toDayDurationText(List<AdminCourseSessionEntity> sessions) {

@@ -1,5 +1,6 @@
 package com.example.lms.enrollment.repo;
 
+import com.example.lms.admin.repo.AdminEnrollmentFlatProjection;
 import com.example.lms.enrollment.entity.EnrollmentEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -149,6 +150,40 @@ public interface EnrollmentJpaRepository extends JpaRepository<EnrollmentEntity,
             ORDER BY e.id DESC
             """, nativeQuery = true)
     List<MyEnrollmentHistoryProjection> findMyEnrollmentHistory(@Param("userId") Long userId);
+
+    @Query(value = """
+            SELECT e.id AS enrollmentId,
+                   u.login_id AS username,
+                   u.name AS name,
+                   COALESCE(c.subject_code, c.course_code) AS subjectCode,
+                   COALESCE(c.subject_name, c.title) AS courseName,
+                   cs.day_of_week AS day,
+                   TIME_FORMAT(cs.start_time, '%H:%i') AS startTime,
+                   TIME_FORMAT(cs.end_time, '%H:%i') AS endTime,
+                   c.price AS price,
+                   CASE
+                     WHEN c.price = 0 THEN 'FREE'
+                     WHEN COALESCE(paid.has_refunded, 0) = 1 AND COALESCE(paid.paid_amount, 0) <= 0 THEN 'REFUNDED'
+                     WHEN COALESCE(paid.paid_amount, 0) > 0 THEN 'PAID'
+                     ELSE 'UNPAID'
+                   END AS paymentStatus,
+                   e.status AS status,
+                   DATE_FORMAT(COALESCE(e.applied_at, e.enrolled_at, e.updated_at), '%Y-%m-%d %H:%i') AS appliedAt
+            FROM enrollments e
+            JOIN users u ON u.id = e.user_id
+            JOIN courses c ON c.id = e.course_id
+            JOIN course_sessions cs ON cs.course_id = e.course_id
+            LEFT JOIN (
+                SELECT user_id,
+                       SUM(CASE WHEN status='PAID' THEN amount WHEN status='REFUNDED' THEN -amount ELSE 0 END) AS paid_amount,
+                       MAX(CASE WHEN status='REFUNDED' THEN 1 ELSE 0 END) AS has_refunded
+                FROM payments
+                GROUP BY user_id
+            ) paid ON paid.user_id = e.user_id
+            WHERE e.status = :status
+            ORDER BY e.id DESC, FIELD(cs.day_of_week, '월','화','수','목','금','토','일'), cs.start_time
+            """, nativeQuery = true)
+    List<AdminEnrollmentFlatProjection> findAdminEnrollmentRowsByStatus(@Param("status") String status);
 
     @Modifying
     @Query(value = """

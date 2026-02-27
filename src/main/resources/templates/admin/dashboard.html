@@ -77,7 +77,7 @@
             <div class="row">
                 <select id="eStatus" onchange="loadEnrollments()"><option>APPLIED</option><option>WAITLIST</option><option>APPROVED</option><option>REJECTED</option><option>CANCELLED</option></select>
             </div>
-            <table><thead><tr><th>ID</th><th>userId</th><th>sessionId</th><th>상태</th><th>처리</th></tr></thead><tbody id="enrollmentBody"></tbody></table>
+            <table><thead><tr><th>ID</th><th>사용자(아이디/이름)</th><th>강의(과목코드/강의명)</th><th>강의시간</th><th>가격</th><th>결제여부</th><th>상태</th><th>처리</th></tr></thead><tbody id="enrollmentBody"></tbody></table>
         </div>
 
         <div id="sec-attendance" class="section">
@@ -160,7 +160,7 @@
   }
   async function loadEnrollments(){
     const rows = await (await fetch('/admin/api/enrollments?status='+eStatus.value)).json();
-    document.getElementById('enrollmentBody').innerHTML = rows.map(v=>`<tr><td>${v.id}</td><td>${v.userId}</td><td>${v.courseSessionId}</td><td>${v.status}</td><td><button class='action' onclick='approve(${v.id})'>승인</button> <button class='action' style='background:#ef4444' onclick='reject(${v.id})'>반려</button></td></tr>`).join('');
+    document.getElementById('enrollmentBody').innerHTML = rows.map(v=>`<tr><td>${v.enrollmentId}</td><td>${v.username||''} / ${v.name||''}</td><td>${v.subjectCode||''} / ${v.courseName||''}</td><td>${v.scheduleText||'-'}</td><td>${Number(v.price||0).toLocaleString()}원</td><td>${v.paymentStatus||'UNPAID'}</td><td>${v.status||''}</td><td><button class='action' onclick='approve(${v.enrollmentId})'>승인</button> <button class='action' style='background:#ef4444' onclick='reject(${v.enrollmentId})'>반려</button></td></tr>`).join('');
   }
   async function approve(id){ await fetch('/admin/api/enrollments/'+id+'/approve',{method:'POST'}); await loadEnrollments(); await loadStats(); }
   async function reject(id){ await fetch('/admin/api/enrollments/'+id+'/reject',{method:'POST'}); await loadEnrollments(); await loadStats(); }
