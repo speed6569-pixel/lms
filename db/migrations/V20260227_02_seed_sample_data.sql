@@ -4,8 +4,8 @@ USE lms_db;
 -- users (password hash below is BCrypt for '1234')
 INSERT INTO users (login_id, email, password_hash, name, role, enabled)
 VALUES
-  ('admin01', 'admin01@example.com', '$2a$10$7EqJtq98hPqEX7fNZaFWoOHi5M6Y4ZCkxzgv2Fne5DE5ZTCDYFzN2', '관리자', 'ROLE_ADMIN', 1),
-  ('user01',  'user01@example.com',  '$2a$10$7EqJtq98hPqEX7fNZaFWoOHi5M6Y4ZCkxzgv2Fne5DE5ZTCDYFzN2', '홍길동', 'ROLE_USER', 1)
+  ('admin01', 'admin01@example.com', '$2b$12$8RW0yPjfW2opzwg7WKQkTudsVn6J1Q/dQSCex1qsWiwRNBIhpIdHK', '관리자', 'ROLE_ADMIN', 1),
+  ('user01',  'user01@example.com',  '$2b$12$8RW0yPjfW2opzwg7WKQkTudsVn6J1Q/dQSCex1qsWiwRNBIhpIdHK', '홍길동', 'ROLE_USER', 1)
 ON DUPLICATE KEY UPDATE
   name = VALUES(name),
   role = VALUES(role),
