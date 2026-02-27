@@ -33,7 +33,7 @@ public class EnrollmentController {
     @PostMapping("/apply")
     public ResponseEntity<Map<String, Object>> apply(
             @RequestParam String courseCode,
-            @RequestParam String section,
+            @RequestParam(required = false) String section,
             HttpSession session
     ) {
         Long userId = resolveUserId(session);
@@ -41,24 +41,25 @@ public class EnrollmentController {
 
         CourseMeta target = findCourse(courseCode, section);
         if (target == null) return ResponseEntity.ok(result(false, "신청 실패: 강의를 찾을 수 없습니다."));
-        if (target.enrolledCount() >= target.maxCount()) return ResponseEntity.ok(result(false, "신청 불가: 정원이 마감된 강의입니다."));
 
-        if (enrollmentJpaRepository.existsByUserIdAndCourseSessionIdAndStatus(userId, target.sessionId(), "ENROLLED")) {
-            return ResponseEntity.ok(result(true, "이미 신청된 강의입니다."));
+        if (enrollmentJpaRepository.existsByUserIdAndCourseIdAndStatusIn(userId, target.courseId(),
+                List.of("APPLIED", "WAITLIST", "APPROVED", "RUNNING"))) {
+            return ResponseEntity.ok(result(false, "이미 신청한 강의입니다."));
         }
 
-        boolean overlapped = enrollmentJpaRepository.findEnrolledLectures(userId).stream()
-                .anyMatch(e -> isTimeOverlapped(e, target));
-        if (overlapped) return ResponseEntity.ok(result(false, "신청 불가: 이미 신청한 강의와 시간이 겹칩니다."));
+        long current = enrollmentJpaRepository.countByCourseIdAndStatusIn(target.courseId(),
+                List.of("APPLIED", "WAITLIST", "APPROVED", "RUNNING"));
+        String status = current >= target.maxCount() ? "WAITLIST" : "APPLIED";
 
         EnrollmentEntity entity = new EnrollmentEntity();
         entity.setUserId(userId);
+        entity.setCourseId(target.courseId());
         entity.setCourseSessionId(target.sessionId());
-        entity.setStatus("ENROLLED");
-        entity.setEnrolledAt(LocalDateTime.now());
+        entity.setStatus(status);
+        entity.setAppliedAt(LocalDateTime.now());
         enrollmentJpaRepository.save(entity);
 
-        return ResponseEntity.ok(result(true, "신청 완료되었습니다"));
+        return ResponseEntity.ok(result(true, "WAITLIST".equals(status) ? "정원 초과로 대기 신청되었습니다." : "신청 완료되었습니다"));
     }
 
     @PostMapping("/cancel")
@@ -131,6 +132,7 @@ public class EnrollmentController {
     private CourseMeta toMeta(CourseListProjection p) {
         return new CourseMeta(
                 p.getSessionId(),
+                p.getCourseId(),
                 p.getCourseCode(),
                 p.getSection(),
                 p.getTitle(),
@@ -167,6 +169,7 @@ public class EnrollmentController {
 
     record CourseMeta(
             Long sessionId,
+            Long courseId,
             String courseCode,
             String section,
             String title,

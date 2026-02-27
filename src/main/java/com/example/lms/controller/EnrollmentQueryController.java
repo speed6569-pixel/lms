@@ -58,10 +58,10 @@ public class EnrollmentQueryController {
         }
 
         Long userId = user.getId();
-        List<MyPageCourseProjection> ongoing = enrollmentJpaRepository.findMyCoursesByStatuses(userId, Set.of("ENROLLED"));
-        List<MyPageCourseProjection> applied = enrollmentJpaRepository.findMyCoursesByStatuses(userId, Set.of("REQUESTED"));
+        List<MyPageCourseProjection> ongoing = enrollmentJpaRepository.findMyCoursesByStatuses(userId, Set.of("APPROVED", "RUNNING"));
+        List<MyPageCourseProjection> applied = enrollmentJpaRepository.findMyCoursesByStatuses(userId, Set.of("APPLIED", "WAITLIST"));
 
-        boolean hasEnrolled = enrollmentJpaRepository.countEnrolledCourses(userId) > 0;
+        boolean hasEnrolled = !ongoing.isEmpty();
         double attendanceRate = hasEnrolled ? safeRate(enrollmentJpaRepository.findAttendanceRate(userId)) : 0.0;
         double progressRate = hasEnrolled ? safeRate(enrollmentJpaRepository.findProgressRate(userId)) : 0.0;
 
@@ -95,8 +95,8 @@ public class EnrollmentQueryController {
         if (user == null) return List.of();
 
         Set<String> statuses = includeRequested
-                ? Set.of("ENROLLED", "REQUESTED")
-                : Set.of("ENROLLED");
+                ? Set.of("APPROVED", "RUNNING", "APPLIED", "WAITLIST")
+                : Set.of("APPROVED", "RUNNING");
 
         return enrollmentJpaRepository.findTimetableByStatuses(user.getId(), statuses).stream()
                 .map(v -> {

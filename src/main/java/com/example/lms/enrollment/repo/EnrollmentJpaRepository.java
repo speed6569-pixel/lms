@@ -13,6 +13,10 @@ public interface EnrollmentJpaRepository extends JpaRepository<EnrollmentEntity,
 
     boolean existsByUserIdAndCourseSessionIdAndStatus(Long userId, Long courseSessionId, String status);
 
+    boolean existsByUserIdAndCourseIdAndStatusIn(Long userId, Long courseId, java.util.Collection<String> statuses);
+
+    long countByCourseIdAndStatusIn(Long courseId, java.util.Collection<String> statuses);
+
     boolean existsByUserIdAndCourseSessionIdAndStatusIn(Long userId, Long courseSessionId, java.util.Collection<String> statuses);
 
     java.util.List<EnrollmentEntity> findByStatusOrderByIdAsc(String status);

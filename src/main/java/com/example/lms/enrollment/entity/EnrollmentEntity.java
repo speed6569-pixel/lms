@@ -16,6 +16,9 @@ public class EnrollmentEntity {
     @Column(name = "course_session_id", nullable = false)
     private Long courseSessionId;
 
+    @Column(name = "course_id")
+    private Long courseId;
+
     @Column(name = "status", nullable = false)
     private String status;
 
@@ -25,16 +28,23 @@ public class EnrollmentEntity {
     @Column(name = "canceled_at")
     private LocalDateTime canceledAt;
 
+    @Column(name = "applied_at")
+    private LocalDateTime appliedAt;
+
     public Long getId() { return id; }
     public Long getUserId() { return userId; }
     public Long getCourseSessionId() { return courseSessionId; }
     public String getStatus() { return status; }
+    public Long getCourseId() { return courseId; }
     public LocalDateTime getEnrolledAt() { return enrolledAt; }
     public LocalDateTime getCanceledAt() { return canceledAt; }
+    public LocalDateTime getAppliedAt() { return appliedAt; }
 
     public void setUserId(Long userId) { this.userId = userId; }
     public void setCourseSessionId(Long courseSessionId) { this.courseSessionId = courseSessionId; }
+    public void setCourseId(Long courseId) { this.courseId = courseId; }
     public void setStatus(String status) { this.status = status; }
     public void setEnrolledAt(LocalDateTime enrolledAt) { this.enrolledAt = enrolledAt; }
     public void setCanceledAt(LocalDateTime canceledAt) { this.canceledAt = canceledAt; }
+    public void setAppliedAt(LocalDateTime appliedAt) { this.appliedAt = appliedAt; }
 }

@@ -2,6 +2,7 @@ package com.example.lms.enrollment.repo;
 
 public interface CourseListProjection {
     Long getSessionId();
+    Long getCourseId();
     String getCourseCode();
     String getSection();
     String getJob();

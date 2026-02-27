@@ -26,6 +26,7 @@ public interface CourseSessionJpaRepository extends JpaRepository<CourseSessionE
 
     @Query(value = """
             SELECT cs.id AS sessionId,
+                   c.id AS courseId,
                    c.course_code AS courseCode,
                    cs.section AS section,
                    c.job_group AS job,

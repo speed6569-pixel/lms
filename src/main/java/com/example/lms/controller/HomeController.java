@@ -126,15 +126,14 @@ public class HomeController {
         }
 
         Set<String> statuses = "applied".equalsIgnoreCase(tab)
-                ? Set.of("REQUESTED")
-                : Set.of("ENROLLED");
+                ? Set.of("APPLIED", "WAITLIST")
+                : Set.of("APPROVED", "RUNNING");
 
         List<MyCourseItem> courses = enrollmentJpaRepository.findMyCoursesByStatuses(userId, statuses).stream()
                 .map(this::toMyCourseItem)
                 .toList();
 
-        long enrolledCount = enrollmentJpaRepository.countEnrolledCourses(userId);
-        boolean hasEnrolledCourses = enrolledCount > 0;
+        boolean hasEnrolledCourses = !enrollmentJpaRepository.findMyCoursesByStatuses(userId, Set.of("APPROVED", "RUNNING")).isEmpty();
 
         double attendanceRate = 0.0;
         double progressRate = 0.0;
