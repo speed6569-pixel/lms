@@ -1,8 +1,50 @@
-<!doctype html>
-<html lang="ko">
-<head><meta charset="UTF-8"><title>ADMIN DASHBOARD</title></head>
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 대시보드</title>
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/header-profile.css}">
+    <style>
+        .admin-wrap{max-width:1200px;margin:24px auto;padding:0 16px;display:grid;grid-template-columns:220px 1fr;gap:16px}
+        .side,.panel{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.06)}
+        .side a{display:block;padding:9px 10px;border-radius:10px;text-decoration:none;color:#1f2937}
+        .side a:hover{background:#eff6ff}
+        .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+        .card{background:#f8fbff;border:1px solid #dbeafe;border-radius:12px;padding:12px}
+        @media (max-width:900px){.admin-wrap{grid-template-columns:1fr}.cards{grid-template-columns:1fr}}
+    </style>
+</head>
 <body>
-<h2>관리자 대시보드</h2>
-<form action="/logout" method="post"><button type="submit">로그아웃</button></form>
+<div th:replace="~{fragments/header :: siteHeader(${userName}, ${userEmail})}"></div>
+
+<main class="admin-wrap">
+    <aside class="side">
+        <h3>관리 메뉴</h3>
+        <a href="#">강의 관리</a>
+        <a href="#">시간표 편성</a>
+        <a href="#">수강신청 관리</a>
+        <a href="#">출석 관리</a>
+        <a href="#">사용자 관리</a>
+        <a href="#">통계(대시보드)</a>
+    </aside>
+
+    <section class="panel">
+        <h2>대시보드 통계</h2>
+        <div class="cards" id="statsCards"></div>
+    </section>
+</main>
+
+<div th:replace="~{fragments/footer :: siteFooter}"></div>
+
+<script>
+  (async function(){
+    const wrap = document.getElementById('statsCards');
+    const res = await fetch('/admin/stats');
+    const stats = await res.json();
+    wrap.innerHTML = Object.entries(stats).map(([k,v]) => `<div class="card"><strong>${k}</strong><div style="font-size:24px;margin-top:6px;">${v}</div></div>`).join('');
+  })();
+</script>
 </body>
 </html>

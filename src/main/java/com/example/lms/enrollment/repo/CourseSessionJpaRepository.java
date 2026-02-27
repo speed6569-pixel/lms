@@ -4,9 +4,20 @@ import com.example.lms.enrollment.entity.CourseSessionEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.LocalTime;
 import java.util.List;
 
 public interface CourseSessionJpaRepository extends JpaRepository<CourseSessionEntity, Long> {
+
+    List<CourseSessionEntity> findByCourseId(Long courseId);
+
+    @Query("""
+            select count(cs) > 0 from CourseSessionEntity cs
+            where cs.room = :room and cs.dayOfWeek = :dayOfWeek
+              and cs.startTime < :endTime and :startTime < cs.endTime
+              and (:excludeId is null or cs.id <> :excludeId)
+            """)
+    boolean existsRoomTimeConflict(String room, String dayOfWeek, LocalTime startTime, LocalTime endTime, Long excludeId);
 
     @Query(value = """
             SELECT cs.id AS sessionId,
