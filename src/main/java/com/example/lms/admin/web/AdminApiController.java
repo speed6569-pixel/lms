@@ -22,6 +22,11 @@ public class AdminApiController {
         this.userJpaRepository = userJpaRepository;
     }
 
+    @GetMapping("/courses")
+    public ResponseEntity<?> courses() {
+        return ResponseEntity.ok(adminService.getCourses());
+    }
+
     @PostMapping("/courses")
     public ResponseEntity<?> createCourse(@RequestBody AdminDtos.CourseCreateRequest req,
                                           Authentication auth,
@@ -43,6 +48,11 @@ public class AdminApiController {
                                            Authentication auth,
                                            HttpServletRequest request) {
         return ResponseEntity.ok(adminService.createSession(id, req, adminId(auth), request.getRemoteAddr()));
+    }
+
+    @GetMapping("/sessions")
+    public ResponseEntity<?> sessions(@RequestParam(required = false) Long courseId) {
+        return ResponseEntity.ok(adminService.getSessions(courseId));
     }
 
     @GetMapping("/enrollments")

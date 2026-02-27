@@ -9,10 +9,15 @@
     <style>
         .admin-wrap{max-width:1200px;margin:24px auto;padding:0 16px;display:grid;grid-template-columns:220px 1fr;gap:16px}
         .side,.panel{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.06)}
-        .side a{display:block;padding:9px 10px;border-radius:10px;text-decoration:none;color:#1f2937}
-        .side a:hover{background:#eff6ff}
+        .side button{display:block;width:100%;text-align:left;padding:9px 10px;border-radius:10px;text-decoration:none;color:#1f2937;border:0;background:#fff;cursor:pointer}
+        .side button:hover,.side button.active{background:#eff6ff}
         .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
         .card{background:#f8fbff;border:1px solid #dbeafe;border-radius:12px;padding:12px}
+        .section{display:none}.section.active{display:block}
+        .row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+        input,select{height:36px;border:1px solid #d1d5db;border-radius:8px;padding:0 10px}
+        button.action{height:36px;border:0;border-radius:8px;background:#2563eb;color:#fff;padding:0 12px;cursor:pointer}
+        table{width:100%;border-collapse:collapse} th,td{border-bottom:1px solid #e5e7eb;padding:8px;text-align:left;font-size:13px}
         @media (max-width:900px){.admin-wrap{grid-template-columns:1fr}.cards{grid-template-columns:1fr}}
     </style>
 </head>
@@ -22,29 +27,131 @@
 <main class="admin-wrap">
     <aside class="side">
         <h3>관리 메뉴</h3>
-        <a href="#">강의 관리</a>
-        <a href="#">시간표 편성</a>
-        <a href="#">수강신청 관리</a>
-        <a href="#">출석 관리</a>
-        <a href="#">사용자 관리</a>
-        <a href="#">통계(대시보드)</a>
+        <button class="nav-btn active" data-target="stats">통계(대시보드)</button>
+        <button class="nav-btn" data-target="courses">강의 관리</button>
+        <button class="nav-btn" data-target="sessions">시간표 편성</button>
+        <button class="nav-btn" data-target="enrollments">수강신청 관리</button>
+        <button class="nav-btn" data-target="attendance">출석 관리</button>
+        <button class="nav-btn" data-target="users">사용자 관리</button>
     </aside>
 
     <section class="panel">
-        <h2>대시보드 통계</h2>
-        <div class="cards" id="statsCards"></div>
+        <div id="sec-stats" class="section active">
+            <h2>대시보드 통계</h2>
+            <div class="cards" id="statsCards"></div>
+        </div>
+
+        <div id="sec-courses" class="section">
+            <h2>강의 관리</h2>
+            <div class="row">
+                <input id="cCode" placeholder="과정코드">
+                <input id="cTitle" placeholder="과정명">
+                <input id="cProfessor" placeholder="교수">
+                <input id="cPrice" placeholder="가격" type="number">
+                <button class="action" onclick="createCourse()">강의 생성</button>
+            </div>
+            <table><thead><tr><th>ID</th><th>코드</th><th>강의명</th><th>교수</th><th>가격</th></tr></thead><tbody id="courseBody"></tbody></table>
+        </div>
+
+        <div id="sec-sessions" class="section">
+            <h2>시간표 편성</h2>
+            <div class="row">
+                <input id="sCourseId" placeholder="courseId" type="number">
+                <input id="sSection" placeholder="분반(01)">
+                <select id="sDay"><option>월</option><option>화</option><option>수</option><option>목</option><option>금</option></select>
+                <input id="sStart" placeholder="09:00">
+                <input id="sEnd" placeholder="11:00">
+                <input id="sRoom" placeholder="강의실">
+                <input id="sMax" placeholder="정원" type="number">
+                <button class="action" onclick="createSession()">세션 생성</button>
+            </div>
+            <table><thead><tr><th>ID</th><th>courseId</th><th>분반</th><th>요일</th><th>시간</th><th>강의실</th></tr></thead><tbody id="sessionBody"></tbody></table>
+        </div>
+
+        <div id="sec-enrollments" class="section">
+            <h2>수강신청 관리</h2>
+            <div class="row">
+                <select id="eStatus" onchange="loadEnrollments()"><option>REQUESTED</option><option>WAITLIST</option><option>ENROLLED</option><option>REJECTED</option></select>
+            </div>
+            <table><thead><tr><th>ID</th><th>userId</th><th>sessionId</th><th>상태</th><th>처리</th></tr></thead><tbody id="enrollmentBody"></tbody></table>
+        </div>
+
+        <div id="sec-attendance" class="section">
+            <h2>출석 관리</h2>
+            <div class="row">
+                <input id="aEnrollmentId" placeholder="enrollmentId" type="number">
+                <input id="aDate" placeholder="YYYY-MM-DD">
+                <select id="aStatus"><option>PRESENT</option><option>LATE</option><option>ABSENT</option><option>EXCUSED</option></select>
+                <input id="aAttended" placeholder="참석분" type="number">
+                <input id="aTotal" placeholder="총분" type="number">
+                <button class="action" onclick="attendanceCheck()">출석 저장</button>
+            </div>
+        </div>
+
+        <div id="sec-users" class="section">
+            <h2>사용자 관리</h2>
+            <p>API: PATCH /admin/users/{id}/role, /enabled</p>
+            <div class="row">
+                <input id="uId" placeholder="userId" type="number">
+                <select id="uRole"><option>ROLE_USER</option><option>ROLE_ADMIN</option></select>
+                <button class="action" onclick="changeRole()">권한 변경</button>
+                <select id="uEnabled"><option value="true">활성</option><option value="false">정지</option></select>
+                <button class="action" onclick="changeEnabled()">계정 상태 변경</button>
+            </div>
+        </div>
     </section>
 </main>
 
 <div th:replace="~{fragments/footer :: siteFooter}"></div>
 
 <script>
-  (async function(){
-    const wrap = document.getElementById('statsCards');
-    const res = await fetch('/admin/stats');
-    const stats = await res.json();
-    wrap.innerHTML = Object.entries(stats).map(([k,v]) => `<div class="card"><strong>${k}</strong><div style="font-size:24px;margin-top:6px;">${v}</div></div>`).join('');
-  })();
+  const sections = ['stats','courses','sessions','enrollments','attendance','users'];
+  document.querySelectorAll('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+    sections.forEach(s=>document.getElementById('sec-'+s).classList.remove('active'));
+    document.getElementById('sec-'+btn.dataset.target).classList.add('active');
+  }));
+
+  async function loadStats(){
+    const stats = await (await fetch('/admin/stats')).json();
+    document.getElementById('statsCards').innerHTML = Object.entries(stats).map(([k,v]) => `<div class='card'><strong>${k}</strong><div style='font-size:24px;margin-top:6px;'>${v}</div></div>`).join('');
+  }
+  async function loadCourses(){
+    const rows = await (await fetch('/admin/courses')).json();
+    document.getElementById('courseBody').innerHTML = rows.map(v=>`<tr><td>${v.id}</td><td>${v.courseCode||''}</td><td>${v.title||''}</td><td>${v.professor||''}</td><td>${v.price||0}</td></tr>`).join('');
+  }
+  async function createCourse(){
+    await fetch('/admin/courses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({courseCode:cCode.value,title:cTitle.value,professor:cProfessor.value,price:Number(cPrice.value||0)})});
+    await loadCourses(); await loadStats();
+  }
+  async function loadSessions(){
+    const rows = await (await fetch('/admin/sessions')).json();
+    document.getElementById('sessionBody').innerHTML = rows.map(v=>`<tr><td>${v.id}</td><td>${v.courseId}</td><td>${v.section||''}</td><td>${v.dayOfWeek||''}</td><td>${v.startTime||''}~${v.endTime||''}</td><td>${v.room||''}</td></tr>`).join('');
+  }
+  async function createSession(){
+    await fetch('/admin/courses/'+sCourseId.value+'/sessions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({section:sSection.value,dayOfWeek:sDay.value,startTime:sStart.value,endTime:sEnd.value,room:sRoom.value,maxCount:Number(sMax.value||0)})});
+    await loadSessions(); await loadStats();
+  }
+  async function loadEnrollments(){
+    const rows = await (await fetch('/admin/enrollments?status='+eStatus.value)).json();
+    document.getElementById('enrollmentBody').innerHTML = rows.map(v=>`<tr><td>${v.id}</td><td>${v.userId}</td><td>${v.courseSessionId}</td><td>${v.status}</td><td><button class='action' onclick='approve(${v.id})'>승인</button> <button class='action' style='background:#ef4444' onclick='reject(${v.id})'>반려</button></td></tr>`).join('');
+  }
+  async function approve(id){ await fetch('/admin/enrollments/'+id+'/approve',{method:'POST'}); await loadEnrollments(); await loadStats(); }
+  async function reject(id){ await fetch('/admin/enrollments/'+id+'/reject',{method:'POST'}); await loadEnrollments(); await loadStats(); }
+  async function attendanceCheck(){
+    await fetch('/admin/attendance/check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enrollmentId:Number(aEnrollmentId.value),sessionDate:aDate.value,status:aStatus.value,minutesAttended:Number(aAttended.value||0),minutesTotal:Number(aTotal.value||0)})});
+    alert('출석 저장 완료');
+  }
+  async function changeRole(){
+    await fetch('/admin/users/'+uId.value+'/role',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({role:uRole.value})});
+    alert('권한 변경 완료');
+  }
+  async function changeEnabled(){
+    await fetch('/admin/users/'+uId.value+'/enabled',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:uEnabled.value==='true'})});
+    alert('계정 상태 변경 완료');
+  }
+
+  loadStats(); loadCourses(); loadSessions(); loadEnrollments();
 </script>
 </body>
 </html>

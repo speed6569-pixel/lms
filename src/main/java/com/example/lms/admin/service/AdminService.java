@@ -93,6 +93,16 @@ public class AdminService {
     }
 
     @Transactional(readOnly = true)
+    public List<CourseEntity> getCourses() {
+        return courseJpaRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CourseSessionEntity> getSessions(Long courseId) {
+        return courseId == null ? courseSessionJpaRepository.findAll() : courseSessionJpaRepository.findByCourseId(courseId);
+    }
+
+    @Transactional(readOnly = true)
     public List<EnrollmentEntity> getEnrollmentsByStatus(String status) {
         return enrollmentJpaRepository.findByStatusOrderByIdAsc(status);
     }
