@@ -77,14 +77,16 @@
 
         <div id="sec-users" class="section">
             <h2>사용자 관리</h2>
-            <p>API: PATCH /admin/users/{id}/role, /enabled</p>
             <div class="row">
-                <input id="uId" placeholder="userId" type="number">
-                <select id="uRole"><option>ROLE_USER</option><option>ROLE_ADMIN</option></select>
-                <button class="action" onclick="changeRole()">권한 변경</button>
-                <select id="uEnabled"><option value="true">활성</option><option value="false">정지</option></select>
-                <button class="action" onclick="changeEnabled()">계정 상태 변경</button>
+                <input id="uq" placeholder="아이디(username) 또는 이름(name)" style="min-width:280px">
+                <button class="action" onclick="loadAdminUsers()">검색</button>
             </div>
+            <table>
+                <thead>
+                <tr><th>ID</th><th>username</th><th>name</th><th>status</th><th>role</th><th>이용기간</th><th>총결제액</th><th>참여강의수</th><th>변경</th></tr>
+                </thead>
+                <tbody id="adminUserBody"></tbody>
+            </table>
         </div>
     </section>
 </main>
@@ -150,17 +152,38 @@
     await fetch('/admin/api/attendance/check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enrollmentId:Number(aEnrollmentId.value),sessionDate:aDate.value,status:aStatus.value,minutesAttended:Number(aAttended.value||0),minutesTotal:Number(aTotal.value||0)})});
     alert('출석 저장 완료');
   }
-  async function changeRole(){
-    await fetch('/admin/api/users/'+uId.value+'/role',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({role:uRole.value})});
-    alert('권한 변경 완료');
-  }
-  async function changeEnabled(){
-    await fetch('/admin/api/users/'+uId.value+'/enabled',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:uEnabled.value==='true'})});
-    alert('계정 상태 변경 완료');
+  async function loadAdminUsers(){
+    const q = document.getElementById('uq').value || '';
+    const rows = await (await fetch('/admin/api/users?q='+encodeURIComponent(q))).json();
+    const body = document.getElementById('adminUserBody');
+    if(!rows || rows.length===0){ body.innerHTML = `<tr><td colspan='9'>검색 결과가 없습니다.</td></tr>`; return; }
+    body.innerHTML = rows.map(v => `
+      <tr>
+        <td>${v.id}</td>
+        <td>${v.username||''}</td>
+        <td>${v.name||''}</td>
+        <td><select id='ust-${v.id}'><option value='ACTIVE' ${v.status==='ACTIVE'?'selected':''}>ACTIVE</option><option value='BLOCKED' ${v.status==='BLOCKED'?'selected':''}>BLOCKED</option></select></td>
+        <td><select id='url-${v.id}'><option value='ROLE_USER' ${v.role==='ROLE_USER'?'selected':''}>USER</option><option value='ROLE_ADMIN' ${v.role==='ROLE_ADMIN'?'selected':''}>ADMIN</option></select></td>
+        <td>${v.usagePeriod||''}</td>
+        <td>${Number(v.totalPayment||0).toLocaleString()}원</td>
+        <td>${v.runningCourseCount||0}</td>
+        <td><button class='action' onclick='saveAdminUser(${v.id})'>저장</button></td>
+      </tr>`).join('');
   }
 
+  async function saveAdminUser(id){
+    const role = document.getElementById('url-'+id).value;
+    const status = document.getElementById('ust-'+id).value;
+    const res = await fetch('/admin/api/users/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({role,status})});
+    const json = await res.json().catch(()=>({message:'저장 실패'}));
+    if(!res.ok){ alert(json.message||'저장 실패'); return; }
+    alert('저장되었습니다.');
+    await loadAdminUsers();
+  }
+
+  document.getElementById('uq')?.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); loadAdminUsers(); }});
   addSessionRow();
-  loadStats(); loadCourses(); loadEnrollments();
+  loadStats(); loadCourses(); loadEnrollments(); loadAdminUsers();
 </script>
 </body>
 </html>
