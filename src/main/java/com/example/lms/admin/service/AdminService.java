@@ -72,6 +72,16 @@ public class AdminService {
         CourseEntity saved = courseJpaRepository.save(c);
 
         List<AdminDtos.CourseSessionInput> sessions = req.sessions() == null ? List.of() : req.sessions();
+        if (sessions.isEmpty()) {
+            if (req.dayRange() == null || req.dayRange().isBlank() || req.startTime() == null || req.endTime() == null) {
+                throw new IllegalArgumentException("요일 범위와 시작/종료 시간을 입력해 주세요.");
+            }
+            List<String> days = expandDayRange(req.dayRange());
+            sessions = days.stream()
+                    .map(d -> new AdminDtos.CourseSessionInput(d, req.startTime(), req.endTime(), null))
+                    .toList();
+        }
+
         int sectionNo = 1;
         for (AdminDtos.CourseSessionInput input : sessions) {
             LocalTime start = LocalTime.parse(input.startTime());
@@ -274,6 +284,16 @@ public class AdminService {
         courseSessionJpaRepository.deleteByCourseId(courseId);
         courseJpaRepository.deleteById(courseId);
         audit(adminUserId, "DELETE_COURSE", "COURSE", courseId, ip, "deleted");
+    }
+
+    private List<String> expandDayRange(String range) {
+        List<String> week = List.of("월", "화", "수", "목", "금", "토", "일");
+        String[] parts = range.replace(" ", "").split("~");
+        if (parts.length == 1) return List.of(parts[0]);
+        int s = week.indexOf(parts[0]);
+        int e = week.indexOf(parts[1]);
+        if (s < 0 || e < 0 || s > e) throw new IllegalArgumentException("요일 범위 형식이 올바르지 않습니다. 예: 월~금");
+        return week.subList(s, e + 1);
     }
 
     private String toDayDurationText(List<AdminCourseSessionEntity> sessions) {
