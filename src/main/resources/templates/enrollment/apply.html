@@ -57,7 +57,7 @@
                     th:attr="data-code=${course.courseCode},data-job=${course.job},data-position=${course.position}">
                     <td>
                         <button type="button" class="apply-btn"
-                                th:attr="data-code=${course.courseCode},data-section=${course.section},data-title=${course.title}"
+                                th:attr="data-code=${course.courseCode},data-section=${course.section},data-title=${course.title},data-course-id=${course.courseId}"
                                 th:disabled="${course.enrolledCount >= course.maxCount}"
                                 th:data-full="${course.enrolledCount >= course.maxCount}"
                                 onclick="toggleApply(this)"
@@ -312,11 +312,16 @@
 
       let res;
       if (!enrolledMap.has(key)) {
-        res = await fetch('/enroll/apply', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({ courseCode: code, section }).toString()
-        });
+        const courseId = button.dataset.courseId;
+        if (courseId) {
+          res = await fetch(`/courses/${courseId}/enroll`, { method: 'POST' });
+        } else {
+          res = await fetch('/enroll/apply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ courseCode: code, section }).toString()
+          });
+        }
       } else {
         res = await fetch('/enroll/cancel', {
           method: 'POST',
@@ -324,7 +329,8 @@
           body: new URLSearchParams({ courseCode: code, section }).toString()
         });
       }
-      const result = await res.json();
+      const result = await res.json().catch(()=>({success:false,message:'신청 처리 중 오류가 발생했습니다.'}));
+      alert(result.message || (result.success ? '처리 완료' : '처리 실패'));
 
       await loadState();
       renderHistory();

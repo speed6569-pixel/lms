@@ -225,7 +225,8 @@ public class HomeController {
                     first.getCourseCode(), first.getSection(), scheduleText, note,
                     first.getJob(), first.getPosition(),
                     enrolled, maxCount,
-                    first.getPrice()
+                    first.getPrice(),
+                    first.getCourseId()
             ));
         }
         return out;
@@ -339,7 +340,8 @@ public class HomeController {
             String position,
             int enrolledCount,
             int maxCount,
-            String price
+            String price,
+            Long courseId
     ) {
     }
 }
