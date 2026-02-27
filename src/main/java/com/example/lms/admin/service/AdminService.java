@@ -18,6 +18,7 @@ import java.util.*;
 @Service
 public class AdminService {
     private final CourseJpaRepository courseJpaRepository;
+    private final AdminCourseSessionJpaRepository adminCourseSessionJpaRepository;
     private final CourseSessionJpaRepository courseSessionJpaRepository;
     private final EnrollmentJpaRepository enrollmentJpaRepository;
     private final AttendanceRecordJpaRepository attendanceRecordJpaRepository;
@@ -26,6 +27,7 @@ public class AdminService {
     private final AuditLogJpaRepository auditLogJpaRepository;
 
     public AdminService(CourseJpaRepository courseJpaRepository,
+                        AdminCourseSessionJpaRepository adminCourseSessionJpaRepository,
                         CourseSessionJpaRepository courseSessionJpaRepository,
                         EnrollmentJpaRepository enrollmentJpaRepository,
                         AttendanceRecordJpaRepository attendanceRecordJpaRepository,
@@ -33,6 +35,7 @@ public class AdminService {
                         UserJpaRepository userJpaRepository,
                         AuditLogJpaRepository auditLogJpaRepository) {
         this.courseJpaRepository = courseJpaRepository;
+        this.adminCourseSessionJpaRepository = adminCourseSessionJpaRepository;
         this.courseSessionJpaRepository = courseSessionJpaRepository;
         this.enrollmentJpaRepository = enrollmentJpaRepository;
         this.attendanceRecordJpaRepository = attendanceRecordJpaRepository;
@@ -55,9 +58,30 @@ public class AdminService {
         c.setProfessor(req.professor());
         c.setPrice(req.price() == null ? 0 : req.price());
         c.setMaxCount(req.maxCount() == null ? 0 : req.maxCount());
-        c.setClassTime(req.classTime());
+        c.setClassTime(null);
         c.setActive(true);
         CourseEntity saved = courseJpaRepository.save(c);
+
+        List<AdminDtos.CourseSessionInput> sessions = req.sessions() == null ? List.of() : req.sessions();
+        int sectionNo = 1;
+        for (AdminDtos.CourseSessionInput input : sessions) {
+            LocalTime start = LocalTime.parse(input.startTime());
+            LocalTime end = LocalTime.parse(input.endTime());
+            if (!start.isBefore(end)) throw new IllegalArgumentException("세션 시작시간은 종료시간보다 빨라야 합니다.");
+
+            AdminCourseSessionEntity s = new AdminCourseSessionEntity();
+            s.setCourse(saved);
+            s.setSection(String.format("%02d", sectionNo++));
+            s.setDayOfWeek(input.dayOfWeek());
+            s.setStartTime(start);
+            s.setEndTime(end);
+            s.setRoom(input.room());
+            s.setMaxCount(saved.getMaxCount() == null ? 0 : saved.getMaxCount());
+            s.setEnrolledCount(0);
+            s.setStatus("OPEN");
+            adminCourseSessionJpaRepository.save(s);
+        }
+
         audit(adminUserId, "CREATE_COURSE", "COURSE", saved.getId(), ip, req.toString());
         return saved;
     }
@@ -115,7 +139,7 @@ public class AdminService {
             row.put("id", c.getId());
             row.put("courseCode", c.getCourseCode());
             row.put("title", c.getTitle());
-            row.put("classTime", c.getClassTime() == null || c.getClassTime().isBlank() ? "-" : c.getClassTime());
+            row.put("classTime", toDayDurationText(adminCourseSessionJpaRepository.findByCourse_Id(c.getId())));
             row.put("professor", c.getProfessor());
             row.put("price", c.getPrice());
             row.put("maxCount", c.getMaxCount() == null ? 0 : c.getMaxCount());
@@ -225,6 +249,25 @@ public class AdminService {
         courseSessionJpaRepository.deleteByCourseId(courseId);
         courseJpaRepository.deleteById(courseId);
         audit(adminUserId, "DELETE_COURSE", "COURSE", courseId, ip, "deleted");
+    }
+
+    private String toDayDurationText(List<AdminCourseSessionEntity> sessions) {
+        if (sessions == null || sessions.isEmpty()) return "-";
+        Map<String, Integer> dayMinutes = new LinkedHashMap<>();
+        for (AdminCourseSessionEntity s : sessions) {
+            if (s.getStartTime() == null || s.getEndTime() == null) continue;
+            int minutes = (s.getEndTime().getHour() * 60 + s.getEndTime().getMinute())
+                    - (s.getStartTime().getHour() * 60 + s.getStartTime().getMinute());
+            dayMinutes.merge(s.getDayOfWeek(), Math.max(minutes, 0), Integer::sum);
+        }
+        if (dayMinutes.isEmpty()) return "-";
+        List<String> parts = new ArrayList<>();
+        for (Map.Entry<String, Integer> e : dayMinutes.entrySet()) {
+            double hours = e.getValue() / 60.0;
+            String h = (hours == (int) hours) ? String.valueOf((int) hours) : String.format("%.1f", hours);
+            parts.add(e.getKey() + " " + h + "시간");
+        }
+        return String.join(" / ", parts);
     }
 
     private void audit(Long actorUserId, String action, String targetType, Long targetId, String ip, String afterJson) {

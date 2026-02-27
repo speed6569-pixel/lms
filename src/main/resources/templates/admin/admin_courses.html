@@ -41,8 +41,19 @@
    const rows = await (await fetch('/admin/api/courses')).json();
    document.getElementById('courseBody').innerHTML = rows.map(v=>`<tr><td>${v.id}</td><td>${v.courseCode||''}</td><td>${v.title||''}</td><td>${v.classTime||'-'}</td><td>${v.professor||''}</td><td>${v.price||0}</td><td>${v.maxCount||0}</td><td><button style='background:#ef4444' onclick='deleteCourse(${v.id})'>삭제</button></td></tr>`).join('');
  }
+ function parseSessions(text){
+   if(!text || !text.trim()) return [];
+   return text.split(',').map(v=>v.trim()).filter(Boolean).map((token)=>{
+     const m = token.match(/^([월화수목금토일])\s*(\d{2}:\d{2})\s*~\s*(\d{2}:\d{2})(?:\s*\(([^)]+)\))?$/);
+     if(!m) throw new Error('강의시간 형식 오류: ' + token + ' (예: 월10:00~12:00(301))');
+     return {dayOfWeek:m[1], startTime:m[2], endTime:m[3], room:m[4]||null};
+   });
+ }
+
  async function createCourse(){
-   const payload = {courseCode:cCode.value,title:cTitle.value,professor:cProfessor.value,price:Number(cPrice.value||0),maxCount:Number(cMax.value||0),classTime:cTime.value};
+   let sessions;
+   try { sessions = parseSessions(cTime.value); } catch(e){ alert(e.message); return; }
+   const payload = {courseCode:cCode.value,title:cTitle.value,professor:cProfessor.value,price:Number(cPrice.value||0),maxCount:Number(cMax.value||0),sessions};
    const res = await fetch('/admin/api/courses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
    if(!res.ok){ const e = await res.json().catch(()=>({message:'생성 실패'})); alert(e.message||'생성 실패'); return; }
    await loadCourses();

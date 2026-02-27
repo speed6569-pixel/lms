@@ -3,6 +3,8 @@ package com.example.lms.admin.entity;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "courses")
@@ -23,6 +25,9 @@ public class CourseEntity {
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AdminCourseSessionEntity> sessions = new ArrayList<>();
+
     public Long getId() { return id; }
     public String getCourseCode() { return courseCode; }
     public void setCourseCode(String courseCode) { this.courseCode = courseCode; }
@@ -40,4 +45,6 @@ public class CourseEntity {
     public void setClassTime(String classTime) { this.classTime = classTime; }
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
+    public List<AdminCourseSessionEntity> getSessions() { return sessions; }
+    public void setSessions(List<AdminCourseSessionEntity> sessions) { this.sessions = sessions; }
 }
