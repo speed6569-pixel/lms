@@ -33,6 +33,7 @@
             <a href="/enrollments/me" th:classappend="${tab == 'ongoing'} ? ' active' : ''">마이페이지 홈</a>
             <a href="/enrollments/me?tab=ongoing" th:classappend="${tab == 'ongoing'} ? ' active' : ''">진행중 교육</a>
             <a href="/enrollments/me?tab=applied" th:classappend="${tab == 'applied'} ? ' active' : ''">신청중 교육</a>
+            <a href="/enrollments/me?tab=closed" th:classappend="${tab == 'closed'} ? ' active' : ''">처리완료/취소내역</a>
         </nav>
     </aside>
 
@@ -41,6 +42,7 @@
             <div class="tab-row">
                 <a href="/enrollments/me?tab=ongoing" th:class="${tab == 'ongoing'} ? 'tab-btn active' : 'tab-btn'">진행중 교육</a>
                 <a href="/enrollments/me?tab=applied" th:class="${tab == 'applied'} ? 'tab-btn active' : 'tab-btn'">신청중 교육</a>
+                <a href="/enrollments/me?tab=closed" th:class="${tab == 'closed'} ? 'tab-btn active' : 'tab-btn'">처리완료/취소내역</a>
             </div>
 
             <div class="table-wrap">
@@ -61,7 +63,7 @@
                         <td>
                             <span class="type-tag"
                                   th:classappend="${course.status == 'APPROVED' or course.status == 'RUNNING'} ? ' type-offline' : ' type-online'"
-                                  th:text="${course.status == 'APPROVED'} ? '신청완료' : (${course.status == 'RUNNING'} ? '진행중' : '신청중')"></span>
+                                  th:text="${course.status == 'APPROVED'} ? '신청완료' : (${course.status == 'RUNNING'} ? '진행중' : (${course.status == 'CANCEL_REQUESTED'} ? '취소요청' : (${course.status == 'CANCELLED'} ? '취소완료' : (${course.status == 'REJECTED'} ? '반려' : '신청중'))))"></span>
                         </td>
                         <td th:text="${course.professor}"></td>
                         <td th:text="${course.classTime}"></td>

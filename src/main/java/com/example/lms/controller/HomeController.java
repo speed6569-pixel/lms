@@ -125,9 +125,14 @@ public class HomeController {
             return "pages/my-classroom";
         }
 
-        Set<String> statuses = "applied".equalsIgnoreCase(tab)
-                ? Set.of("APPLIED", "WAITLIST")
-                : Set.of("APPROVED", "RUNNING");
+        Set<String> statuses;
+        if ("applied".equalsIgnoreCase(tab)) {
+            statuses = Set.of("APPLIED", "WAITLIST");
+        } else if ("closed".equalsIgnoreCase(tab)) {
+            statuses = Set.of("REJECTED", "CANCELLED", "CANCEL_REQUESTED");
+        } else {
+            statuses = Set.of("APPROVED", "RUNNING");
+        }
 
         List<MyCourseItem> courses = enrollmentJpaRepository.findMyCoursesByStatuses(userId, statuses).stream()
                 .map(this::toMyCourseItem)
