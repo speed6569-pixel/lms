@@ -29,7 +29,6 @@
         <h3>관리 메뉴</h3>
         <button class="nav-btn active" data-target="stats">통계(대시보드)</button>
         <button class="nav-btn" data-target="courses">강의 관리</button>
-        <button class="nav-btn" data-target="sessions">시간표 편성</button>
         <button class="nav-btn" data-target="enrollments">수강신청 관리</button>
         <button class="nav-btn" data-target="attendance">출석 관리</button>
         <button class="nav-btn" data-target="users">사용자 관리</button>
@@ -54,21 +53,6 @@
             </div>
             <div id="sessionRows" class="row"></div>
             <table><thead><tr><th>ID</th><th>코드</th><th>강의명</th><th>강의 시간</th><th>교수</th><th>가격</th><th>정원</th><th>삭제</th></tr></thead><tbody id="courseBody"></tbody></table>
-        </div>
-
-        <div id="sec-sessions" class="section">
-            <h2>시간표 편성</h2>
-            <div class="row">
-                <input id="sCourseId" placeholder="courseId" type="number">
-                <input id="sSection" placeholder="분반(01)">
-                <select id="sDay"><option>월</option><option>화</option><option>수</option><option>목</option><option>금</option></select>
-                <input id="sStart" placeholder="09:00">
-                <input id="sEnd" placeholder="11:00">
-                <input id="sRoom" placeholder="강의실">
-                <input id="sMax" placeholder="정원" type="number">
-                <button class="action" onclick="createSession()">세션 생성</button>
-            </div>
-            <table><thead><tr><th>ID</th><th>courseId</th><th>분반</th><th>요일</th><th>시간</th><th>강의실</th></tr></thead><tbody id="sessionBody"></tbody></table>
         </div>
 
         <div id="sec-enrollments" class="section">
@@ -108,7 +92,7 @@
 <div th:replace="~{fragments/footer :: siteFooter}"></div>
 
 <script>
-  const sections = ['stats','courses','sessions','enrollments','attendance','users'];
+  const sections = ['stats','courses','enrollments','attendance','users'];
   document.querySelectorAll('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>{
     document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
     sections.forEach(s=>document.getElementById('sec-'+s).classList.remove('active'));
@@ -154,15 +138,7 @@
   async function deleteCourse(id){
     if(!confirm('강의를 삭제하시겠습니까? 연결된 세션/신청/출석/진도 데이터도 삭제됩니다.')) return;
     await fetch('/admin/api/courses/'+id,{method:'DELETE'});
-    await loadCourses(); await loadSessions(); await loadEnrollments(); await loadStats();
-  }
-  async function loadSessions(){
-    const rows = await (await fetch('/admin/api/sessions')).json();
-    document.getElementById('sessionBody').innerHTML = rows.map(v=>`<tr><td>${v.id}</td><td>${v.courseId}</td><td>${v.section||''}</td><td>${v.dayOfWeek||''}</td><td>${v.startTime||''}~${v.endTime||''}</td><td>${v.room||''}</td></tr>`).join('');
-  }
-  async function createSession(){
-    await fetch('/admin/api/courses/'+sCourseId.value+'/sessions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({section:sSection.value,dayOfWeek:sDay.value,startTime:sStart.value,endTime:sEnd.value,room:sRoom.value,maxCount:Number(sMax.value||0)})});
-    await loadSessions(); await loadStats();
+    await loadCourses(); await loadEnrollments(); await loadStats();
   }
   async function loadEnrollments(){
     const rows = await (await fetch('/admin/api/enrollments?status='+eStatus.value)).json();
@@ -184,7 +160,7 @@
   }
 
   addSessionRow();
-  loadStats(); loadCourses(); loadSessions(); loadEnrollments();
+  loadStats(); loadCourses(); loadEnrollments();
 </script>
 </body>
 </html>
