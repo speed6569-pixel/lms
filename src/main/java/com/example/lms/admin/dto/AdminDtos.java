@@ -3,8 +3,8 @@ package com.example.lms.admin.dto;
 import java.time.LocalDate;
 
 public class AdminDtos {
-    public record CourseCreateRequest(String courseCode, String title, String description, String professor, Integer price, Integer maxCount, java.util.List<CourseSessionInput> sessions) {}
-    public record CourseUpdateRequest(String title, String description, String professor, Integer price, Integer maxCount, String classTime, Boolean active) {}
+    public record CourseCreateRequest(String subjectCode, String jobGroup, String jobLevel, String subjectName, String instructor, Integer price, Integer capacity, String status, String description, java.util.List<CourseSessionInput> sessions) {}
+    public record CourseUpdateRequest(String subjectName, String instructor, Integer price, Integer capacity, String status, String jobGroup, String jobLevel, String classTime, Boolean active) {}
     public record CourseSessionInput(String dayOfWeek, String startTime, String endTime, String room) {}
     public record SessionCreateRequest(String section, String dayOfWeek, String startTime, String endTime, String room, Integer maxCount) {}
     public record EnrollmentDecisionRequest(String reason) {}

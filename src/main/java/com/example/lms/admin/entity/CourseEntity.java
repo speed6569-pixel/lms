@@ -22,6 +22,18 @@ public class CourseEntity {
     @Column(name = "class_time")
     private String classTime;
     private Boolean active;
+
+    @Column(name = "subject_code")
+    private String subjectCode;
+    @Column(name = "job_group")
+    private String jobGroup;
+    @Column(name = "job_level")
+    private String jobLevel;
+    @Column(name = "subject_name")
+    private String subjectName;
+    private String instructor;
+    private Integer capacity;
+    private String status;
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -47,4 +59,19 @@ public class CourseEntity {
     public void setActive(Boolean active) { this.active = active; }
     public List<AdminCourseSessionEntity> getSessions() { return sessions; }
     public void setSessions(List<AdminCourseSessionEntity> sessions) { this.sessions = sessions; }
+
+    public String getSubjectCode() { return subjectCode; }
+    public void setSubjectCode(String subjectCode) { this.subjectCode = subjectCode; }
+    public String getJobGroup() { return jobGroup; }
+    public void setJobGroup(String jobGroup) { this.jobGroup = jobGroup; }
+    public String getJobLevel() { return jobLevel; }
+    public void setJobLevel(String jobLevel) { this.jobLevel = jobLevel; }
+    public String getSubjectName() { return subjectName; }
+    public void setSubjectName(String subjectName) { this.subjectName = subjectName; }
+    public String getInstructor() { return instructor; }
+    public void setInstructor(String instructor) { this.instructor = instructor; }
+    public Integer getCapacity() { return capacity; }
+    public void setCapacity(Integer capacity) { this.capacity = capacity; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

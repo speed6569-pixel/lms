@@ -42,6 +42,15 @@ public class AdminApiController {
         return ResponseEntity.ok(adminService.updateCourse(id, req, adminId(auth), request.getRemoteAddr()));
     }
 
+    @PatchMapping("/courses/{id}/status")
+    public ResponseEntity<?> courseStatus(@PathVariable Long id,
+                                          @RequestBody Map<String, String> body,
+                                          Authentication auth,
+                                          HttpServletRequest request) {
+        String status = body.getOrDefault("status", "OPEN");
+        return ResponseEntity.ok(adminService.updateCourseStatus(id, status, adminId(auth), request.getRemoteAddr()));
+    }
+
     @DeleteMapping("/courses/{id}")
     public ResponseEntity<?> deleteCourse(@PathVariable Long id,
                                           Authentication auth,

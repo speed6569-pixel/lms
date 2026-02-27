@@ -46,18 +46,27 @@ public class AdminService {
 
     @Transactional
     public CourseEntity createCourse(AdminDtos.CourseCreateRequest req, Long adminUserId, String ip) {
-        if (req.courseCode() == null || req.courseCode().isBlank()) throw new IllegalArgumentException("과정코드는 필수입니다.");
-        if (courseJpaRepository.existsByCourseCode(req.courseCode().trim())) throw new IllegalArgumentException("이미 존재하는 과정코드입니다.");
+        if (req.subjectCode() == null || req.subjectCode().isBlank()) throw new IllegalArgumentException("과목코드는 필수입니다.");
+        if (courseJpaRepository.existsBySubjectCode(req.subjectCode().trim()) || courseJpaRepository.existsByCourseCode(req.subjectCode().trim())) {
+            throw new IllegalArgumentException("이미 존재하는 과목코드입니다.");
+        }
         if (req.price() != null && req.price() < 0) throw new IllegalArgumentException("가격은 0 이상이어야 합니다.");
-        if (req.maxCount() != null && req.maxCount() < 0) throw new IllegalArgumentException("정원은 0 이상이어야 합니다.");
+        if (req.capacity() != null && req.capacity() < 0) throw new IllegalArgumentException("정원은 0 이상이어야 합니다.");
 
         CourseEntity c = new CourseEntity();
-        c.setCourseCode(req.courseCode().trim());
-        c.setTitle(req.title());
+        c.setSubjectCode(req.subjectCode().trim());
+        c.setCourseCode(req.subjectCode().trim());
+        c.setJobGroup(req.jobGroup());
+        c.setJobLevel(req.jobLevel());
+        c.setSubjectName(req.subjectName());
+        c.setTitle(req.subjectName());
+        c.setInstructor(req.instructor());
+        c.setProfessor(req.instructor());
         c.setDescription(req.description());
-        c.setProfessor(req.professor());
         c.setPrice(req.price() == null ? 0 : req.price());
-        c.setMaxCount(req.maxCount() == null ? 0 : req.maxCount());
+        c.setCapacity(req.capacity() == null ? 0 : req.capacity());
+        c.setMaxCount(req.capacity() == null ? 0 : req.capacity());
+        c.setStatus(req.status() == null || req.status().isBlank() ? "OPEN" : req.status());
         c.setClassTime(null);
         c.setActive(true);
         CourseEntity saved = courseJpaRepository.save(c);
@@ -76,7 +85,7 @@ public class AdminService {
             s.setStartTime(start);
             s.setEndTime(end);
             s.setRoom(input.room());
-            s.setMaxCount(saved.getMaxCount() == null ? 0 : saved.getMaxCount());
+            s.setMaxCount(saved.getCapacity() == null ? 0 : saved.getCapacity());
             s.setEnrolledCount(0);
             s.setStatus("OPEN");
             adminCourseSessionJpaRepository.save(s);
@@ -89,17 +98,20 @@ public class AdminService {
     @Transactional
     public CourseEntity updateCourse(Long id, AdminDtos.CourseUpdateRequest req, Long adminUserId, String ip) {
         CourseEntity c = courseJpaRepository.findById(id).orElseThrow();
-        if (req.title() != null) c.setTitle(req.title());
-        if (req.description() != null) c.setDescription(req.description());
-        if (req.professor() != null) c.setProfessor(req.professor());
+        if (req.subjectName() != null) { c.setSubjectName(req.subjectName()); c.setTitle(req.subjectName()); }
+        if (req.instructor() != null) { c.setInstructor(req.instructor()); c.setProfessor(req.instructor()); }
+        if (req.jobGroup() != null) c.setJobGroup(req.jobGroup());
+        if (req.jobLevel() != null) c.setJobLevel(req.jobLevel());
         if (req.price() != null) {
             if (req.price() < 0) throw new IllegalArgumentException("가격은 0 이상이어야 합니다.");
             c.setPrice(req.price());
         }
-        if (req.maxCount() != null) {
-            if (req.maxCount() < 0) throw new IllegalArgumentException("정원은 0 이상이어야 합니다.");
-            c.setMaxCount(req.maxCount());
+        if (req.capacity() != null) {
+            if (req.capacity() < 0) throw new IllegalArgumentException("정원은 0 이상이어야 합니다.");
+            c.setCapacity(req.capacity());
+            c.setMaxCount(req.capacity());
         }
+        if (req.status() != null) c.setStatus(req.status());
         if (req.classTime() != null) c.setClassTime(req.classTime());
         if (req.active() != null) c.setActive(req.active());
         CourseEntity saved = courseJpaRepository.save(c);
@@ -137,12 +149,16 @@ public class AdminService {
         for (CourseEntity c : courseJpaRepository.findAll()) {
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("id", c.getId());
-            row.put("courseCode", c.getCourseCode());
-            row.put("title", c.getTitle());
+            row.put("applyStatus", "CLOSED".equalsIgnoreCase(c.getStatus()) ? "마감" : "모집중");
+            row.put("subjectCode", c.getSubjectCode() == null ? c.getCourseCode() : c.getSubjectCode());
+            row.put("jobGroup", c.getJobGroup() == null ? "" : c.getJobGroup());
+            row.put("jobLevel", c.getJobLevel() == null ? "" : c.getJobLevel());
+            row.put("subjectName", c.getSubjectName() == null ? c.getTitle() : c.getSubjectName());
+            row.put("instructor", c.getInstructor() == null ? c.getProfessor() : c.getInstructor());
             row.put("classTime", toDayDurationText(adminCourseSessionJpaRepository.findByCourse_Id(c.getId())));
-            row.put("professor", c.getProfessor());
             row.put("price", c.getPrice());
-            row.put("maxCount", c.getMaxCount() == null ? 0 : c.getMaxCount());
+            row.put("capacity", c.getCapacity() == null ? (c.getMaxCount() == null ? 0 : c.getMaxCount()) : c.getCapacity());
+            row.put("status", c.getStatus() == null ? "OPEN" : c.getStatus());
             out.add(row);
         }
         return out;
@@ -239,6 +255,15 @@ public class AdminService {
         m.put("waitlist", enrollmentJpaRepository.findByStatusOrderByIdAsc("WAITLIST").size());
         m.put("applied", enrollmentJpaRepository.findByStatusOrderByIdAsc("REQUESTED").size());
         return m;
+    }
+
+    @Transactional
+    public CourseEntity updateCourseStatus(Long courseId, String status, Long adminUserId, String ip) {
+        CourseEntity c = courseJpaRepository.findById(courseId).orElseThrow();
+        c.setStatus(status);
+        CourseEntity saved = courseJpaRepository.save(c);
+        audit(adminUserId, "UPDATE_COURSE_STATUS", "COURSE", courseId, ip, status);
+        return saved;
     }
 
     @Transactional
