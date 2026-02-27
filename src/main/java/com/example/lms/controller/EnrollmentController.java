@@ -121,7 +121,8 @@ public class EnrollmentController {
 
     private CourseMeta findCourse(String courseCode, String section) {
         return courseSessionJpaRepository.findAllCourseRows().stream()
-                .filter(c -> c.getCourseCode().equalsIgnoreCase(courseCode) && c.getSection().equalsIgnoreCase(section))
+                .filter(c -> c.getCourseCode().equalsIgnoreCase(courseCode)
+                        && (section == null || section.isBlank() || c.getSection().equalsIgnoreCase(section)))
                 .findFirst()
                 .map(this::toMeta)
                 .orElse(null);

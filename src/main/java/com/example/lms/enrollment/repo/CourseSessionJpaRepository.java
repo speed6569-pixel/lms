@@ -30,20 +30,31 @@ public interface CourseSessionJpaRepository extends JpaRepository<CourseSessionE
                    cs.section AS section,
                    c.job_group AS job,
                    c.job_level AS position,
-                   c.title AS title,
-                   c.professor AS professor,
+                   COALESCE(c.subject_name, c.title) AS title,
+                   COALESCE(c.instructor, c.professor) AS professor,
                    CONCAT(cs.day_of_week, ' ', TIME_FORMAT(cs.start_time, '%H:%i'), '-', TIME_FORMAT(cs.end_time, '%H:%i')) AS classTime,
                    CASE WHEN c.price = 0 THEN '무료' ELSE CONCAT('₩', FORMAT(c.price, 0)) END AS price,
                    cs.enrolled_count AS enrolledCount,
-                   cs.max_count AS maxCount,
+                   COALESCE(c.capacity, cs.max_count) AS maxCount,
                    cs.day_of_week AS day,
                    TIME_FORMAT(cs.start_time, '%H:%i') AS startTime,
                    TIME_FORMAT(cs.end_time, '%H:%i') AS endTime,
-                   cs.day_night AS dayNight,
-                   CASE WHEN cs.enrolled_count >= cs.max_count THEN '신청불가' ELSE '신청가능' END AS note
+                   '' AS dayNight,
+                   CASE WHEN cs.enrolled_count >= COALESCE(c.capacity, cs.max_count) THEN '신청불가' ELSE '신청가능' END AS note
             FROM course_sessions cs
             JOIN courses c ON cs.course_id = c.id
             ORDER BY FIELD(cs.day_of_week, '월','화','수','목','금','토','일'), cs.start_time
             """, nativeQuery = true)
     List<CourseListProjection> findAllCourseRows();
+
+    @Query(value = """
+            SELECT c.course_code AS courseCode,
+                   COUNT(*) AS enrolledCount
+            FROM enrollments e
+            JOIN course_sessions cs ON cs.id = e.course_session_id
+            JOIN courses c ON c.id = cs.course_id
+            WHERE e.status IN ('APPROVED','ENROLLED','RUNNING','REQUESTED')
+            GROUP BY c.course_code
+            """, nativeQuery = true)
+    List<CourseEnrollmentCountProjection> findCourseEnrollmentCounts();
 }

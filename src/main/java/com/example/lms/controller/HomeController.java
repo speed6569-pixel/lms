@@ -14,10 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Controller
 public class HomeController {
@@ -208,20 +205,73 @@ public class HomeController {
     public String schedulePage() { return "pages/schedule"; }
 
     private List<Course> readCourses() {
-        return courseSessionJpaRepository.findAllCourseRows().stream().map(this::toCourse).toList();
+        List<CourseListProjection> rows = courseSessionJpaRepository.findAllCourseRows();
+        Map<String, Integer> enrollCountMap = new HashMap<>();
+        courseSessionJpaRepository.findCourseEnrollmentCounts()
+                .forEach(v -> enrollCountMap.put(v.getCourseCode(), v.getEnrolledCount() == null ? 0 : v.getEnrolledCount()));
+
+        Map<String, List<CourseListProjection>> grouped = new LinkedHashMap<>();
+        for (CourseListProjection r : rows) grouped.computeIfAbsent(r.getCourseCode(), k -> new ArrayList<>()).add(r);
+
+        List<Course> out = new ArrayList<>();
+        for (Map.Entry<String, List<CourseListProjection>> e : grouped.entrySet()) {
+            List<CourseListProjection> g = e.getValue();
+            CourseListProjection first = g.get(0);
+            String scheduleText = buildScheduleText(g);
+            int maxCount = first.getMaxCount() == null ? 0 : first.getMaxCount();
+            int enrolled = enrollCountMap.getOrDefault(first.getCourseCode(), 0);
+            String note = enrolled >= maxCount && maxCount > 0 ? "신청불가" : "신청가능";
+
+            out.add(new Course(
+                    0, "", "", "", first.getTitle(), "",
+                    maxCount,
+                    first.getProfessor(), "", first.getDayNight(),
+                    first.getCourseCode(), first.getSection(), scheduleText, note,
+                    first.getJob(), first.getPosition(),
+                    enrolled, maxCount,
+                    first.getPrice()
+            ));
+        }
+        return out;
     }
 
-    private Course toCourse(CourseListProjection p) {
-        return new Course(
-                0, "", "", "", p.getTitle(), "",
-                p.getMaxCount() == null ? 0 : p.getMaxCount(),
-                p.getProfessor(), "", p.getDayNight(),
-                p.getCourseCode(), p.getSection(), p.getClassTime(), p.getNote(),
-                p.getJob(), p.getPosition(),
-                p.getEnrolledCount() == null ? 0 : p.getEnrolledCount(),
-                p.getMaxCount() == null ? 0 : p.getMaxCount(),
-                p.getPrice()
-        );
+    private String buildScheduleText(List<CourseListProjection> sessions) {
+        if (sessions == null || sessions.isEmpty()) return "-";
+        List<String> order = List.of("월","화","수","목","금","토","일");
+        Map<String, List<String>> timeToDays = new LinkedHashMap<>();
+        for (CourseListProjection s : sessions) {
+            String time = s.getStartTime() + "~" + s.getEndTime();
+            timeToDays.computeIfAbsent(time, k -> new ArrayList<>()).add(s.getDay());
+        }
+
+        List<String> parts = new ArrayList<>();
+        for (Map.Entry<String, List<String>> en : timeToDays.entrySet()) {
+            List<String> days = en.getValue().stream().distinct()
+                    .sorted(Comparator.comparingInt(order::indexOf))
+                    .toList();
+            parts.add(compressDays(days, order) + " " + en.getKey());
+        }
+        return String.join("; ", parts);
+    }
+
+    private String compressDays(List<String> days, List<String> order) {
+        if (days.isEmpty()) return "";
+        if (days.size() == 1) return days.get(0);
+
+        List<String> chunks = new ArrayList<>();
+        int start = 0;
+        for (int i = 1; i <= days.size(); i++) {
+            boolean broken = (i == days.size()) || (order.indexOf(days.get(i)) - order.indexOf(days.get(i - 1)) != 1);
+            if (broken) {
+                String from = days.get(start);
+                String to = days.get(i - 1);
+                if (start == i - 1) chunks.add(from);
+                else if (i - start == 2) chunks.add(from + "/" + to);
+                else chunks.add(from + "~" + to);
+                start = i;
+            }
+        }
+        return String.join("/", chunks);
     }
 
     private MyCourseItem toMyCourseItem(MyPageCourseProjection p) {
