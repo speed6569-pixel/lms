@@ -20,7 +20,9 @@
       <a class="auth-link auth-signup" href="/signup">회원가입</a>
     </div>
 
-    <div class="profile-wrap" sec:authorize="isAuthenticated()" id="profileWrap">
+    <div class="profile-wrap" sec:authorize="isAuthenticated()"
+         th:if="${#httpServletRequest.requestURI == null or !#strings.startsWith(#httpServletRequest.requestURI, '/settings')}"
+         id="profileWrap">
       <button class="profile-btn" id="profileBtn" type="button">
         <span class="avatar" id="avatarText">U</span>
         <span class="profile-text desktop-only">
