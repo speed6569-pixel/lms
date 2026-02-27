@@ -188,17 +188,11 @@ public class HomeController {
         return result;
     }
 
-    @GetMapping("/support")
-    public String learningSupportPage() { return "pages/support"; }
-
     @GetMapping("/customer-center")
-    public String customerCenterPage() { return "pages/customer-center"; }
+    public String customerCenterPage() { return "redirect:/cs"; }
 
     @GetMapping("/payments")
     public String paymentsPage() { return "pages/payments"; }
-
-    @GetMapping("/schedule")
-    public String schedulePage() { return "pages/schedule"; }
 
     private List<Course> readCourses() {
         List<CourseListProjection> rows = courseSessionJpaRepository.findAllCourseRows();

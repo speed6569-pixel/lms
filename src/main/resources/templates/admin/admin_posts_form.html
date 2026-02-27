@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>게시물 작성</title>
+<link rel="stylesheet" th:href="@{/css/home.css}"><link rel="stylesheet" th:href="@{/css/header-profile.css}">
+<style>.wrap{max-width:900px;margin:24px auto;padding:0 16px}.panel{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px}.row{display:grid;gap:8px;margin-bottom:10px}input,select,textarea{border:1px solid #d1d5db;border-radius:8px;padding:8px}button{height:36px;border:0;border-radius:8px;background:#2563eb;color:#fff;padding:0 12px}</style></head>
+<body><div th:replace="~{fragments/header :: siteHeader(${userName}, ${userEmail})}"></div>
+<main class="wrap"><section class="panel">
+  <h2 th:text="${mode=='edit'} ? '게시물 수정' : '게시물 등록'"></h2>
+  <form th:action="${mode=='edit'} ? @{'/admin/posts/' + ${post.id}} : @{/admin/posts}" method="post">
+    <div class="row">
+      <select name="category"><option value="SUPPORT" th:selected="${post != null and post.category=='SUPPORT'}">학습지원</option><option value="CS" th:selected="${post != null and post.category=='CS'}">고객센터</option><option value="SCHEDULE" th:selected="${post != null and post.category=='SCHEDULE'}">교육일정</option></select>
+      <input name="title" placeholder="제목" th:value="${post != null ? post.title : ''}">
+      <textarea name="content" rows="12" placeholder="내용" th:text="${post != null ? post.content : ''}"></textarea>
+      <select name="status"><option value="DRAFT" th:selected="${post != null and post.status=='DRAFT'}">DRAFT</option><option value="PUBLISHED" th:selected="${post != null and post.status=='PUBLISHED'}">PUBLISHED</option><option value="ARCHIVED" th:selected="${post != null and post.status=='ARCHIVED'}">ARCHIVED</option></select>
+      <label><input type="checkbox" name="pinned" th:checked="${post != null and post.pinned}"> 상단고정</label>
+      <button type="submit">저장</button>
+    </div>
+  </form>
+</section></main>
+<div th:replace="~{fragments/footer :: siteFooter}"></div>
+</body></html>
