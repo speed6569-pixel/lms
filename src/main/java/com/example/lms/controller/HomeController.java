@@ -2,6 +2,10 @@ package com.example.lms.controller;
 
 import com.example.lms.enrollment.repo.CourseListProjection;
 import com.example.lms.enrollment.repo.CourseSessionJpaRepository;
+import com.example.lms.enrollment.repo.EnrollmentJpaRepository;
+import com.example.lms.enrollment.repo.MyPageCourseProjection;
+import com.example.lms.enrollment.repo.UserJpaRepository;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,14 +17,21 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Controller
 public class HomeController {
 
     private final CourseSessionJpaRepository courseSessionJpaRepository;
+    private final EnrollmentJpaRepository enrollmentJpaRepository;
+    private final UserJpaRepository userJpaRepository;
 
-    public HomeController(CourseSessionJpaRepository courseSessionJpaRepository) {
+    public HomeController(CourseSessionJpaRepository courseSessionJpaRepository,
+                          EnrollmentJpaRepository enrollmentJpaRepository,
+                          UserJpaRepository userJpaRepository) {
         this.courseSessionJpaRepository = courseSessionJpaRepository;
+        this.enrollmentJpaRepository = enrollmentJpaRepository;
+        this.userJpaRepository = userJpaRepository;
     }
 
     @GetMapping({"/", "/homepage"})
@@ -91,21 +102,37 @@ public class HomeController {
 
     @GetMapping("/enrollments/me")
     public String myPage(
-            @RequestParam(required = false) String job,
-            @RequestParam(required = false) String dayNight,
-            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false, defaultValue = "ongoing") String tab,
+            Authentication authentication,
             Model model
     ) {
-        List<Course> filtered = readCourses().stream()
-                .filter(c -> isBlank(job) || c.job().equalsIgnoreCase(job))
-                .filter(c -> isBlank(dayNight) || c.dayNight().equalsIgnoreCase(dayNight))
-                .filter(c -> isBlank(keyword) || contains(c, keyword))
+        if (authentication == null || !authentication.isAuthenticated()) {
+            model.addAttribute("courses", List.of());
+            model.addAttribute("tab", tab);
+            return "pages/my-classroom";
+        }
+
+        String loginId = authentication.getName();
+        Long userId = userJpaRepository.findByLoginId(loginId)
+                .map(u -> u.getId())
+                .orElse(null);
+
+        if (userId == null) {
+            model.addAttribute("courses", List.of());
+            model.addAttribute("tab", tab);
+            return "pages/my-classroom";
+        }
+
+        Set<String> statuses = "applied".equalsIgnoreCase(tab)
+                ? Set.of("REQUESTED")
+                : Set.of("ENROLLED");
+
+        List<MyCourseItem> courses = enrollmentJpaRepository.findMyCoursesByStatuses(userId, statuses).stream()
+                .map(this::toMyCourseItem)
                 .toList();
 
-        model.addAttribute("courses", filtered);
-        model.addAttribute("job", job);
-        model.addAttribute("dayNight", dayNight);
-        model.addAttribute("keyword", keyword);
+        model.addAttribute("courses", courses);
+        model.addAttribute("tab", tab);
         return "pages/my-classroom";
     }
 
@@ -168,6 +195,20 @@ public class HomeController {
         );
     }
 
+    private MyCourseItem toMyCourseItem(MyPageCourseProjection p) {
+        return new MyCourseItem(
+                p.getTitle(),
+                p.getProfessor(),
+                p.getClassTime(),
+                p.getPrice(),
+                p.getCourseCode(),
+                p.getSection(),
+                p.getEnrolledCount() == null ? 0 : p.getEnrolledCount(),
+                p.getMaxCount() == null ? 0 : p.getMaxCount(),
+                p.getStatus()
+        );
+    }
+
     private Course findCourse(String courseCode, String section) {
         return readCourses().stream()
                 .filter(c -> c.courseCode().equalsIgnoreCase(courseCode) && c.section().equalsIgnoreCase(section))
@@ -184,6 +225,19 @@ public class HomeController {
                 || c.professor().toLowerCase().contains(k)
                 || c.position().toLowerCase().contains(k)
                 || c.job().toLowerCase().contains(k);
+    }
+
+    public record MyCourseItem(
+            String title,
+            String professor,
+            String classTime,
+            String price,
+            String courseCode,
+            String section,
+            int enrolledCount,
+            int maxCount,
+            String status
+    ) {
     }
 
     public record Course(
