@@ -50,13 +50,6 @@
                         <div class="nl-main">
                             <div class="nl-name-row">
                                 <strong class="nl-name" th:text="${userName != null ? userName : #authentication.name}">사용자</strong>
-                                <span class="nl-id-badge">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
-                                        <rect x="5" y="11" width="14" height="10" rx="2"></rect>
-                                        <path d="M8 11V8a4 4 0 1 1 8 0v3"></path>
-                                    </svg>
-                                    네이버ID
-                                </span>
                             </div>
                             <p class="nl-email" th:text="${userEmail != null ? userEmail : #authentication.name}">email</p>
 
