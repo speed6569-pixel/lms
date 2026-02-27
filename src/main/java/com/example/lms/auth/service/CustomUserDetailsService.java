@@ -22,10 +22,12 @@ public class CustomUserDetailsService implements UserDetailsService {
         UserEntity user = userJpaRepository.findByLoginId(username)
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
 
-        return new User(
-                user.getLoginId(),
-                user.getPasswordHash(),
-                List.of(new SimpleGrantedAuthority(user.getRole()))
-        );
+        boolean enabled = user.getEnabled() != null ? user.getEnabled() : !"BLOCKED".equalsIgnoreCase(user.getStatus());
+
+        return User.withUsername(user.getLoginId())
+                .password(user.getPasswordHash())
+                .authorities(List.of(new SimpleGrantedAuthority(user.getRole())))
+                .disabled(!enabled)
+                .build();
     }
 }

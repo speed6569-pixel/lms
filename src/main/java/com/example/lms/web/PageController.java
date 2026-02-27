@@ -20,4 +20,9 @@ public class PageController {
     public String adminCourses() {
         return "admin/admin_courses";
     }
+
+    @GetMapping("/admin/users")
+    public String adminUsers() {
+        return "admin/admin_users";
+    }
 }

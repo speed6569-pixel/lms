@@ -32,6 +32,9 @@ public class UserEntity {
     @Column(name = "enabled", nullable = false)
     private Boolean enabled = true;
 
+    @Column(name = "status", nullable = false)
+    private String status = "ACTIVE";
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -43,6 +46,7 @@ public class UserEntity {
     public String getPhone() { return phone; }
     public String getRole() { return role; }
     public Boolean getEnabled() { return enabled; }
+    public String getStatus() { return status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 
     public void setLoginId(String loginId) { this.loginId = loginId; }
@@ -52,4 +56,5 @@ public class UserEntity {
     public void setPhone(String phone) { this.phone = phone; }
     public void setRole(String role) { this.role = role; }
     public void setEnabled(Boolean enabled) { this.enabled = enabled; }
+    public void setStatus(String status) { this.status = status; }
 }
