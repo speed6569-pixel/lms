@@ -58,10 +58,10 @@
                     <td>
                         <button type="button" class="apply-btn"
                                 th:attr="data-code=${course.courseCode},data-section=${course.section},data-title=${course.title},data-course-id=${course.courseId}"
-                                th:disabled="${course.enrolledCount >= course.maxCount}"
-                                th:data-full="${course.enrolledCount >= course.maxCount}"
+                                th:disabled="${!course.open or course.enrolledCount >= course.maxCount}"
+                                th:data-full="${!course.open or course.enrolledCount >= course.maxCount}"
                                 onclick="toggleApply(this)"
-                                th:text="${course.enrolledCount >= course.maxCount} ? '신청불가' : '신청'">신청</button>
+                                th:text="${!course.open} ? '모집마감' : (course.enrolledCount >= course.maxCount ? '신청불가' : '신청')">신청</button>
                     </td>
                     <td th:text="${course.courseCode}"></td>
                     <td th:text="${course.job}"></td>

@@ -41,7 +41,8 @@ public interface CourseSessionJpaRepository extends JpaRepository<CourseSessionE
                    TIME_FORMAT(cs.start_time, '%H:%i') AS startTime,
                    TIME_FORMAT(cs.end_time, '%H:%i') AS endTime,
                    '' AS dayNight,
-                   CASE WHEN cs.enrolled_count >= COALESCE(c.capacity, cs.max_count) THEN '신청불가' ELSE '신청가능' END AS note
+                   CASE WHEN cs.enrolled_count >= COALESCE(c.capacity, cs.max_count) THEN '신청불가' ELSE '신청가능' END AS note,
+                   COALESCE(c.status, 'OPEN') AS courseStatus
             FROM course_sessions cs
             JOIN courses c ON cs.course_id = c.id
             ORDER BY FIELD(cs.day_of_week, '월','화','수','목','금','토','일'), cs.start_time

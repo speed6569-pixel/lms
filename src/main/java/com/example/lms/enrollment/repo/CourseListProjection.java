@@ -18,4 +18,5 @@ public interface CourseListProjection {
     String getEndTime();
     String getDayNight();
     String getNote();
+    String getCourseStatus();
 }

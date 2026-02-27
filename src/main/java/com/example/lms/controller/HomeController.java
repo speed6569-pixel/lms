@@ -216,7 +216,8 @@ public class HomeController {
             String scheduleText = buildScheduleText(g);
             int maxCount = first.getMaxCount() == null ? 0 : first.getMaxCount();
             int enrolled = enrollCountMap.getOrDefault(first.getCourseCode(), 0);
-            String note = enrolled >= maxCount && maxCount > 0 ? "신청불가" : "신청가능";
+            boolean open = "OPEN".equalsIgnoreCase(first.getCourseStatus());
+            String note = !open ? "모집마감" : (enrolled >= maxCount && maxCount > 0 ? "신청불가" : "신청가능");
 
             out.add(new Course(
                     0, "", "", "", first.getTitle(), "",
@@ -226,7 +227,8 @@ public class HomeController {
                     first.getJob(), first.getPosition(),
                     enrolled, maxCount,
                     first.getPrice(),
-                    first.getCourseId()
+                    first.getCourseId(),
+                    open
             ));
         }
         return out;
@@ -341,7 +343,8 @@ public class HomeController {
             int enrolledCount,
             int maxCount,
             String price,
-            Long courseId
+            Long courseId,
+            boolean open
     ) {
     }
 }

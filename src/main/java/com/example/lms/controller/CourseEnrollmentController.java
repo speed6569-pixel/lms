@@ -1,5 +1,6 @@
 package com.example.lms.controller;
 
+import com.example.lms.admin.repo.CourseJpaRepository;
 import com.example.lms.enrollment.entity.EnrollmentEntity;
 import com.example.lms.enrollment.repo.CourseSessionJpaRepository;
 import com.example.lms.enrollment.repo.EnrollmentJpaRepository;
@@ -21,13 +22,16 @@ public class CourseEnrollmentController {
 
     private final EnrollmentJpaRepository enrollmentJpaRepository;
     private final CourseSessionJpaRepository courseSessionJpaRepository;
+    private final CourseJpaRepository courseJpaRepository;
     private final UserJpaRepository userJpaRepository;
 
     public CourseEnrollmentController(EnrollmentJpaRepository enrollmentJpaRepository,
                                       CourseSessionJpaRepository courseSessionJpaRepository,
+                                      CourseJpaRepository courseJpaRepository,
                                       UserJpaRepository userJpaRepository) {
         this.enrollmentJpaRepository = enrollmentJpaRepository;
         this.courseSessionJpaRepository = courseSessionJpaRepository;
+        this.courseJpaRepository = courseJpaRepository;
         this.userJpaRepository = userJpaRepository;
     }
 
@@ -40,6 +44,14 @@ public class CourseEnrollmentController {
         Long userId = userJpaRepository.findByLoginId(authentication.getName()).map(u -> u.getId()).orElse(null);
         if (userId == null) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "사용자 정보를 찾을 수 없습니다."));
+        }
+
+        var course = courseJpaRepository.findById(courseId).orElse(null);
+        if (course == null) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "강의를 찾을 수 없습니다."));
+        }
+        if (!"OPEN".equalsIgnoreCase(course.getStatus())) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "모집 마감 강의입니다."));
         }
 
         if (enrollmentJpaRepository.existsByUserIdAndCourseIdAndStatusIn(userId, courseId, List.of("APPLIED", "WAITLIST", "APPROVED", "RUNNING"))) {
