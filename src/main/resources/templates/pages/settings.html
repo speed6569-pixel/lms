@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>계정 설정</title>
+    <link rel="stylesheet" th:href="@{/css/header-profile.css}">
+    <link rel="stylesheet" th:href="@{/css/settings.css}">
+    <script defer th:src="@{/js/header-profile.js}"></script>
+    <script defer th:src="@{/js/settings.js}"></script>
+</head>
+<body>
+<div th:replace="~{fragments/header :: siteHeader(${userName}, ${userEmail})}"></div>
+
+<main class="settings-wrap">
+    <aside class="settings-left card">
+        <div class="profile-card">
+            <div class="avatar" id="profileAvatar">U</div>
+            <h2 id="profileName">사용자</h2>
+            <p id="profileEmail">-</p>
+        </div>
+
+        <nav class="menu-list">
+            <button class="menu-btn active" data-menu="profile">내 프로필</button>
+            <button class="menu-btn" data-menu="security">보안 설정</button>
+            <button class="menu-btn" data-menu="activity">활동 관리</button>
+            <button class="menu-btn" data-menu="admin" sec:authorize="hasRole('ADMIN')">관리자 메뉴</button>
+        </nav>
+    </aside>
+
+    <section class="settings-right">
+        <div class="card panel active" data-panel="profile">
+            <h3>내 프로필</h3>
+            <div class="field-grid">
+                <label>이름 <input id="nameInput" type="text"></label>
+                <label>전화번호 <input id="phoneInput" type="text"></label>
+                <label>이메일 <input id="emailInput" type="text" disabled></label>
+            </div>
+            <div class="row-actions">
+                <button id="saveProfileBtn" class="btn primary">저장</button>
+                <button id="withdrawBtn" class="btn danger">회원 탈퇴</button>
+            </div>
+        </div>
+
+        <div class="card panel" data-panel="security">
+            <h3>보안 설정</h3>
+            <div class="field-grid">
+                <label>현재 비밀번호 <input id="currentPw" type="password"></label>
+                <label>새 비밀번호 <input id="newPw" type="password"></label>
+            </div>
+            <div class="toggle-line">
+                <span>2단계 인증</span>
+                <label class="switch"><input type="checkbox" id="twoFactor"><span class="slider"></span></label>
+            </div>
+            <div class="row-actions">
+                <button id="changePwBtn" class="btn primary">비밀번호 변경</button>
+            </div>
+        </div>
+
+        <div class="card panel" data-panel="activity">
+            <h3>활동 관리</h3>
+            <h4>최근 로그인 기록</h4>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>시간</th><th>IP</th><th>브라우저</th></tr></thead>
+                    <tbody id="loginHistoryBody"></tbody>
+                </table>
+            </div>
+
+            <h4>접속 기기</h4>
+            <ul id="deviceList" class="device-list"></ul>
+        </div>
+
+        <div class="card panel" data-panel="admin" sec:authorize="hasRole('ADMIN')">
+            <h3>관리자 메뉴</h3>
+            <p>관리자 전용 메뉴 영역입니다.</p>
+            <a href="/admin/dashboard" class="btn primary" style="display:inline-block;">관리자 대시보드 이동</a>
+        </div>
+    </section>
+</main>
+</body>
+</html>

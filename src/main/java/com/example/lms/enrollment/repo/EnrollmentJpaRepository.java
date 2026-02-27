@@ -2,6 +2,7 @@ package com.example.lms.enrollment.repo;
 
 import com.example.lms.enrollment.entity.EnrollmentEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -104,5 +105,25 @@ public interface EnrollmentJpaRepository extends JpaRepository<EnrollmentEntity,
             """, nativeQuery = true)
     List<TimetableBlockProjection> findTimetableByStatuses(@Param("userId") Long userId,
                                                            @Param("statuses") Set<String> statuses);
+
+    @Modifying
+    @Query(value = """
+            DELETE ar FROM attendance_records ar
+            JOIN enrollments e ON e.id = ar.enrollment_id
+            WHERE e.user_id = :userId
+            """, nativeQuery = true)
+    int deleteAttendanceByUserId(@Param("userId") Long userId);
+
+    @Modifying
+    @Query(value = """
+            DELETE pr FROM progress_records pr
+            JOIN enrollments e ON e.id = pr.enrollment_id
+            WHERE e.user_id = :userId
+            """, nativeQuery = true)
+    int deleteProgressByUserId(@Param("userId") Long userId);
+
+    @Modifying
+    @Query(value = "DELETE FROM enrollments WHERE user_id = :userId", nativeQuery = true)
+    int deleteEnrollmentsByUserId(@Param("userId") Long userId);
 }
 

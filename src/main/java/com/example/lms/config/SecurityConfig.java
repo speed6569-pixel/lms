@@ -2,6 +2,7 @@ package com.example.lms.config;
 
 import com.example.lms.auth.service.CustomUserDetailsService;
 import com.example.lms.enrollment.repo.UserJpaRepository;
+import com.example.lms.settings.service.SettingsService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,11 +24,14 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
     private final UserJpaRepository userJpaRepository;
+    private final SettingsService settingsService;
 
     public SecurityConfig(CustomUserDetailsService userDetailsService,
-                          UserJpaRepository userJpaRepository) {
+                          UserJpaRepository userJpaRepository,
+                          SettingsService settingsService) {
         this.userDetailsService = userDetailsService;
         this.userJpaRepository = userJpaRepository;
+        this.settingsService = settingsService;
     }
 
     @Bean
@@ -43,7 +47,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/homepage", "/login", "/signup", "/signup/**", "/css/**", "/js/**", "/images/**").permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
-                .requestMatchers("/user/**", "/enroll/**", "/enrollments/**", "/api/me/**", "/payments", "/settings")
+                .requestMatchers("/user/**", "/enroll/**", "/enrollments/**", "/api/me/**", "/api/settings/**", "/payments", "/settings")
                     .hasAnyRole("USER", "ADMIN")
                 .anyRequest().authenticated()
             )
@@ -86,6 +90,10 @@ public class SecurityConfig {
             session.setAttribute("loginUserEmail", loginId);
             session.setAttribute("loginUserRole", u.getRole());
         });
+
+        String xff = request.getHeader("X-Forwarded-For");
+        String ipAddress = (xff != null && !xff.isBlank()) ? xff.split(",")[0].trim() : request.getRemoteAddr();
+        settingsService.saveLoginHistory(loginId, ipAddress, request.getHeader("User-Agent"));
 
         RequestCache requestCache = new HttpSessionRequestCache();
         SavedRequest savedRequest = requestCache.getRequest(request, response);
