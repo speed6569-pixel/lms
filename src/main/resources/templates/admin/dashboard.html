@@ -121,7 +121,6 @@
       <input class='ss-start' type='time' value='${v.startTime||"09:00"}'>
       <span>~</span>
       <input class='ss-end' type='time' value='${v.endTime||"11:00"}'>
-      <input class='ss-room' placeholder='강의실' value='${v.room||""}'>
       <button type='button' class='action' style='background:#ef4444' onclick='this.parentElement.remove()'>세션 삭제</button>
     `;
     wrap.appendChild(el);
@@ -131,7 +130,7 @@
       dayOfWeek:r.querySelector('.ss-day').value,
       startTime:r.querySelector('.ss-start').value,
       endTime:r.querySelector('.ss-end').value,
-      room:r.querySelector('.ss-room').value || null
+      room:null
     }));
   }
   async function createCourse(){
