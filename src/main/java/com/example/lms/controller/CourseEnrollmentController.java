@@ -6,8 +6,10 @@ import com.example.lms.enrollment.entity.EnrollmentEntity;
 import com.example.lms.enrollment.repo.CourseSessionJpaRepository;
 import com.example.lms.enrollment.repo.EnrollmentJpaRepository;
 import com.example.lms.enrollment.repo.UserJpaRepository;
+import com.example.lms.payments.service.PaymentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,15 +27,42 @@ public class CourseEnrollmentController {
     private final CourseSessionJpaRepository courseSessionJpaRepository;
     private final CourseJpaRepository courseJpaRepository;
     private final UserJpaRepository userJpaRepository;
+    private final PaymentService paymentService;
 
     public CourseEnrollmentController(EnrollmentJpaRepository enrollmentJpaRepository,
                                       CourseSessionJpaRepository courseSessionJpaRepository,
                                       CourseJpaRepository courseJpaRepository,
-                                      UserJpaRepository userJpaRepository) {
+                                      UserJpaRepository userJpaRepository,
+                                      PaymentService paymentService) {
         this.enrollmentJpaRepository = enrollmentJpaRepository;
         this.courseSessionJpaRepository = courseSessionJpaRepository;
         this.courseJpaRepository = courseJpaRepository;
         this.userJpaRepository = userJpaRepository;
+        this.paymentService = paymentService;
+    }
+
+    @GetMapping("/{courseId}/preview")
+    public ResponseEntity<Map<String, Object>> preview(@PathVariable Long courseId) {
+        var course = courseJpaRepository.findById(courseId).orElse(null);
+        if (course == null) return ResponseEntity.badRequest().body(Map.of("success", false, "message", "강의를 찾을 수 없습니다."));
+        List<CourseSessionEntity> sessions = courseSessionJpaRepository.findByCourseId(courseId);
+        String schedule = sessions.stream()
+                .sorted(Comparator.comparing(CourseSessionEntity::getDayOfWeek).thenComparing(CourseSessionEntity::getStartTime))
+                .map(s -> s.getDayOfWeek() + " " + formatTime(s.getStartTime()) + "~" + formatTime(s.getEndTime()))
+                .reduce((a,b) -> a + ", " + b).orElse("-");
+        int capacity = Optional.ofNullable(course.getCapacity()).orElse(0);
+        long current = enrollmentJpaRepository.countByCourseIdAndStatusIn(courseId, List.of("APPLIED", "WAITLIST", "APPROVED", "RUNNING"));
+
+        return ResponseEntity.ok(Map.of(
+                "courseId", courseId,
+                "subjectCode", Optional.ofNullable(course.getSubjectCode()).orElse(course.getCourseCode()),
+                "subjectName", Optional.ofNullable(course.getSubjectName()).orElse(course.getTitle()),
+                "instructor", Optional.ofNullable(course.getInstructor()).orElse(course.getProfessor()),
+                "scheduleText", schedule,
+                "price", Optional.ofNullable(course.getPrice()).orElse(0),
+                "current", current,
+                "capacity", capacity
+        ));
     }
 
     @PostMapping("/{courseId}/enroll")
@@ -57,6 +86,11 @@ public class CourseEnrollmentController {
 
         if (enrollmentJpaRepository.existsByUserIdAndCourseId(userId, courseId)) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "이미 신청 이력이 있는 강의입니다. 중복 신청할 수 없습니다."));
+        }
+
+        long amount = Optional.ofNullable(course.getPrice()).orElse(0);
+        if (amount > 0 && !paymentService.hasPaid(userId, courseId)) {
+            return ResponseEntity.status(403).body(Map.of("success", false, "message", "결제 완료 후 신청할 수 있습니다."));
         }
 
         List<CourseSessionEntity> newSessions = courseSessionJpaRepository.findByCourseId(courseId);
