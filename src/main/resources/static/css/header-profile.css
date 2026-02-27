@@ -16,7 +16,7 @@
 .profile-dropdown {
   display: none; position: absolute; right: 0; top: 46px;
   min-width: 180px; background: #fff; border: 1px solid #dbe3ef;
-  border-radius: 10px; box-shadow: 0 8px 20px rgba(0,0,0,.08); z-index: 1000;
+  border-radius: 10px; box-shadow: 0 8px 20px rgba(0,0,0,.08); z-index: 99999;
   overflow: hidden;
 }
 .profile-dropdown.open { display: block; }
