@@ -7,11 +7,6 @@
     <link rel="stylesheet" th:href="@{/css/page.css}">
     <link rel="stylesheet" th:href="@{/css/header-profile.css}">
     <script defer th:src="@{/js/header-profile.js}"></script>
-    <style>
-      .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;z-index:9998}
-      .modal-box{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,92vw);background:#fff;border-radius:12px;padding:16px;display:none;z-index:9999}
-      .modal-row{display:flex;justify-content:space-between;border-bottom:1px solid #eee;padding:7px 0}
-    </style>
 </head>
 <body>
 <div th:replace="~{fragments/header :: siteHeader(${userName}, ${userEmail})}"></div>
@@ -106,26 +101,6 @@
     </section>
 </main>
 
-<div id="enrollModalBackdrop" class="modal-backdrop"></div>
-<div id="enrollModal" class="modal-box">
-  <h3>수강신청 확인</h3>
-  <div class="modal-row"><span>과목코드</span><strong id="mCode">-</strong></div>
-  <div class="modal-row"><span>교과목명</span><strong id="mTitle">-</strong></div>
-  <div class="modal-row"><span>담당교수</span><strong id="mInstructor">-</strong></div>
-  <div class="modal-row"><span>강의시간</span><strong id="mSchedule">-</strong></div>
-  <div class="modal-row"><span>인원제한</span><strong id="mCapacity">-</strong></div>
-  <div class="modal-row"><span>가격</span><strong id="mPrice">-</strong></div>
-  <div id="paidArea" style="display:none; margin-top:10px;">
-    <label>결제수단
-      <select id="mProvider"><option value="CARD">카드결제</option><option value="VBANK">가상계좌</option></select>
-    </label>
-  </div>
-  <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:12px;">
-    <button type="button" class="btn-primary" style="background:#6b7280" onclick="closeEnrollModal()">닫기</button>
-    <button type="button" class="btn-primary" id="mConfirmBtn">신청 확정</button>
-  </div>
-</div>
-
 <script>
     const tabOpen = document.getElementById('tabOpen');
     const tabHistory = document.getElementById('tabHistory');
@@ -140,10 +115,6 @@
     const weeklyEvents = document.getElementById('weeklyEvents');
     const filterForm = document.querySelector('#openPanel form.filter-grid');
     const enrolledMap = new Map();
-    const enrollModal = document.getElementById('enrollModal');
-    const enrollModalBackdrop = document.getElementById('enrollModalBackdrop');
-    let pendingApplyButton = null;
-    let pendingCourseId = null;
     const courseRows = Array.from(document.querySelectorAll('#courseTableBody .course-row'));
     const noResultRow = document.getElementById('noResultRow');
     const searchBtn = document.getElementById('searchBtn');
@@ -332,86 +303,34 @@
       });
     }
 
-    async function openEnrollModal(button){
-      pendingApplyButton = button;
-      pendingCourseId = button.dataset.courseId;
-      const preview = await (await fetch(`/courses/${pendingCourseId}/preview`)).json();
-      if (preview.message) { alert(preview.message); return; }
-
-      document.getElementById('mCode').textContent = preview.subjectCode || '-';
-      document.getElementById('mTitle').textContent = preview.subjectName || '-';
-      document.getElementById('mInstructor').textContent = preview.instructor || '-';
-      document.getElementById('mSchedule').textContent = preview.scheduleText || '-';
-      document.getElementById('mCapacity').textContent = `${preview.current || 0}/${preview.capacity || 0}`;
-      document.getElementById('mPrice').textContent = Number(preview.price||0) === 0 ? '무료 강의' : `${Number(preview.price).toLocaleString()}원`;
-
-      const paid = Number(preview.price||0) > 0;
-      document.getElementById('paidArea').style.display = paid ? '' : 'none';
-      document.getElementById('mConfirmBtn').textContent = paid ? '결제 후 신청' : '신청 확정';
-
-      enrollModalBackdrop.style.display = 'block';
-      enrollModal.style.display = 'block';
-    }
-
-    enrollModalBackdrop.addEventListener('click', () => closeEnrollModal());
-
-    window.closeEnrollModal = function(){
-      enrollModal.style.display = 'none';
-      enrollModalBackdrop.style.display = 'none';
-      pendingApplyButton = null;
-      pendingCourseId = null;
-    }
-
-    document.getElementById('mConfirmBtn').addEventListener('click', async () => {
-      if (!pendingCourseId) return;
-
-      const code = pendingApplyButton?.dataset?.code;
-      const key = keyOf(code);
-
-      const preview = await (await fetch(`/courses/${pendingCourseId}/preview`)).json();
-      const paidCourse = Number(preview.price||0) > 0;
-
-      if (paidCourse) {
-        const provider = document.getElementById('mProvider').value;
-        const prepared = await (await fetch('/payments/prepare', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({courseId: Number(pendingCourseId), provider})
-        })).json();
-        if (!prepared.paymentId) { alert(prepared.message || '결제 준비 실패'); return; }
-
-        const confirmed = await (await fetch('/payments/confirm', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({paymentId: prepared.paymentId, providerTxId: 'SANDBOX-TX-' + prepared.paymentId})
-        })).json();
-        if (!confirmed.success) { alert(confirmed.message || '결제 실패'); return; }
-      }
-
-      const res = await fetch(`/courses/${pendingCourseId}/enroll`, { method: 'POST' });
-      const result = await res.json().catch(()=>({success:false,message:'신청 처리 중 오류가 발생했습니다.'}));
-      alert(result.message || (result.success ? '처리 완료' : '처리 실패'));
-
-      closeEnrollModal();
-      await loadState();
-      renderHistory();
-      syncApplyButtons();
-    });
-
     window.toggleApply = async function(button){
       if (button.disabled || button.dataset.full === 'true') return;
       const code = button.dataset.code;
+      const section = button.dataset.section;
       const key = keyOf(code);
 
+      let res;
       if (!enrolledMap.has(key)) {
-        await openEnrollModal(button);
+        const courseId = button.dataset.courseId;
+        if (courseId) {
+          res = await fetch(`/courses/${courseId}/enroll`, { method: 'POST' });
+        } else {
+          res = await fetch('/enroll/apply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ courseCode: code, section }).toString()
+          });
+        }
       } else {
         const enrollmentId = enrolledMap.get(key)?.enrollmentId;
-        const res = await fetch(`/api/me/enrollments/${enrollmentId}/cancel`, { method: 'POST' });
-        const result = await res.json().catch(()=>({success:false,message:'취소 처리 중 오류'}));
-        alert(result.message || (result.success ? '취소 완료' : '취소 실패'));
-        await loadState();
-        renderHistory();
-        syncApplyButtons();
+        res = await fetch(`/api/me/enrollments/${enrollmentId}/cancel`, { method: 'POST' });
       }
+      const result = await res.json().catch(()=>({success:false,message:'신청 처리 중 오류가 발생했습니다.'}));
+      alert(result.message || (result.success ? '처리 완료' : '처리 실패'));
+
+      await loadState();
+      renderHistory();
+      syncApplyButtons();
     }
 
     window.cancelFromHistory = async function(enrollmentId){
