@@ -11,14 +11,6 @@ import com.example.lms.enrollment.repo.CourseSessionJpaRepository;
 import com.example.lms.enrollment.repo.EnrollmentJpaRepository;
 import com.example.lms.enrollment.repo.UserJpaRepository;
 import com.example.lms.enrollment.service.PointService;
-import com.example.lms.learn.entity.LessonEntity;
-import com.example.lms.learn.repo.LessonJpaRepository;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +28,6 @@ public class AdminService {
     private final UserJpaRepository userJpaRepository;
     private final AuditLogJpaRepository auditLogJpaRepository;
     private final PointService pointService;
-    private final LessonJpaRepository lessonJpaRepository;
 
     public AdminService(CourseJpaRepository courseJpaRepository,
                         AdminCourseSessionJpaRepository adminCourseSessionJpaRepository,
@@ -46,8 +37,7 @@ public class AdminService {
                         ProgressRecordJpaRepository progressRecordJpaRepository,
                         UserJpaRepository userJpaRepository,
                         AuditLogJpaRepository auditLogJpaRepository,
-                        PointService pointService,
-                        LessonJpaRepository lessonJpaRepository) {
+                        PointService pointService) {
         this.courseJpaRepository = courseJpaRepository;
         this.adminCourseSessionJpaRepository = adminCourseSessionJpaRepository;
         this.courseSessionJpaRepository = courseSessionJpaRepository;
@@ -57,7 +47,6 @@ public class AdminService {
         this.userJpaRepository = userJpaRepository;
         this.auditLogJpaRepository = auditLogJpaRepository;
         this.pointService = pointService;
-        this.lessonJpaRepository = lessonJpaRepository;
     }
 
     @Transactional
@@ -120,19 +109,6 @@ public class AdminService {
             s.setEnrolledCount(0);
             s.setStatus("OPEN");
             adminCourseSessionJpaRepository.save(s);
-        }
-
-        List<AdminDtos.LessonInput> lessons = req.lessons() == null ? List.of() : req.lessons();
-        for (AdminDtos.LessonInput li : lessons) {
-            if (li.videoUrl() == null || li.videoUrl().isBlank()) continue;
-            LessonEntity lesson = new LessonEntity();
-            lesson.setCourseId(saved.getId());
-            lesson.setTitle((li.title() == null || li.title().isBlank()) ? "차시" : li.title().trim());
-            lesson.setDescription(li.description());
-            lesson.setVideoUrl(li.videoUrl().trim());
-            lesson.setOrderNo(li.orderNo() == null ? 1 : li.orderNo());
-            lesson.setThumbnailUrl(li.thumbnailUrl());
-            lessonJpaRepository.save(lesson);
         }
 
         audit(adminUserId, "CREATE_COURSE", "COURSE", saved.getId(), ip, req.toString());
@@ -454,61 +430,6 @@ public class AdminService {
             parts.add(e.getKey() + " " + h + "시간");
         }
         return String.join(" / ", parts);
-    }
-
-    @Transactional(readOnly = true)
-    public List<LessonEntity> getLessons(Long courseId) {
-        return lessonJpaRepository.findByCourseIdOrderByOrderNoAsc(courseId);
-    }
-
-    @Transactional
-    public Map<String, Object> addLessons(Long courseId, List<AdminDtos.LessonInput> lessons) {
-        if (lessons == null || lessons.isEmpty()) throw new IllegalArgumentException("추가할 차시가 없습니다.");
-        if (!courseJpaRepository.existsById(courseId)) throw new IllegalArgumentException("강의를 찾을 수 없습니다.");
-
-        int added = 0;
-        for (AdminDtos.LessonInput li : lessons) {
-            if (li.videoUrl() == null || li.videoUrl().isBlank()) continue;
-            LessonEntity lesson = new LessonEntity();
-            lesson.setCourseId(courseId);
-            lesson.setTitle((li.title() == null || li.title().isBlank()) ? "차시" : li.title().trim());
-            lesson.setDescription(li.description());
-            lesson.setVideoUrl(li.videoUrl().trim());
-            lesson.setOrderNo(li.orderNo() == null ? 1 : li.orderNo());
-            lesson.setThumbnailUrl(li.thumbnailUrl());
-            lessonJpaRepository.save(lesson);
-            added++;
-        }
-        return Map.of("success", true, "added", added);
-    }
-
-    @Transactional
-    public Map<String, Object> deleteLesson(Long courseId, Long lessonId) {
-        lessonJpaRepository.deleteByIdAndCourseId(lessonId, courseId);
-        return Map.of("success", true);
-    }
-
-    @Transactional
-    public Map<String, Object> uploadVideo(MultipartFile file) {
-        if (file == null || file.isEmpty()) throw new IllegalArgumentException("업로드할 파일이 없습니다.");
-
-        String original = file.getOriginalFilename() == null ? "video.mp4" : file.getOriginalFilename();
-        String lower = original.toLowerCase();
-        if (!(lower.endsWith(".mp4") || lower.endsWith(".webm") || lower.endsWith(".mov"))) {
-            throw new IllegalArgumentException("동영상 파일(mp4/webm/mov)만 업로드할 수 있습니다.");
-        }
-
-        try {
-            Path dir = Path.of("/home/ubuntu/project/lms/uploads/videos");
-            Files.createDirectories(dir);
-            String ext = lower.substring(lower.lastIndexOf('.'));
-            String savedName = java.util.UUID.randomUUID().toString().replace("-", "") + ext;
-            Path target = dir.resolve(savedName);
-            Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
-            return Map.of("success", true, "url", "/media/videos/" + savedName, "filename", savedName);
-        } catch (IOException e) {
-            throw new IllegalArgumentException("파일 업로드에 실패했습니다.");
-        }
     }
 
     private void audit(Long actorUserId, String action, String targetType, Long targetId, String ip, String afterJson) {

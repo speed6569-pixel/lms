@@ -68,22 +68,9 @@
                 </div>
                 <input id="cStart" type="time" value="09:00">
                 <input id="cEnd" type="time" value="11:00">
-                <button type="button" class="action" onclick="addLessonRow()">차시 추가</button>
                 <button class="action" onclick="createCourse()">강의 생성</button>
             </div>
-            <div id="lessonRows" class="row" style="display:grid;grid-template-columns:1fr;gap:8px;"></div>
-            <table><thead><tr><th>신청</th><th>ID</th><th>과목코드</th><th>직군</th><th>직급</th><th>교과목명</th><th>교수</th><th>강의 시간</th><th>가격</th><th>인원제한</th><th>영상관리</th><th>삭제</th></tr></thead><tbody id="courseBody"></tbody></table>
-
-            <div id="lessonManager" style="display:none;margin-top:14px;border:1px solid #dbeafe;border-radius:12px;padding:12px;background:#f8fbff;">
-                <h3 id="lmTitle" style="margin:0 0 10px 0;">차시/영상 관리</h3>
-                <div id="lmList" style="margin-bottom:10px;"></div>
-                <div id="lmRows" class="row" style="display:grid;grid-template-columns:1fr;gap:8px;"></div>
-                <div class="row">
-                    <button type="button" class="action" onclick="addExistingLessonRow()">차시 추가</button>
-                    <button type="button" class="action" onclick="saveExistingLessons()">저장</button>
-                    <button type="button" class="action" style="background:#6b7280" onclick="closeLessonManager()">닫기</button>
-                </div>
-            </div>
+            <table><thead><tr><th>신청</th><th>ID</th><th>과목코드</th><th>직군</th><th>직급</th><th>교과목명</th><th>교수</th><th>강의 시간</th><th>가격</th><th>인원제한</th><th>삭제</th></tr></thead><tbody id="courseBody"></tbody></table>
         </div>
 
         <div id="sec-enrollments" class="section">
@@ -126,7 +113,7 @@
   }
   async function loadCourses(){
     const rows = await (await fetch('/admin/api/courses')).json();
-    document.getElementById('courseBody').innerHTML = rows.map(v=>`<tr><td><button class='action' onclick="toggleStatus(${v.id},'${v.status||'OPEN'}')">${v.applyStatus||'모집중'}</button></td><td>${v.id}</td><td>${v.subjectCode||''}</td><td>${v.jobGroup||''}</td><td>${v.jobLevel||''}</td><td>${v.subjectName||''}</td><td>${v.instructor||''}</td><td>${v.classTime||'-'}</td><td>${v.price||0}</td><td>${v.capacity||0}</td><td><button class='action' style='background:#0ea5e9' onclick="openLessonManager(${v.id},'${(v.subjectName||'').replace(/'/g,"\\'")}')">관리</button></td><td><button class='action' style='background:#ef4444' onclick='deleteCourse(${v.id})'>삭제</button></td></tr>`).join('');
+    document.getElementById('courseBody').innerHTML = rows.map(v=>`<tr><td><button class='action' onclick="toggleStatus(${v.id},'${v.status||'OPEN'}')">${v.applyStatus||'모집중'}</button></td><td>${v.id}</td><td>${v.subjectCode||''}</td><td>${v.jobGroup||''}</td><td>${v.jobLevel||''}</td><td>${v.subjectName||''}</td><td>${v.instructor||''}</td><td>${v.classTime||'-'}</td><td>${v.price||0}</td><td>${v.capacity||0}</td><td><button class='action' style='background:#ef4444' onclick='deleteCourse(${v.id})'>삭제</button></td></tr>`).join('');
   }
   function currentDayMode(){ return document.querySelector('input[name="dayMode"]:checked')?.value || 'MULTI'; }
   function toggleDayMode(){
@@ -135,122 +122,10 @@
     document.getElementById('rangeDayBox').style.display = mode==='RANGE' ? '' : 'none';
   }
 
-  let lessonCourseId = null;
-
-  async function openLessonManager(courseId, courseName){
-    lessonCourseId = courseId;
-    document.getElementById('lessonManager').style.display='block';
-    document.getElementById('lmTitle').textContent = `차시/영상 관리 - ${courseName || courseId}`;
-    document.getElementById('lmRows').innerHTML = '';
-    await loadLessonList();
-  }
-
-  function closeLessonManager(){
-    document.getElementById('lessonManager').style.display='none';
-    lessonCourseId = null;
-  }
-
-  async function loadLessonList(){
-    if(!lessonCourseId) return;
-    const rows = await (await fetch(`/admin/api/courses/${lessonCourseId}/lessons`)).json();
-    const box = document.getElementById('lmList');
-    if(!rows || rows.length===0){ box.innerHTML = `<div style='color:#6b7280;'>등록된 차시가 없습니다.</div>`; return; }
-    box.innerHTML = rows.map(l => `<div style='display:flex;justify-content:space-between;gap:8px;align-items:center;border-bottom:1px solid #e5e7eb;padding:6px 0;'><div><strong>${l.orderNo}. ${l.title}</strong><div style='font-size:12px;color:#6b7280;'>${l.videoUrl}</div></div><button class='action' style='background:#ef4444' onclick='deleteLesson(${l.id})'>삭제</button></div>`).join('');
-  }
-
-  async function deleteLesson(lessonId){
-    if(!lessonCourseId) return;
-    if(!confirm('해당 차시를 삭제하시겠습니까?')) return;
-    await fetch(`/admin/api/courses/${lessonCourseId}/lessons/${lessonId}`, { method:'DELETE' });
-    await loadLessonList();
-  }
-
-  function addExistingLessonRow(){
-    const box = document.getElementById('lmRows');
-    const idx = box.children.length + 1;
-    const row = document.createElement('div');
-    row.className='row';
-    row.style.border='1px solid #e5e7eb';
-    row.style.padding='8px';
-    row.style.borderRadius='10px';
-    row.innerHTML = `<input class='l-order' type='number' min='1' value='${idx}' style='width:90px'><input class='l-title' placeholder='차시명' style='min-width:180px'><input class='l-desc' placeholder='차시설명' style='min-width:260px'><input class='l-file' type='file' accept='video/mp4,video/webm,video/quicktime'><button type='button' class='action' style='background:#6b7280' onclick='this.closest(".row").remove()'>삭제</button>`;
-    box.appendChild(row);
-  }
-
-  async function saveExistingLessons(){
-    if(!lessonCourseId){ alert('강의를 먼저 선택하세요.'); return; }
-    const rows = [...document.querySelectorAll('#lmRows > .row')];
-    if(rows.length===0){ alert('추가할 차시를 입력하세요.'); return; }
-    const lessons = [];
-    for (const row of rows){
-      const title = row.querySelector('.l-title')?.value?.trim();
-      const description = row.querySelector('.l-desc')?.value?.trim();
-      const orderNo = Number(row.querySelector('.l-order')?.value || 1);
-      const file = row.querySelector('.l-file')?.files?.[0];
-      if (!title && !file) continue;
-      if (!file) { alert('차시 영상 파일을 선택하세요.'); return; }
-      const videoUrl = await uploadLessonVideo(file);
-      lessons.push({ title: title || '차시', description, orderNo, videoUrl });
-    }
-    if(lessons.length===0){ alert('업로드할 차시가 없습니다.'); return; }
-    const res = await fetch(`/admin/api/courses/${lessonCourseId}/lessons`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(lessons)});
-    const json = await res.json().catch(()=>({}));
-    if(!res.ok){ alert(json.message || '차시 저장 실패'); return; }
-    document.getElementById('lmRows').innerHTML='';
-    await loadLessonList();
-    alert('차시가 저장되었습니다.');
-  }
-
-  async function uploadLessonVideo(file){
-    const fd = new FormData();
-    fd.append('file', file);
-    const res = await fetch('/admin/api/uploads/video', { method:'POST', body: fd });
-    const json = await res.json().catch(()=>({}));
-    if(!res.ok || !json.url) throw new Error(json.message || '영상 업로드 실패');
-    return json.url;
-  }
-
-  function addLessonRow(){
-    const box = document.getElementById('lessonRows');
-    const idx = box.children.length + 1;
-    const row = document.createElement('div');
-    row.className = 'row';
-    row.style.border = '1px solid #e5e7eb';
-    row.style.padding = '8px';
-    row.style.borderRadius = '10px';
-    row.innerHTML = `
-      <input class='l-order' type='number' min='1' value='${idx}' placeholder='차시순서' style='width:90px'>
-      <input class='l-title' placeholder='차시명' style='min-width:180px'>
-      <input class='l-desc' placeholder='차시설명' style='min-width:260px'>
-      <input class='l-file' type='file' accept='video/mp4,video/webm,video/quicktime'>
-      <button type='button' class='action' style='background:#6b7280' onclick='this.closest(".row").remove()'>삭제</button>
-    `;
-    box.appendChild(row);
-  }
-
-  async function collectLessons(){
-    const rows = [...document.querySelectorAll('#lessonRows > .row')];
-    const lessons = [];
-    for (const row of rows){
-      const title = row.querySelector('.l-title')?.value?.trim();
-      const description = row.querySelector('.l-desc')?.value?.trim();
-      const orderNo = Number(row.querySelector('.l-order')?.value || 1);
-      const file = row.querySelector('.l-file')?.files?.[0];
-      if (!title && !file) continue;
-      if (!file) { alert('차시 영상 파일을 선택하세요.'); throw new Error('영상 파일 누락'); }
-      const videoUrl = await uploadLessonVideo(file);
-      lessons.push({ title: title || '차시', description, orderNo, videoUrl });
-    }
-    return lessons;
-  }
-
   async function createCourse(){
     const mode = currentDayMode();
     const days = [...document.querySelectorAll('.day-check:checked')].map(v=>v.value);
     if(mode==='MULTI' && days.length===0){ alert('요일을 1개 이상 선택하세요.'); return; }
-
-    let lessons = [];
-    try { lessons = await collectLessons(); } catch (e) { return; }
 
     await fetch('/admin/api/courses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
       subjectCode:cCode.value,jobGroup:cJobGroup.value,jobLevel:cJobLevel.value,subjectName:cTitle.value,instructor:cProfessor.value,
@@ -258,10 +133,8 @@
       dayMode:mode, days,
       startDay:document.getElementById('startDay').value,
       endDay:document.getElementById('endDay').value,
-      startTime:cStart.value,endTime:cEnd.value,
-      lessons
+      startTime:cStart.value,endTime:cEnd.value
     })});
-    document.getElementById('lessonRows').innerHTML='';
     await loadCourses(); await loadStats();
   }
   async function toggleStatus(id,current){
