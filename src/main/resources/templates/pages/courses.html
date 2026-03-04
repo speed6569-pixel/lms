@@ -52,7 +52,7 @@
                 <td th:text="${course.instructor}"></td>
                 <td th:text="${course.scheduleText}"></td>
                 <td th:text="${course.price}"></td>
-                <td th:text="${course.capacity}"></td>
+                <td th:text="|${course.enrolledCount}/${course.capacity}|"></td>
                 <td th:text="${course.openedDate}"></td>
             </tr>
             <tr th:if="${#lists.isEmpty(courses)}">

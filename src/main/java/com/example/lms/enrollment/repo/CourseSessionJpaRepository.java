@@ -57,7 +57,7 @@ public interface CourseSessionJpaRepository extends JpaRepository<CourseSessionE
             FROM enrollments e
             JOIN course_sessions cs ON cs.id = e.course_session_id
             JOIN courses c ON c.id = cs.course_id
-            WHERE e.status IN ('APPROVED','ENROLLED','RUNNING','REQUESTED')
+            WHERE e.status IN ('APPLIED','WAITLIST','APPROVED','RUNNING')
             GROUP BY c.course_code
             """, nativeQuery = true)
     List<CourseEnrollmentCountProjection> findCourseEnrollmentCounts();

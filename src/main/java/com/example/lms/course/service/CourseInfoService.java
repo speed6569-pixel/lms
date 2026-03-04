@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,10 @@ public class CourseInfoService {
     public List<CourseInfoRowDto> getCourseInfoRows(String keyword, String jobGroup, String jobLevel) {
         List<CourseListProjection> rows = courseSessionJpaRepository.findAllCourseRows();
 
+        Map<String, Integer> enrollCountMap = new HashMap<>();
+        courseSessionJpaRepository.findCourseEnrollmentCounts()
+                .forEach(v -> enrollCountMap.put(v.getCourseCode(), v.getEnrolledCount() == null ? 0 : v.getEnrolledCount()));
+
         Map<Long, List<CourseListProjection>> grouped = new LinkedHashMap<>();
         for (CourseListProjection r : rows) {
             if (!"OPEN".equalsIgnoreCase(r.getCourseStatus()) && !"CLOSED".equalsIgnoreCase(r.getCourseStatus())) continue;
@@ -32,24 +37,28 @@ public class CourseInfoService {
         }
 
         return grouped.values().stream()
-                .map(this::toDto)
+                .map(v -> toDto(v, enrollCountMap))
                 .filter(v -> isBlank(jobGroup) || equalsIgnoreCase(v.jobGroup(), jobGroup))
                 .filter(v -> isBlank(jobLevel) || equalsIgnoreCase(v.jobLevel(), jobLevel))
                 .filter(v -> isBlank(keyword) || contains(v, keyword))
                 .toList();
     }
 
-    private CourseInfoRowDto toDto(List<CourseListProjection> sessions) {
+    private CourseInfoRowDto toDto(List<CourseListProjection> sessions, Map<String, Integer> enrollCountMap) {
         CourseListProjection first = sessions.get(0);
+        String courseCode = emptyToDash(first.getCourseCode());
+        int capacity = first.getMaxCount() == null ? 0 : first.getMaxCount();
+        int enrolled = enrollCountMap.getOrDefault(first.getCourseCode(), 0);
         return new CourseInfoRowDto(
-                emptyToDash(first.getCourseCode()),
+                courseCode,
                 emptyToDash(first.getJob()),
                 emptyToDash(first.getPosition()),
                 emptyToDash(first.getTitle()),
                 emptyToDash(first.getProfessor()),
                 buildScheduleText(sessions),
                 emptyToDash(first.getPrice()),
-                first.getMaxCount() == null ? 0 : first.getMaxCount(),
+                enrolled,
+                capacity,
                 emptyToDash(first.getCreatedAt())
         );
     }

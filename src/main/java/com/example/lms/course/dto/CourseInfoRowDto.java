@@ -8,6 +8,7 @@ public record CourseInfoRowDto(
         String instructor,
         String scheduleText,
         String price,
+        int enrolledCount,
         int capacity,
         String openedDate
 ) {
