@@ -19,4 +19,5 @@ public interface CourseListProjection {
     String getDayNight();
     String getNote();
     String getCourseStatus();
+    String getCreatedAt();
 }

@@ -1,5 +1,6 @@
 package com.example.lms.controller;
 
+import com.example.lms.course.service.CourseInfoService;
 import com.example.lms.enrollment.repo.CourseListProjection;
 import com.example.lms.enrollment.repo.CourseSessionJpaRepository;
 import com.example.lms.enrollment.repo.EnrollmentJpaRepository;
@@ -25,15 +26,18 @@ public class HomeController {
     private final EnrollmentJpaRepository enrollmentJpaRepository;
     private final UserJpaRepository userJpaRepository;
     private final PointTransactionJpaRepository pointTransactionJpaRepository;
+    private final CourseInfoService courseInfoService;
 
     public HomeController(CourseSessionJpaRepository courseSessionJpaRepository,
                           EnrollmentJpaRepository enrollmentJpaRepository,
                           UserJpaRepository userJpaRepository,
-                          PointTransactionJpaRepository pointTransactionJpaRepository) {
+                          PointTransactionJpaRepository pointTransactionJpaRepository,
+                          CourseInfoService courseInfoService) {
         this.courseSessionJpaRepository = courseSessionJpaRepository;
         this.enrollmentJpaRepository = enrollmentJpaRepository;
         this.userJpaRepository = userJpaRepository;
         this.pointTransactionJpaRepository = pointTransactionJpaRepository;
+        this.courseInfoService = courseInfoService;
     }
 
     @GetMapping({"/", "/homepage"})
@@ -43,18 +47,14 @@ public class HomeController {
 
     @GetMapping("/courses")
     public String coursesPage(
-            @RequestParam(required = false) String category,
-            @RequestParam(required = false) String openedYear,
+            @RequestParam(required = false) String jobGroup,
+            @RequestParam(required = false) String jobLevel,
             @RequestParam(required = false) String keyword,
             Model model
     ) {
-        List<Course> filtered = readCourses().stream()
-                .filter(c -> isBlank(keyword) || contains(c, keyword))
-                .toList();
-
-        model.addAttribute("courses", filtered);
-        model.addAttribute("category", category);
-        model.addAttribute("openedYear", openedYear);
+        model.addAttribute("courses", courseInfoService.getCourseInfoRows(keyword, jobGroup, jobLevel));
+        model.addAttribute("jobGroup", jobGroup);
+        model.addAttribute("jobLevel", jobLevel);
         model.addAttribute("keyword", keyword);
         return "pages/courses";
     }

@@ -14,17 +14,25 @@
 
 <main class="container content-wrap">
     <form class="search-row" method="get" action="/courses">
-        <select name="category">
-            <option value="">과정구분 전체</option>
-            <option value="전공" th:selected="${category == '전공'}">전공</option>
-            <option value="기타" th:selected="${category == '기타'}">기타</option>
+        <select name="jobGroup">
+            <option value="">직군 전체</option>
+            <option value="개발" th:selected="${jobGroup == '개발'}">개발</option>
+            <option value="기획/마케팅" th:selected="${jobGroup == '기획/마케팅'}">기획/마케팅</option>
+            <option value="경영" th:selected="${jobGroup == '경영'}">경영</option>
+            <option value="영업" th:selected="${jobGroup == '영업'}">영업</option>
+            <option value="CS" th:selected="${jobGroup == 'CS'}">CS</option>
+            <option value="물류" th:selected="${jobGroup == '물류'}">물류</option>
         </select>
-        <select name="openedYear">
-            <option value="">개설연도 전체</option>
-            <option value="2026" th:selected="${openedYear == '2026'}">2026</option>
-            <option value="2025" th:selected="${openedYear == '2025'}">2025</option>
+        <select name="jobLevel">
+            <option value="">직급 전체</option>
+            <option value="사원" th:selected="${jobLevel == '사원'}">사원</option>
+            <option value="주임" th:selected="${jobLevel == '주임'}">주임</option>
+            <option value="대리" th:selected="${jobLevel == '대리'}">대리</option>
+            <option value="과장" th:selected="${jobLevel == '과장'}">과장</option>
+            <option value="차장" th:selected="${jobLevel == '차장'}">차장</option>
+            <option value="부장" th:selected="${jobLevel == '부장'}">부장</option>
         </select>
-        <input type="text" name="keyword" th:value="${keyword}" placeholder="과정명/교수명/과목코드 검색">
+        <input type="text" name="keyword" th:value="${keyword}" placeholder="교과목명/담당교수/과목코드 검색">
         <button type="submit">검색</button>
     </form>
 
@@ -32,21 +40,23 @@
         <table class="data-table">
             <thead>
             <tr>
-                <th>숫자</th><th>과정</th><th>운영 방식</th><th>제목</th><th>개설 연/월/일</th><th>학습정원</th><th>교수 이름</th>
+                <th>과목코드</th><th>직군</th><th>직급</th><th>교과목명</th><th>담당교수</th><th>강의시간</th><th>가격</th><th>인원제한</th><th>개설 연월일</th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="course : ${courses}">
-                <td th:text="${course.number}"></td>
-                <td th:text="${course.process}"></td>
-                <td th:text="${course.operation}"></td>
-                <td th:text="${course.title}"></td>
-                <td th:text="${course.openDate}"></td>
+                <td th:text="${course.subjectCode}"></td>
+                <td th:text="${course.jobGroup}"></td>
+                <td th:text="${course.jobLevel}"></td>
+                <td th:text="${course.courseName}"></td>
+                <td th:text="${course.instructor}"></td>
+                <td th:text="${course.scheduleText}"></td>
+                <td th:text="${course.price}"></td>
                 <td th:text="${course.capacity}"></td>
-                <td th:text="${course.professor}"></td>
+                <td th:text="${course.openedDate}"></td>
             </tr>
             <tr th:if="${#lists.isEmpty(courses)}">
-                <td colspan="7">검색 결과가 없습니다.</td>
+                <td colspan="9">검색 결과가 없습니다.</td>
             </tr>
             </tbody>
         </table>
