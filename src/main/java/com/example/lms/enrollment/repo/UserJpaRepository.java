@@ -3,14 +3,21 @@ package com.example.lms.enrollment.repo;
 import com.example.lms.admin.repo.AdminUserStatsProjection;
 import com.example.lms.enrollment.entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
+import jakarta.persistence.LockModeType;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface UserJpaRepository extends JpaRepository<UserEntity, Long> {
     Optional<UserEntity> findByLoginId(String loginId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from UserEntity u where u.id = :id")
+    Optional<UserEntity> findByIdForUpdate(@Param("id") Long id);
     boolean existsByLoginId(String loginId);
     long countByRole(String role);
     List<UserEntity> findByLoginIdContainingIgnoreCaseOrNameContainingIgnoreCaseOrderByIdDesc(String loginId, String name);

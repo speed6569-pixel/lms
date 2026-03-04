@@ -11,13 +11,12 @@
 <body>
 <div th:replace="~{fragments/header :: siteHeader(${userName}, ${userEmail})}"></div>
 
-
-
 <main class="container content-wrap modern-mypage">
     <aside class="profile-sidebar card-surface">
         <div class="profile-avatar">U</div>
         <h2 class="profile-name" th:text="|${userName != null ? userName : '학습자'} 님|">학습자 님</h2>
         <p class="profile-sub">LMS 마이페이지</p>
+        <p class="profile-sub" th:text="|포인트 잔액: ${#numbers.formatInteger(pointBalance, 1, 'COMMA')}P|"></p>
 
         <div th:if="${hasEnrolledCourses}" class="status-item">
             <div class="status-head"><span>출석률</span><strong th:text="|${#numbers.formatDecimal(attendanceRate, 1, 1)}%|">0.0%</strong></div>
@@ -28,24 +27,18 @@
             <div class="progress-track"><span th:style="|width:${progressRate}%|"></span></div>
         </div>
         <p th:if="${summaryMessage != null}" class="profile-sub" th:text="${summaryMessage}"></p>
-
-        <nav class="side-nav">
-            <a href="/enrollments/me" th:classappend="${tab == 'ongoing'} ? ' active' : ''">마이페이지 홈</a>
-            <a href="/enrollments/me?tab=ongoing" th:classappend="${tab == 'ongoing'} ? ' active' : ''">진행중 교육</a>
-            <a href="/enrollments/me?tab=applied" th:classappend="${tab == 'applied'} ? ' active' : ''">신청중 교육</a>
-            <a href="/enrollments/me?tab=closed" th:classappend="${tab == 'closed'} ? ' active' : ''">처리완료/취소내역</a>
-        </nav>
     </aside>
 
     <section class="mypage-dashboard">
         <div class="card-surface">
             <div class="tab-row">
-                <a href="/enrollments/me?tab=ongoing" th:class="${tab == 'ongoing'} ? 'tab-btn active' : 'tab-btn'">진행중 교육</a>
-                <a href="/enrollments/me?tab=applied" th:class="${tab == 'applied'} ? 'tab-btn active' : 'tab-btn'">신청중 교육</a>
-                <a href="/enrollments/me?tab=closed" th:class="${tab == 'closed'} ? 'tab-btn active' : 'tab-btn'">처리완료/취소내역</a>
+                <button type="button" class="tab-btn" data-tab="ongoing">진행중 교육</button>
+                <button type="button" class="tab-btn" data-tab="applied">신청중 교육</button>
+                <button type="button" class="tab-btn" data-tab="payments">결제 내역</button>
+                <button type="button" class="tab-btn" data-tab="closed">처리완료/취소내역</button>
             </div>
 
-            <div class="table-wrap">
+            <div id="tab-ongoing" class="tab-pane table-wrap">
                 <table class="data-table">
                     <thead>
                     <tr>
@@ -58,28 +51,100 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr th:each="course : ${courses}">
+                    <tr th:each="course : ${ongoingCourses}">
                         <td th:text="${course.title}"></td>
-                        <td>
-                            <span class="type-tag"
-                                  th:classappend="${course.status == 'APPROVED' or course.status == 'RUNNING'} ? ' type-offline' : ' type-online'"
-                                  th:text="${tab == 'applied'} ? (${course.status == 'WAITLIST'} ? '대기중' : '신청중') : (${tab == 'closed'} ? (${course.status == 'CANCELLED'} ? '취소됨' : '완료') : (${course.status == 'APPROVED'} ? '신청완료' : '진행중'))"></span>
-                        </td>
+                        <td><span class="type-tag type-offline" th:text="${course.status == 'APPROVED'} ? '신청완료' : '진행중'"></span></td>
                         <td th:text="${course.professor}"></td>
                         <td th:text="${course.classTime}"></td>
                         <td th:text="${course.price}"></td>
                         <td th:text="|${course.enrolledCount}/${course.maxCount}|"></td>
                     </tr>
-                    <tr th:if="${#lists.isEmpty(courses)}">
-                        <td colspan="6">표시할 강의가 없습니다.</td>
+                    <tr th:if="${#lists.isEmpty(ongoingCourses)}"><td colspan="6">표시할 강의가 없습니다.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="tab-applied" class="tab-pane table-wrap" style="display:none;">
+                <table class="data-table">
+                    <thead>
+                    <tr>
+                        <th>강의명</th>
+                        <th>상태</th>
+                        <th>교수</th>
+                        <th>강의시간</th>
+                        <th>가격</th>
+                        <th>인원제한</th>
                     </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="course : ${appliedCourses}">
+                        <td th:text="${course.title}"></td>
+                        <td><span class="type-tag type-online" th:text="${course.status == 'WAITLIST'} ? '대기중' : '신청중'"></span></td>
+                        <td th:text="${course.professor}"></td>
+                        <td th:text="${course.classTime}"></td>
+                        <td th:text="${course.price}"></td>
+                        <td th:text="|${course.enrolledCount}/${course.maxCount}|"></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(appliedCourses)}"><td colspan="6">표시할 강의가 없습니다.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="tab-payments" class="tab-pane table-wrap" style="display:none;">
+                <table class="data-table">
+                    <thead>
+                    <tr>
+                        <th>결제일시</th>
+                        <th>강의명/과목코드</th>
+                        <th>결제금액</th>
+                        <th>결제수단</th>
+                        <th>상태</th>
+                        <th>잔액</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="p : ${paymentItems}">
+                        <td th:text="${#temporals.format(p.createdAt, 'yyyy-MM-dd HH:mm')}"></td>
+                        <td th:text="${p.courseLabel}"></td>
+                        <td th:text="|${#numbers.formatInteger(p.amount, 1, 'COMMA')}P|"></td>
+                        <td th:text="${p.method}"></td>
+                        <td th:text="${p.status}"></td>
+                        <td th:text="|${#numbers.formatInteger(p.balanceAfter, 1, 'COMMA')}P|"></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(paymentItems)}"><td colspan="6">결제 내역이 없습니다.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="tab-closed" class="tab-pane table-wrap" style="display:none;">
+                <table class="data-table">
+                    <thead>
+                    <tr>
+                        <th>강의명</th>
+                        <th>상태</th>
+                        <th>교수</th>
+                        <th>강의시간</th>
+                        <th>가격</th>
+                        <th>인원제한</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="course : ${closedCourses}">
+                        <td th:text="${course.title}"></td>
+                        <td><span class="type-tag type-online" th:text="${course.status}"></span></td>
+                        <td th:text="${course.professor}"></td>
+                        <td th:text="${course.classTime}"></td>
+                        <td th:text="${course.price}"></td>
+                        <td th:text="|${course.enrolledCount}/${course.maxCount}|"></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(closedCourses)}"><td colspan="6">표시할 내역이 없습니다.</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <div class="dashboard-grid">
-            <article class="card-surface lecture-card" th:each="course : ${courses}">
+        <div class="dashboard-grid" id="ongoingCards">
+            <article class="card-surface lecture-card" th:each="course : ${ongoingCourses}">
                 <div class="lecture-thumb" th:text="${course.courseCode}"></div>
                 <div class="lecture-body">
                     <h3 th:text="${course.title}"></h3>
@@ -90,7 +155,7 @@
             </article>
         </div>
 
-        <div class="card-surface" th:if="${tab == 'applied'}">
+        <div class="card-surface" id="appliedTimetable" style="display:none;">
             <h3 style="margin-bottom:10px;">시간표 조회</h3>
             <div id="weeklyTimetable" class="weekly-wrap">
                 <div class="weekly-head">
@@ -103,11 +168,35 @@
     </section>
 </main>
 
-<script>
+<script th:inline="javascript">
     (function(){
+      const initialTab = /*[[${tab}]]*/ 'ongoing';
+      const tabPanes = document.querySelectorAll('.tab-pane');
+      const tabButtons = document.querySelectorAll('.tab-btn');
+      const ongoingCards = document.getElementById('ongoingCards');
+      const appliedTimetable = document.getElementById('appliedTimetable');
+
+      function showTab(tab) {
+        tabPanes.forEach(p => p.style.display = 'none');
+        document.getElementById('tab-' + tab).style.display = 'block';
+        tabButtons.forEach(b => b.classList.remove('active'));
+        document.querySelector('.tab-btn[data-tab="' + tab + '"]')?.classList.add('active');
+
+        ongoingCards.style.display = (tab === 'ongoing') ? '' : 'none';
+        appliedTimetable.style.display = (tab === 'applied') ? '' : 'none';
+
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', tab);
+        history.replaceState({}, '', url.toString());
+
+        if (tab === 'applied') loadTimetable();
+      }
+
+      tabButtons.forEach(btn => btn.addEventListener('click', () => showTab(btn.dataset.tab)));
+
       const weeklyBody = document.getElementById('weeklyBody');
       const weeklyEvents = document.getElementById('weeklyEvents');
-      if (!weeklyBody || !weeklyEvents) return;
+      let timetableLoaded = false;
 
       function toMin(hm){ const [h,m] = hm.split(':').map(Number); return h*60+m; }
       function colorFor(title){
@@ -118,6 +207,7 @@
       }
 
       function renderWeeklyGrid(lectures){
+        if (!weeklyBody || !weeklyEvents) return;
         const days = ['월','화','수','목','금'];
         const startMin = 9*60, endMin = 22*60, step=30;
         const rows = (endMin-startMin)/step;
@@ -158,10 +248,16 @@
         });
       }
 
-      fetch('/api/me/timetable?tab=applied')
-        .then(r => r.json())
-        .then(renderWeeklyGrid)
-        .catch(() => renderWeeklyGrid([]));
+      function loadTimetable() {
+        if (timetableLoaded) return;
+        fetch('/api/me/timetable?tab=applied')
+          .then(r => r.json())
+          .then(renderWeeklyGrid)
+          .catch(() => renderWeeklyGrid([]));
+        timetableLoaded = true;
+      }
+
+      showTab(initialTab || 'ongoing');
     })();
 </script>
 

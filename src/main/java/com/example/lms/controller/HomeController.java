@@ -4,6 +4,8 @@ import com.example.lms.enrollment.repo.CourseListProjection;
 import com.example.lms.enrollment.repo.CourseSessionJpaRepository;
 import com.example.lms.enrollment.repo.EnrollmentJpaRepository;
 import com.example.lms.enrollment.repo.MyPageCourseProjection;
+import com.example.lms.enrollment.repo.MyPointTransactionProjection;
+import com.example.lms.enrollment.repo.PointTransactionJpaRepository;
 import com.example.lms.enrollment.repo.UserJpaRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -22,13 +24,16 @@ public class HomeController {
     private final CourseSessionJpaRepository courseSessionJpaRepository;
     private final EnrollmentJpaRepository enrollmentJpaRepository;
     private final UserJpaRepository userJpaRepository;
+    private final PointTransactionJpaRepository pointTransactionJpaRepository;
 
     public HomeController(CourseSessionJpaRepository courseSessionJpaRepository,
                           EnrollmentJpaRepository enrollmentJpaRepository,
-                          UserJpaRepository userJpaRepository) {
+                          UserJpaRepository userJpaRepository,
+                          PointTransactionJpaRepository pointTransactionJpaRepository) {
         this.courseSessionJpaRepository = courseSessionJpaRepository;
         this.enrollmentJpaRepository = enrollmentJpaRepository;
         this.userJpaRepository = userJpaRepository;
+        this.pointTransactionJpaRepository = pointTransactionJpaRepository;
     }
 
     @GetMapping({"/", "/homepage"})
@@ -101,7 +106,11 @@ public class HomeController {
             Model model
     ) {
         if (authentication == null || !authentication.isAuthenticated()) {
-            model.addAttribute("courses", List.of());
+            model.addAttribute("ongoingCourses", List.of());
+            model.addAttribute("appliedCourses", List.of());
+            model.addAttribute("closedCourses", List.of());
+            model.addAttribute("paymentItems", List.of());
+            model.addAttribute("pointBalance", 0);
             model.addAttribute("tab", tab);
             model.addAttribute("attendanceRate", 0.0);
             model.addAttribute("progressRate", 0.0);
@@ -110,13 +119,13 @@ public class HomeController {
             return "pages/my-classroom";
         }
 
-        String loginId = authentication.getName();
-        Long userId = userJpaRepository.findByLoginId(loginId)
-                .map(u -> u.getId())
-                .orElse(null);
-
-        if (userId == null) {
-            model.addAttribute("courses", List.of());
+        var user = userJpaRepository.findByLoginId(authentication.getName()).orElse(null);
+        if (user == null) {
+            model.addAttribute("ongoingCourses", List.of());
+            model.addAttribute("appliedCourses", List.of());
+            model.addAttribute("closedCourses", List.of());
+            model.addAttribute("paymentItems", List.of());
+            model.addAttribute("pointBalance", 0);
             model.addAttribute("tab", tab);
             model.addAttribute("attendanceRate", 0.0);
             model.addAttribute("progressRate", 0.0);
@@ -125,20 +134,23 @@ public class HomeController {
             return "pages/my-classroom";
         }
 
-        Set<String> statuses;
-        if ("applied".equalsIgnoreCase(tab)) {
-            statuses = Set.of("APPLIED", "WAITLIST");
-        } else if ("closed".equalsIgnoreCase(tab)) {
-            statuses = Set.of("APPROVED", "REJECTED", "CANCELLED");
-        } else {
-            statuses = Set.of("APPROVED", "RUNNING");
-        }
+        Long userId = user.getId();
 
-        List<MyCourseItem> courses = enrollmentJpaRepository.findMyCoursesByStatuses(userId, statuses).stream()
+        List<MyCourseItem> ongoingCourses = enrollmentJpaRepository.findMyCoursesByStatuses(userId, Set.of("APPROVED", "RUNNING")).stream()
+                .map(this::toMyCourseItem)
+                .toList();
+        List<MyCourseItem> appliedCourses = enrollmentJpaRepository.findMyCoursesByStatuses(userId, Set.of("APPLIED", "WAITLIST")).stream()
+                .map(this::toMyCourseItem)
+                .toList();
+        List<MyCourseItem> closedCourses = enrollmentJpaRepository.findMyCoursesByStatuses(userId, Set.of("COMPLETED", "REJECTED", "CANCELLED", "CANCEL_REQUESTED")).stream()
                 .map(this::toMyCourseItem)
                 .toList();
 
-        boolean hasEnrolledCourses = !enrollmentJpaRepository.findMyCoursesByStatuses(userId, Set.of("APPROVED", "RUNNING")).isEmpty();
+        List<MyPaymentItem> paymentItems = pointTransactionJpaRepository.findHistoryByUserId(userId).stream()
+                .map(this::toMyPointItem)
+                .toList();
+
+        boolean hasEnrolledCourses = !ongoingCourses.isEmpty();
 
         double attendanceRate = 0.0;
         double progressRate = 0.0;
@@ -154,7 +166,11 @@ public class HomeController {
             summaryMessage = "현재 수강 중인 강의가 없습니다.";
         }
 
-        model.addAttribute("courses", courses);
+        model.addAttribute("ongoingCourses", ongoingCourses);
+        model.addAttribute("appliedCourses", appliedCourses);
+        model.addAttribute("closedCourses", closedCourses);
+        model.addAttribute("paymentItems", paymentItems);
+        model.addAttribute("pointBalance", Optional.ofNullable(user.getPointBalance()).orElse(0));
         model.addAttribute("tab", tab);
         model.addAttribute("attendanceRate", attendanceRate);
         model.addAttribute("progressRate", progressRate);
@@ -286,6 +302,29 @@ public class HomeController {
         );
     }
 
+    private MyPaymentItem toMyPointItem(MyPointTransactionProjection p) {
+        String status = switch (p.getType()) {
+            case "SPEND" -> "PAID";
+            case "REFUND" -> "REFUND";
+            default -> "EARN";
+        };
+
+        String courseLabel = "-";
+        if (p.getCourseTitle() != null && !p.getCourseTitle().isBlank()) {
+            courseLabel = p.getCourseTitle() + (p.getSubjectCode() == null || p.getSubjectCode().isBlank() ? "" : " / " + p.getSubjectCode());
+        }
+
+        return new MyPaymentItem(
+                p.getCreatedAt(),
+                courseLabel,
+                p.getAmount(),
+                "POINT",
+                status,
+                p.getBalanceAfter(),
+                p.getMemo()
+        );
+    }
+
     private Course findCourse(String courseCode, String section) {
         return readCourses().stream()
                 .filter(c -> c.courseCode().equalsIgnoreCase(courseCode) && c.section().equalsIgnoreCase(section))
@@ -319,6 +358,17 @@ public class HomeController {
             int enrolledCount,
             int maxCount,
             String status
+    ) {
+    }
+
+    public record MyPaymentItem(
+            java.time.LocalDateTime createdAt,
+            String courseLabel,
+            Integer amount,
+            String method,
+            String status,
+            Integer balanceAfter,
+            String memo
     ) {
     }
 

@@ -35,6 +35,9 @@ public class UserEntity {
     @Column(name = "status", nullable = false)
     private String status = "ACTIVE";
 
+    @Column(name = "point_balance", nullable = false)
+    private Integer pointBalance = 0;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -47,6 +50,7 @@ public class UserEntity {
     public String getRole() { return role; }
     public Boolean getEnabled() { return enabled; }
     public String getStatus() { return status; }
+    public Integer getPointBalance() { return pointBalance; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 
     public void setLoginId(String loginId) { this.loginId = loginId; }
@@ -57,4 +61,5 @@ public class UserEntity {
     public void setRole(String role) { this.role = role; }
     public void setEnabled(Boolean enabled) { this.enabled = enabled; }
     public void setStatus(String status) { this.status = status; }
+    public void setPointBalance(Integer pointBalance) { this.pointBalance = pointBalance; }
 }
