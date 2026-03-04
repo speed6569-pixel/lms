@@ -89,46 +89,24 @@
             </div>
         </div>
 
-        <div id="lectureCarousel" class="lecture-carousel" aria-label="최신 강의 목록">
-            <article class="card lecture-card" data-course-id="java-basic" data-title="자바 기초 완성">
-                <p class="card-tag">NEW</p>
-                <h4>자바 기초 완성</h4>
-                <p>문법부터 객체지향까지 한 번에 정리하는 입문 과정</p>
-            </article>
-            <article class="card lecture-card" data-course-id="spring-boot" data-title="스프링부트 실전">
-                <p class="card-tag">HOT</p>
-                <h4>스프링부트 실전</h4>
-                <p>API, DB 연동, 배포까지 실무 흐름으로 학습</p>
-            </article>
-            <article class="card lecture-card" data-course-id="sql-master" data-title="SQL 마스터 클래스">
-                <p class="card-tag">추천</p>
-                <h4>SQL 마스터 클래스</h4>
-                <p>조회 성능과 실무 쿼리 패턴 집중 트레이닝</p>
-            </article>
-            <article class="card lecture-card" data-course-id="python-data" data-title="파이썬 데이터 분석">
-                <p class="card-tag">인기</p>
-                <h4>파이썬 데이터 분석</h4>
-                <p>Pandas 기반 데이터 처리와 시각화 실습 과정</p>
+        <div id="lectureCarousel" class="lecture-carousel" aria-label="최신 강의 목록" th:if="${!#lists.isEmpty(latestCourses)}">
+            <article class="card lecture-card" th:each="c : ${latestCourses}" th:attr="data-course-id=${c.courseId}">
+                <h4 th:text="${c.courseName}"></h4>
+                <p th:text="${c.summary}"></p>
             </article>
         </div>
+        <div class="card" th:if="${#lists.isEmpty(latestCourses)}">표시할 최신 강의가 없습니다.</div>
     </section>
 
     <section class="container section-block" id="schedule">
         <h3>공지사항</h3>
-        <div class="cards-grid notice-grid">
-            <article class="card notice-card">
-                <h4>[안내] 3월 신규 과정 오픈 일정</h4>
-                <p>3월 4일(월) 오전 10시 신규 과정이 순차적으로 오픈됩니다.</p>
-            </article>
-            <article class="card notice-card">
-                <h4>[점검] LMS 서비스 정기 점검</h4>
-                <p>2월 28일(금) 01:00~03:00 시스템 점검이 예정되어 있습니다.</p>
-            </article>
-            <article class="card notice-card">
-                <h4>[이벤트] 수강 후기 작성 이벤트</h4>
-                <p>수강 후기를 남기면 추첨을 통해 기프티콘을 드립니다.</p>
+        <div class="cards-grid notice-grid" th:if="${!#lists.isEmpty(latestNotices)}">
+            <article class="card notice-card" th:each="n : ${latestNotices}">
+                <h4><a th:href="@{/posts/{id}(id=${n.id})}" th:text="${n.title}" style="text-decoration:none;color:inherit;"></a></h4>
+                <p th:text="${n.summary}"></p>
             </article>
         </div>
+        <div class="card" th:if="${#lists.isEmpty(latestNotices)}">등록된 공지사항이 없습니다.</div>
     </section>
 </main>
 

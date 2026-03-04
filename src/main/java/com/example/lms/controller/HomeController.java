@@ -2,6 +2,7 @@ package com.example.lms.controller;
 
 import com.example.lms.course.service.CourseInfoService;
 import com.example.lms.enrollment.repo.CourseListProjection;
+import com.example.lms.home.service.HomeContentService;
 import com.example.lms.enrollment.repo.CourseSessionJpaRepository;
 import com.example.lms.enrollment.repo.EnrollmentJpaRepository;
 import com.example.lms.enrollment.repo.MyPageCourseProjection;
@@ -27,21 +28,26 @@ public class HomeController {
     private final UserJpaRepository userJpaRepository;
     private final PointTransactionJpaRepository pointTransactionJpaRepository;
     private final CourseInfoService courseInfoService;
+    private final HomeContentService homeContentService;
 
     public HomeController(CourseSessionJpaRepository courseSessionJpaRepository,
                           EnrollmentJpaRepository enrollmentJpaRepository,
                           UserJpaRepository userJpaRepository,
                           PointTransactionJpaRepository pointTransactionJpaRepository,
-                          CourseInfoService courseInfoService) {
+                          CourseInfoService courseInfoService,
+                          HomeContentService homeContentService) {
         this.courseSessionJpaRepository = courseSessionJpaRepository;
         this.enrollmentJpaRepository = enrollmentJpaRepository;
         this.userJpaRepository = userJpaRepository;
         this.pointTransactionJpaRepository = pointTransactionJpaRepository;
         this.courseInfoService = courseInfoService;
+        this.homeContentService = homeContentService;
     }
 
     @GetMapping({"/", "/homepage"})
-    public String home() {
+    public String home(Model model) {
+        model.addAttribute("latestCourses", homeContentService.latestCourses());
+        model.addAttribute("latestNotices", homeContentService.latestNotices());
         return "index";
     }
 
