@@ -4,8 +4,6 @@ import com.example.lms.admin.entity.CourseEntity;
 import com.example.lms.admin.repo.CourseJpaRepository;
 import com.example.lms.enrollment.entity.CourseSessionEntity;
 import com.example.lms.enrollment.entity.EnrollmentEntity;
-import com.example.lms.enrollment.entity.PointTransactionEntity;
-import com.example.lms.enrollment.entity.PointTransactionType;
 import com.example.lms.enrollment.entity.UserEntity;
 import com.example.lms.enrollment.repo.CourseSessionJpaRepository;
 import com.example.lms.enrollment.repo.EnrollmentJpaRepository;
@@ -68,36 +66,20 @@ public class CourseEnrollmentService {
         }
 
         EnrollmentEntity target = existingOpt.orElse(null);
-        boolean shouldChargePoint = true;
 
         if (target != null) {
             String existing = target.getStatus();
             if (List.of("APPLIED", "APPROVED", "RUNNING", "WAITLIST").contains(existing)) {
                 throw new IllegalStateException("이미 신청 이력이 있는 강의입니다. 중복 신청할 수 없습니다.");
             }
-            if ("CANCEL_REQUESTED".equals(existing)) {
-                shouldChargePoint = false;
-            }
         }
 
         int price = Optional.ofNullable(course.getPrice()).orElse(0);
-        if (shouldChargePoint && price > 0) {
-            int currentBalance = safe(user.getPointBalance());
-            if (currentBalance < price) {
-                throw new InsufficientPointException("포인트가 부족합니다. 현재 잔액: " + currentBalance + "P");
+        if (price > 0) {
+            int netPaid = Optional.ofNullable(pointTransactionJpaRepository.netPaidByUserAndCourse(userId, courseId)).orElse(0);
+            if (netPaid < price) {
+                throw new IllegalStateException("결제가 완료되지 않은 강의입니다. 결제 후 신청해 주세요.");
             }
-
-            int nextBalance = currentBalance - price;
-            user.setPointBalance(nextBalance);
-
-            PointTransactionEntity spend = new PointTransactionEntity();
-            spend.setUserId(userId);
-            spend.setCourseId(courseId);
-            spend.setType(PointTransactionType.SPEND);
-            spend.setAmount(price);
-            spend.setBalanceAfter(nextBalance);
-            spend.setMemo(target == null ? "강의 결제" : "강의 재신청 결제");
-            pointTransactionJpaRepository.save(spend);
         }
 
         long current = enrollmentJpaRepository.countByCourseIdAndStatusIn(courseId, List.of("APPLIED", "WAITLIST", "APPROVED", "RUNNING"));
@@ -117,10 +99,6 @@ public class CourseEnrollmentService {
         enrollmentJpaRepository.save(target);
 
         return (existingOpt.isPresent() ? "REAPPLIED_" : "") + status;
-    }
-
-    private int safe(Integer value) {
-        return value == null ? 0 : value;
     }
 
     private String findConflictMessage(List<CourseSessionEntity> existingSessions, List<CourseSessionEntity> newSessions) {

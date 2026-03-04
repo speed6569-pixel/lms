@@ -15,6 +15,9 @@ public interface PointTransactionJpaRepository extends JpaRepository<PointTransa
     @Query("select coalesce(sum(pt.amount), 0) from PointTransactionEntity pt where pt.userId = :userId and pt.courseId = :courseId and pt.type = com.example.lms.enrollment.entity.PointTransactionType.REFUND")
     Integer sumRefundByUserAndCourse(@Param("userId") Long userId, @Param("courseId") Long courseId);
 
+    @Query("select coalesce(sum(case when pt.type = com.example.lms.enrollment.entity.PointTransactionType.SPEND then pt.amount when pt.type = com.example.lms.enrollment.entity.PointTransactionType.REFUND then -pt.amount else 0 end), 0) from PointTransactionEntity pt where pt.userId = :userId and pt.courseId = :courseId")
+    Integer netPaidByUserAndCourse(@Param("userId") Long userId, @Param("courseId") Long courseId);
+
     @Query(value = """
             SELECT pt.id AS id,
                    pt.created_at AS createdAt,
