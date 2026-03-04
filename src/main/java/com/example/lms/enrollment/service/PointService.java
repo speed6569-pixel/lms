@@ -41,6 +41,34 @@ public class PointService {
         return nextBalance;
     }
 
+    @Transactional
+    public int refundCoursePayment(Long userId, Long courseId, String memo) {
+        if (courseId == null) return 0;
+
+        UserEntity user = userJpaRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        int spent = safe(pointTransactionJpaRepository.sumSpendByUserAndCourse(userId, courseId));
+        int refunded = safe(pointTransactionJpaRepository.sumRefundByUserAndCourse(userId, courseId));
+        int refundable = spent - refunded;
+
+        if (refundable <= 0) return 0;
+
+        int nextBalance = safe(user.getPointBalance()) + refundable;
+        user.setPointBalance(nextBalance);
+
+        PointTransactionEntity tx = new PointTransactionEntity();
+        tx.setUserId(userId);
+        tx.setCourseId(courseId);
+        tx.setType(PointTransactionType.REFUND);
+        tx.setAmount(refundable);
+        tx.setBalanceAfter(nextBalance);
+        tx.setMemo(memo == null || memo.isBlank() ? "수강 취소 환불" : memo);
+        pointTransactionJpaRepository.save(tx);
+
+        return refundable;
+    }
+
     private int safe(Integer value) {
         return value == null ? 0 : value;
     }

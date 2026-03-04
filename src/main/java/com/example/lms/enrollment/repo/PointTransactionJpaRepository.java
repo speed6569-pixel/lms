@@ -9,6 +9,12 @@ import java.util.List;
 
 public interface PointTransactionJpaRepository extends JpaRepository<PointTransactionEntity, Long> {
 
+    @Query("select coalesce(sum(pt.amount), 0) from PointTransactionEntity pt where pt.userId = :userId and pt.courseId = :courseId and pt.type = com.example.lms.enrollment.entity.PointTransactionType.SPEND")
+    Integer sumSpendByUserAndCourse(@Param("userId") Long userId, @Param("courseId") Long courseId);
+
+    @Query("select coalesce(sum(pt.amount), 0) from PointTransactionEntity pt where pt.userId = :userId and pt.courseId = :courseId and pt.type = com.example.lms.enrollment.entity.PointTransactionType.REFUND")
+    Integer sumRefundByUserAndCourse(@Param("userId") Long userId, @Param("courseId") Long courseId);
+
     @Query(value = """
             SELECT pt.id AS id,
                    pt.created_at AS createdAt,

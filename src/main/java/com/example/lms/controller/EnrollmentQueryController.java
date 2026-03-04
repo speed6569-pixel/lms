@@ -3,6 +3,8 @@ package com.example.lms.controller;
 import com.example.lms.enrollment.repo.EnrollmentJpaRepository;
 import com.example.lms.enrollment.repo.MyPageCourseProjection;
 import com.example.lms.enrollment.repo.UserJpaRepository;
+import com.example.lms.enrollment.service.PointService;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -17,11 +19,14 @@ import java.util.Set;
 public class EnrollmentQueryController {
     private final UserJpaRepository userJpaRepository;
     private final EnrollmentJpaRepository enrollmentJpaRepository;
+    private final PointService pointService;
 
     public EnrollmentQueryController(UserJpaRepository userJpaRepository,
-                                     EnrollmentJpaRepository enrollmentJpaRepository) {
+                                     EnrollmentJpaRepository enrollmentJpaRepository,
+                                     PointService pointService) {
         this.userJpaRepository = userJpaRepository;
         this.enrollmentJpaRepository = enrollmentJpaRepository;
+        this.pointService = pointService;
     }
 
     @GetMapping("/dashboard")
@@ -149,6 +154,7 @@ public class EnrollmentQueryController {
     }
 
     @PostMapping("/enrollments/{id}/cancel")
+    @Transactional
     public ResponseEntity<Map<String, Object>> cancelEnrollment(@PathVariable Long id, Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "로그인이 필요합니다."));
@@ -170,7 +176,16 @@ public class EnrollmentQueryController {
 
         target.setStatus(next);
         enrollmentJpaRepository.save(target);
-        return ResponseEntity.ok(Map.of("success", true, "message", "CANCELLED".equals(next) ? "신청이 취소되었습니다." : "취소 요청이 접수되었습니다."));
+
+        if ("CANCELLED".equals(next)) {
+            int refunded = pointService.refundCoursePayment(user.getId(), target.getCourseId(), "신청 취소 환불");
+            String msg = refunded > 0
+                    ? "신청이 취소되었고 " + refunded + "P 환불되었습니다."
+                    : "신청이 취소되었습니다.";
+            return ResponseEntity.ok(Map.of("success", true, "message", msg));
+        }
+
+        return ResponseEntity.ok(Map.of("success", true, "message", "취소 요청이 접수되었습니다."));
     }
 
     private double safeRate(Double value) {
