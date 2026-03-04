@@ -32,6 +32,8 @@ public interface EnrollmentJpaRepository extends JpaRepository<EnrollmentEntity,
 
     java.util.Optional<EnrollmentEntity> findByIdAndUserId(Long id, Long userId);
 
+    java.util.Optional<EnrollmentEntity> findByUserIdAndCourseId(Long userId, Long courseId);
+
     @Query(value = """
             SELECT c.course_code AS courseCode,
                    cs.section AS section,

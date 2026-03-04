@@ -38,7 +38,15 @@ public class CourseEnrollmentController {
 
         try {
             String status = courseEnrollmentService.enroll(userId, courseId);
-            return ResponseEntity.ok(Map.of("success", true, "message", "WAITLIST".equals(status) ? "대기 신청되었습니다." : "신청 완료되었습니다."));
+            boolean reapplied = status.startsWith("REAPPLIED_");
+            String normalized = reapplied ? status.replace("REAPPLIED_", "") : status;
+            String message;
+            if ("WAITLIST".equals(normalized)) {
+                message = reapplied ? "재신청 처리되었습니다. 현재 대기 상태입니다." : "대기 신청되었습니다.";
+            } else {
+                message = reapplied ? "재신청이 완료되었습니다." : "신청 완료되었습니다.";
+            }
+            return ResponseEntity.ok(Map.of("success", true, "message", message));
         } catch (InsufficientPointException e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         } catch (IllegalArgumentException | IllegalStateException e) {

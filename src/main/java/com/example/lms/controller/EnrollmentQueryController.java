@@ -169,23 +169,13 @@ public class EnrollmentQueryController {
             return ResponseEntity.status(403).body(Map.of("success", false, "message", "본인 신청만 취소할 수 있습니다."));
         }
 
-        String next;
-        if (Set.of("APPLIED", "WAITLIST").contains(target.getStatus())) next = "CANCELLED";
-        else if (Set.of("APPROVED", "RUNNING").contains(target.getStatus())) next = "CANCEL_REQUESTED";
-        else return ResponseEntity.badRequest().body(Map.of("success", false, "message", "현재 상태에서는 취소할 수 없습니다."));
-
-        target.setStatus(next);
-        enrollmentJpaRepository.save(target);
-
-        if ("CANCELLED".equals(next)) {
-            int refunded = pointService.refundCoursePayment(user.getId(), target.getCourseId(), "신청 취소 환불");
-            String msg = refunded > 0
-                    ? "신청이 취소되었고 " + refunded + "P 환불되었습니다."
-                    : "신청이 취소되었습니다.";
-            return ResponseEntity.ok(Map.of("success", true, "message", msg));
+        if (!Set.of("APPLIED", "WAITLIST", "APPROVED", "RUNNING").contains(target.getStatus())) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "현재 상태에서는 취소할 수 없습니다."));
         }
 
-        return ResponseEntity.ok(Map.of("success", true, "message", "취소 요청이 접수되었습니다."));
+        target.setStatus("CANCEL_REQUESTED");
+        enrollmentJpaRepository.save(target);
+        return ResponseEntity.ok(Map.of("success", true, "message", "취소 요청이 접수되었습니다. 관리자 승인 후 취소 확정됩니다."));
     }
 
     private double safeRate(Double value) {

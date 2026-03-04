@@ -253,9 +253,10 @@ public class AdminService {
         EnrollmentEntity e = enrollmentJpaRepository.findById(enrollmentId).orElseThrow();
 
         if ("CANCEL_REQUESTED".equalsIgnoreCase(e.getStatus())) {
-            e.setStatus("RUNNING");
+            String rollback = (e.getEnrolledAt() == null) ? "APPLIED" : "APPROVED";
+            e.setStatus(rollback);
             EnrollmentEntity saved = enrollmentJpaRepository.save(e);
-            audit(adminUserId, "REJECT_CANCEL_REQUEST", "ENROLLMENT", enrollmentId, ip, "RUNNING");
+            audit(adminUserId, "REJECT_CANCEL_REQUEST", "ENROLLMENT", enrollmentId, ip, rollback);
             return saved;
         }
 
