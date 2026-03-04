@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>강의 시청</title>
+    <link rel="stylesheet" th:href="@{/css/page.css}">
+    <link rel="stylesheet" th:href="@{/css/header-profile.css}">
+    <script defer th:src="@{/js/header-profile.js}"></script>
+    <style>
+        .learn-wrap{max-width:1200px;margin:20px auto;padding:0 16px;display:grid;grid-template-columns:2fr 1fr;gap:14px}
+        .box{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:12px}
+        .lesson-item{border:1px solid #e5e7eb;border-radius:10px;padding:10px;cursor:pointer;margin-bottom:8px}
+        .lesson-item.active{border-color:#2563eb;background:#eff6ff}
+        .thumb{width:60px;height:40px;background:#e5e7eb;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px}
+        .li-row{display:flex;gap:10px}
+        .tabs{display:flex;gap:6px;margin-bottom:8px}
+        .tab-btn{padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer}
+        .tab-btn.active{background:#eff6ff;border-color:#93c5fd}
+        .nav-row{display:flex;gap:8px;justify-content:space-between;margin-top:10px}
+        .action{border:0;background:#2563eb;color:#fff;border-radius:8px;padding:8px 12px;cursor:pointer}
+    </style>
+</head>
+<body>
+<div th:replace="~{fragments/header :: siteHeader(${userName}, ${userEmail})}"></div>
+
+<main class="learn-wrap">
+    <section class="box">
+        <h2 th:text="|${courseName} (${courseCode})|"></h2>
+        <video id="player" controls style="width:100%;max-height:520px;background:#000;"></video>
+        <div style="margin-top:10px;">
+            <a href="/mypage?tab=ongoing" class="action" style="text-decoration:none;display:inline-block;">나의 수강 현황(마이페이지)</a>
+        </div>
+    </section>
+
+    <aside class="box">
+        <div class="tabs">
+            <button type="button" class="tab-btn active" data-tab="todo">수강예정 강의</button>
+            <button type="button" class="tab-btn" data-tab="done">수강완료 강의</button>
+        </div>
+
+        <div id="lessonList"></div>
+
+        <div class="nav-row">
+            <button type="button" id="prevBtn" class="action">이전강의</button>
+            <button type="button" id="completeBtn" class="action">완료 처리</button>
+            <button type="button" id="nextBtn" class="action">다음강의</button>
+        </div>
+    </aside>
+</main>
+
+<script th:inline="javascript">
+(() => {
+  const lessons = /*[[${lessons}]]*/ [];
+  const progressMap = /*[[${progressMap}]]*/ {};
+  const selectedLessonId = /*[[${selectedLessonId}]]*/ null;
+
+  const player = document.getElementById('player');
+  const listEl = document.getElementById('lessonList');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const completeBtn = document.getElementById('completeBtn');
+  const tabBtns = document.querySelectorAll('.tab-btn');
+
+  let activeTab = 'todo';
+  let currentIndex = Math.max(0, lessons.findIndex(l => l.id === selectedLessonId));
+  if (currentIndex < 0) currentIndex = 0;
+
+  function getProgress(lessonId){
+    return progressMap[String(lessonId)] || progressMap[lessonId] || null;
+  }
+  function isDone(lessonId){
+    const p = getProgress(lessonId);
+    return !!(p && p.completed);
+  }
+
+  function filteredLessons(){
+    return lessons.filter(l => activeTab === 'done' ? isDone(l.id) : !isDone(l.id));
+  }
+
+  function currentLesson(){ return lessons[currentIndex] || null; }
+
+  function renderList(){
+    const arr = filteredLessons();
+    listEl.innerHTML = '';
+    if (!arr.length){
+      listEl.innerHTML = '<div style="color:#6b7280;">표시할 차시가 없습니다.</div>';
+      return;
+    }
+
+    arr.forEach(l => {
+      const div = document.createElement('div');
+      const active = currentLesson() && currentLesson().id === l.id;
+      div.className = 'lesson-item' + (active ? ' active' : '');
+      div.innerHTML = `<div class='li-row'><div class='thumb'>${l.thumbnailUrl ? '<img src="'+l.thumbnailUrl+'" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">' : '썸네일'}</div><div><strong>${l.orderNo}. ${l.title}</strong><div style='font-size:12px;color:#6b7280;'>${l.description || '-'}</div></div></div>`;
+      div.addEventListener('click', () => {
+        currentIndex = lessons.findIndex(x => x.id === l.id);
+        loadLesson();
+      });
+      listEl.appendChild(div);
+    });
+  }
+
+  function loadLesson(){
+    const lesson = currentLesson();
+    if (!lesson) return;
+    player.src = lesson.videoUrl;
+    renderList();
+  }
+
+  async function saveProgress(percent, completed){
+    const lesson = currentLesson();
+    if (!lesson) return;
+    const res = await fetch(`/api/learn/${lesson.id}/progress`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({progressPercent: percent, completed})
+    });
+    const json = await res.json().catch(()=>({}));
+    if (json.success !== false) {
+      progressMap[String(lesson.id)] = { progressPercent: json.progressPercent || percent, completed: !!json.completed };
+      renderList();
+    }
+  }
+
+  tabBtns.forEach(b => b.addEventListener('click', () => {
+    tabBtns.forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    activeTab = b.dataset.tab;
+    renderList();
+  }));
+
+  prevBtn.addEventListener('click', () => { if (currentIndex > 0) { currentIndex--; loadLesson(); }});
+  nextBtn.addEventListener('click', () => { if (currentIndex < lessons.length - 1) { currentIndex++; loadLesson(); }});
+  completeBtn.addEventListener('click', async () => {
+    await saveProgress(100, true);
+    alert('완료 처리되었습니다.');
+  });
+
+  player.addEventListener('timeupdate', () => {
+    if (!player.duration || !isFinite(player.duration)) return;
+    const percent = Math.floor((player.currentTime / player.duration) * 100);
+    if (percent >= 90 && !isDone(currentLesson()?.id)) {
+      saveProgress(percent, true);
+    }
+  });
+
+  player.addEventListener('ended', () => saveProgress(100, true));
+  loadLesson();
+})();
+</script>
+</body>
+</html>

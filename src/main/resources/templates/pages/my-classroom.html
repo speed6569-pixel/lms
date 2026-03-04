@@ -30,6 +30,8 @@
     </aside>
 
     <section class="mypage-dashboard">
+        <div class="card-surface" th:if="${errorMessage}" style="background:#fff7ed;color:#9a3412;" th:text="${errorMessage}"></div>
+
         <div class="card-surface">
             <div class="tab-row">
                 <button type="button" class="tab-btn" data-tab="ongoing">진행중 교육</button>
@@ -51,7 +53,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr th:each="course : ${ongoingCourses}">
+                    <tr th:each="course : ${ongoingCourses}" th:onclick="|location.href='/learn/${course.courseId}'|" style="cursor:pointer;">
                         <td th:text="${course.title}"></td>
                         <td><span class="type-tag type-offline" th:text="${course.status == 'APPROVED'} ? '신청완료' : '진행중'"></span></td>
                         <td th:text="${course.professor}"></td>
@@ -77,7 +79,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr th:each="course : ${appliedCourses}">
+                    <tr th:each="course : ${appliedCourses}" th:onclick="|location.href='/learn/${course.courseId}'|" style="cursor:pointer;">
                         <td th:text="${course.title}"></td>
                         <td><span class="type-tag type-online" th:text="${course.status == 'WAITLIST'} ? '대기중' : '신청중'"></span></td>
                         <td th:text="${course.professor}"></td>
@@ -150,7 +152,7 @@
         </div>
 
         <div class="dashboard-grid" id="ongoingCards">
-            <article class="card-surface lecture-card" th:each="course : ${ongoingCourses}">
+            <article class="card-surface lecture-card" th:each="course : ${ongoingCourses}" th:onclick="|location.href='/learn/${course.courseId}'|" style="cursor:pointer;">
                 <div class="lecture-thumb" th:text="${course.courseCode}"></div>
                 <div class="lecture-body">
                     <h3 th:text="${course.title}"></h3>

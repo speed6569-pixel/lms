@@ -1,6 +1,7 @@
 package com.example.lms.enrollment.repo;
 
 public interface MyPageCourseProjection {
+    Long getCourseId();
     String getCourseCode();
     String getSection();
     String getTitle();

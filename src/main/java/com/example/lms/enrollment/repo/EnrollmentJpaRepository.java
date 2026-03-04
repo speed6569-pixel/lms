@@ -53,7 +53,8 @@ public interface EnrollmentJpaRepository extends JpaRepository<EnrollmentEntity,
     List<TimetableLectureProjection> findEnrolledLectures(@Param("userId") Long userId);
 
     @Query(value = """
-            SELECT c.course_code AS courseCode,
+            SELECT c.id AS courseId,
+                   c.course_code AS courseCode,
                    COALESCE(cs.section, '01') AS section,
                    COALESCE(c.subject_name, c.title) AS title,
                    COALESCE(c.instructor, c.professor) AS professor,

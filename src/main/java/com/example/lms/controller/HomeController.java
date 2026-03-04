@@ -296,6 +296,7 @@ public class HomeController {
 
     private MyCourseItem toMyCourseItem(MyPageCourseProjection p) {
         return new MyCourseItem(
+                p.getCourseId(),
                 p.getTitle(),
                 p.getProfessor(),
                 p.getClassTime(),
@@ -355,6 +356,7 @@ public class HomeController {
     }
 
     public record MyCourseItem(
+            Long courseId,
             String title,
             String professor,
             String classTime,
