@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
@@ -59,12 +60,34 @@ public class AdminApiController {
         return ResponseEntity.ok(Map.of("success", true));
     }
 
+    @PostMapping("/uploads/video")
+    public ResponseEntity<?> uploadVideo(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(adminService.uploadVideo(file));
+    }
+
     @PostMapping("/courses/{id}/sessions")
     public ResponseEntity<?> createSession(@PathVariable Long id,
                                            @RequestBody AdminDtos.SessionCreateRequest req,
                                            Authentication auth,
                                            HttpServletRequest request) {
         return ResponseEntity.ok(adminService.createSession(id, req, adminId(auth), request.getRemoteAddr()));
+    }
+
+    @GetMapping("/courses/{id}/lessons")
+    public ResponseEntity<?> lessons(@PathVariable Long id) {
+        return ResponseEntity.ok(adminService.getLessons(id));
+    }
+
+    @PostMapping("/courses/{id}/lessons")
+    public ResponseEntity<?> addLessons(@PathVariable Long id,
+                                        @RequestBody java.util.List<AdminDtos.LessonInput> lessons) {
+        return ResponseEntity.ok(adminService.addLessons(id, lessons));
+    }
+
+    @DeleteMapping("/courses/{courseId}/lessons/{lessonId}")
+    public ResponseEntity<?> deleteLesson(@PathVariable Long courseId,
+                                          @PathVariable Long lessonId) {
+        return ResponseEntity.ok(adminService.deleteLesson(courseId, lessonId));
     }
 
     @GetMapping("/sessions")
