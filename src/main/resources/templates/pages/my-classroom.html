@@ -131,7 +131,10 @@
                     <tbody>
                     <tr th:each="course : ${closedCourses}">
                         <td th:text="${course.title}"></td>
-                        <td><span class="type-tag type-online" th:text="${course.status}"></span></td>
+                        <td>
+                            <span class="type-tag type-online"
+                                  th:text="${course.status == 'APPLIED'} ? '신청중' : (${course.status == 'WAITLIST'} ? '대기' : (${course.status == 'APPROVED'} ? '승인' : (${course.status == 'REJECTED'} ? '반려/거부' : (${course.status == 'CANCELLED'} ? '취소됨' : course.status))))"></span>
+                        </td>
                         <td th:text="${course.professor}"></td>
                         <td th:text="${course.classTime}"></td>
                         <td th:text="${course.price}"></td>

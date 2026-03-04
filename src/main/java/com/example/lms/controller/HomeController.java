@@ -142,7 +142,7 @@ public class HomeController {
         List<MyCourseItem> appliedCourses = enrollmentJpaRepository.findMyCoursesByStatuses(userId, Set.of("APPLIED", "WAITLIST")).stream()
                 .map(this::toMyCourseItem)
                 .toList();
-        List<MyCourseItem> closedCourses = enrollmentJpaRepository.findMyCoursesByStatuses(userId, Set.of("COMPLETED", "REJECTED", "CANCELLED", "CANCEL_REQUESTED")).stream()
+        List<MyCourseItem> closedCourses = enrollmentJpaRepository.findMyCoursesByStatuses(userId, Set.of("REJECTED", "CANCELLED")).stream()
                 .map(this::toMyCourseItem)
                 .toList();
 
