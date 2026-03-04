@@ -17,7 +17,7 @@ public class PostViewController {
 
     @GetMapping("/support")
     public String support(Model model) {
-        model.addAttribute("title", "학습지원");
+        model.addAttribute("title", "공지사항");
         model.addAttribute("posts", postService.userList("SUPPORT"));
         model.addAttribute("category", "SUPPORT");
         return "posts/posts_list";
