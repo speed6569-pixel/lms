@@ -185,10 +185,6 @@
         ongoingCards.style.display = (tab === 'ongoing') ? '' : 'none';
         appliedTimetable.style.display = (tab === 'applied') ? '' : 'none';
 
-        const url = new URL(window.location.href);
-        url.searchParams.set('tab', tab);
-        history.replaceState({}, '', url.toString());
-
         if (tab === 'applied') loadTimetable();
       }
 
