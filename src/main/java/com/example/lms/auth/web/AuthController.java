@@ -2,8 +2,10 @@ package com.example.lms.auth.web;
 
 import com.example.lms.auth.service.EmailSenderService;
 import com.example.lms.auth.service.EmailVerificationService;
+import com.example.lms.auth.service.PasswordResetService;
 import com.example.lms.auth.service.UserService;
 import com.example.lms.auth.web.form.SignupForm;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
@@ -14,6 +16,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
@@ -30,13 +33,16 @@ public class AuthController {
     private final EmailVerificationService emailVerificationService;
     private final EmailSenderService emailSenderService;
     private final UserService userService;
+    private final PasswordResetService passwordResetService;
 
     public AuthController(EmailVerificationService emailVerificationService,
                           EmailSenderService emailSenderService,
-                          UserService userService) {
+                          UserService userService,
+                          PasswordResetService passwordResetService) {
         this.emailVerificationService = emailVerificationService;
         this.emailSenderService = emailSenderService;
         this.userService = userService;
+        this.passwordResetService = passwordResetService;
     }
 
     @GetMapping("/login")
@@ -47,6 +53,60 @@ public class AuthController {
             return "redirect:/";
         }
         return "auth/login";
+    }
+
+    @GetMapping("/forgot-password")
+    public String forgotPasswordPage() {
+        return "auth/forgot-password";
+    }
+
+    @PostMapping("/forgot-password")
+    public String forgotPassword(@RequestParam String loginIdOrEmail,
+                                 HttpServletRequest request,
+                                 RedirectAttributes redirectAttributes) {
+        String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
+        passwordResetService.requestReset(loginIdOrEmail, baseUrl);
+        redirectAttributes.addFlashAttribute("message", "계정이 존재하면 비밀번호 재설정 메일이 발송됩니다. 메일을 확인해주세요.");
+        return "redirect:/forgot-password";
+    }
+
+    @GetMapping("/reset-password")
+    public String resetPasswordPage(@RequestParam String token, Model model) {
+        boolean valid = passwordResetService.isTokenValid(token);
+        model.addAttribute("token", token);
+        model.addAttribute("valid", valid);
+        return "auth/reset-password";
+    }
+
+    @PostMapping("/reset-password")
+    public String resetPassword(@RequestParam String token,
+                                @RequestParam String newPassword,
+                                @RequestParam String confirmPassword,
+                                RedirectAttributes redirectAttributes,
+                                Model model) {
+        if (newPassword == null || newPassword.isBlank() || confirmPassword == null || confirmPassword.isBlank()) {
+            model.addAttribute("token", token);
+            model.addAttribute("valid", passwordResetService.isTokenValid(token));
+            model.addAttribute("error", "새 비밀번호를 입력해주세요.");
+            return "auth/reset-password";
+        }
+        if (!newPassword.equals(confirmPassword)) {
+            model.addAttribute("token", token);
+            model.addAttribute("valid", passwordResetService.isTokenValid(token));
+            model.addAttribute("error", "비밀번호 확인이 일치하지 않습니다.");
+            return "auth/reset-password";
+        }
+
+        try {
+            passwordResetService.resetPassword(token, newPassword);
+            redirectAttributes.addFlashAttribute("message", "비밀번호 변경이 완료되었습니다. 다시 로그인해주세요.");
+            return "redirect:/login";
+        } catch (IllegalArgumentException e) {
+            model.addAttribute("token", token);
+            model.addAttribute("valid", false);
+            model.addAttribute("error", e.getMessage());
+            return "auth/reset-password";
+        }
     }
 
     @GetMapping("/signup")
