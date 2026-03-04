@@ -1,9 +1,12 @@
 package com.example.lms.settings.service;
 
 import com.example.lms.enrollment.entity.LoginHistoryEntity;
+import com.example.lms.enrollment.entity.PointTransactionEntity;
+import com.example.lms.enrollment.entity.PointTransactionType;
 import com.example.lms.enrollment.entity.UserEntity;
 import com.example.lms.enrollment.repo.EnrollmentJpaRepository;
 import com.example.lms.enrollment.repo.LoginHistoryJpaRepository;
+import com.example.lms.enrollment.repo.PointTransactionJpaRepository;
 import com.example.lms.enrollment.repo.UserJpaRepository;
 import com.example.lms.settings.dto.SettingsDtos;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,15 +24,18 @@ public class SettingsService {
     private final UserJpaRepository userJpaRepository;
     private final LoginHistoryJpaRepository loginHistoryJpaRepository;
     private final EnrollmentJpaRepository enrollmentJpaRepository;
+    private final PointTransactionJpaRepository pointTransactionJpaRepository;
     private final PasswordEncoder passwordEncoder;
 
     public SettingsService(UserJpaRepository userJpaRepository,
                            LoginHistoryJpaRepository loginHistoryJpaRepository,
                            EnrollmentJpaRepository enrollmentJpaRepository,
+                           PointTransactionJpaRepository pointTransactionJpaRepository,
                            PasswordEncoder passwordEncoder) {
         this.userJpaRepository = userJpaRepository;
         this.loginHistoryJpaRepository = loginHistoryJpaRepository;
         this.enrollmentJpaRepository = enrollmentJpaRepository;
+        this.pointTransactionJpaRepository = pointTransactionJpaRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -68,6 +74,7 @@ public class SettingsService {
                 user.getEmail(),
                 user.getPhone(),
                 user.getRole(),
+                user.getPointBalance() == null ? 0 : user.getPointBalance(),
                 history,
                 deviceMap.values().stream().toList()
         );
@@ -116,6 +123,33 @@ public class SettingsService {
         enrollmentJpaRepository.deleteEnrollmentsByUserId(user.getId());
         loginHistoryJpaRepository.deleteByUserId(user.getId());
         userJpaRepository.delete(user);
+    }
+
+    @Transactional
+    public int chargePoints(String loginId, int chargePlan) {
+        UserEntity user = userJpaRepository.findByLoginId(loginId)
+                .flatMap(u -> userJpaRepository.findByIdForUpdate(u.getId()))
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        int earn = switch (chargePlan) {
+            case 5000 -> 5000;
+            case 10000 -> 12000;
+            case 50000 -> 100000;
+            default -> throw new IllegalArgumentException("지원하지 않는 충전 금액입니다.");
+        };
+
+        int nextBalance = (user.getPointBalance() == null ? 0 : user.getPointBalance()) + earn;
+        user.setPointBalance(nextBalance);
+
+        PointTransactionEntity tx = new PointTransactionEntity();
+        tx.setUserId(user.getId());
+        tx.setType(PointTransactionType.EARN);
+        tx.setAmount(earn);
+        tx.setBalanceAfter(nextBalance);
+        tx.setMemo("충전 " + chargePlan + "원");
+        pointTransactionJpaRepository.save(tx);
+
+        return earn;
     }
 
     public void saveLoginHistory(String loginId, String ipAddress, String userAgent) {

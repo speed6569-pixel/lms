@@ -1,21 +1,26 @@
 (function(){
-  const menuBtns = Array.from(document.querySelectorAll('.menu-btn'));
+  const menuBtns = Array.from(document.querySelectorAll('.menu-btn[data-menu]'));
   const panels = Array.from(document.querySelectorAll('.panel'));
+  const chargeMenuLink = document.querySelector('.menu-link');
+  const activeTab = document.body.dataset.activeTab || 'profile';
   const nameInput = document.getElementById('nameInput');
   const phoneInput = document.getElementById('phoneInput');
   const emailInput = document.getElementById('emailInput');
   const profileName = document.getElementById('profileName');
   const profileEmail = document.getElementById('profileEmail');
   const profileAvatar = document.getElementById('profileAvatar');
+  const profilePoint = document.getElementById('profilePoint');
   const loginHistoryBody = document.getElementById('loginHistoryBody');
   const deviceList = document.getElementById('deviceList');
 
   function activate(menu){
     menuBtns.forEach(b=>b.classList.toggle('active', b.dataset.menu===menu));
     panels.forEach(p=>p.classList.toggle('active', p.dataset.panel===menu));
+    if (chargeMenuLink) chargeMenuLink.classList.toggle('active', menu === 'charge');
   }
 
   menuBtns.forEach(btn=>btn.addEventListener('click',()=>activate(btn.dataset.menu)));
+  activate(activeTab);
 
   async function loadMe(){
     const res = await fetch('/api/settings/me');
@@ -29,6 +34,7 @@
     profileName.textContent = me.name || me.username || '사용자';
     profileEmail.textContent = me.email || me.username || '-';
     if(profileName.textContent) profileAvatar.textContent = profileName.textContent.substring(0,1);
+    if(profilePoint) profilePoint.textContent = `포인트: ${(me.pointBalance || 0).toLocaleString()}P`;
 
     loginHistoryBody.innerHTML = '';
     (me.loginHistory || []).forEach(v=>{

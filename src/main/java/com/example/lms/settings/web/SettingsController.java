@@ -8,7 +8,9 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -23,8 +25,29 @@ public class SettingsController {
     }
 
     @GetMapping("/settings")
-    public String settingsPage() {
+    public String settingsPage(@RequestParam(required = false, defaultValue = "profile") String tab,
+                               Model model) {
+        model.addAttribute("activeTab", tab);
         return "pages/settings";
+    }
+
+    @GetMapping("/settings/charge")
+    public String chargePage(Model model) {
+        model.addAttribute("activeTab", "charge");
+        return "pages/settings";
+    }
+
+    @PostMapping("/settings/charge")
+    public String charge(@RequestParam("chargePlan") int chargePlan,
+                         Authentication authentication,
+                         RedirectAttributes redirectAttributes) {
+        try {
+            int earned = settingsService.chargePoints(authentication.getName(), chargePlan);
+            redirectAttributes.addFlashAttribute("flashMessage", "충전 완료: " + earned + "P 적립되었습니다.");
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("flashMessage", e.getMessage());
+        }
+        return "redirect:/settings/charge";
     }
 
     @GetMapping("/api/settings/me")

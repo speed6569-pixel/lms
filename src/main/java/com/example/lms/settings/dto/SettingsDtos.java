@@ -11,6 +11,7 @@ public class SettingsDtos {
             String email,
             String phone,
             String role,
+            Integer pointBalance,
             List<LoginHistoryItem> loginHistory,
             List<DeviceItem> devices
     ) {}
