@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>결제 내역 상세</title>
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/header-profile.css}">
+    <style>
+        .wrap{max-width:900px;margin:24px auto;padding:0 16px}
+        .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:16px}
+        .grid{display:grid;grid-template-columns:180px 1fr;gap:10px}
+        .k{color:#6b7280}.v{font-weight:600}
+        .top{margin-bottom:12px}
+    </style>
+</head>
+<body>
+<div th:replace="~{fragments/header :: siteHeader(${userName}, ${userEmail})}"></div>
+<main class="wrap">
+    <div class="top"><a href="/admin/payments">← 목록으로</a></div>
+    <section class="card">
+        <h2>결제/포인트 상세</h2>
+        <div class="grid">
+            <div class="k">결제ID</div><div class="v" th:text="${item.paymentId}"></div>
+            <div class="k">결제일시</div><div class="v" th:text="${#temporals.format(item.createdAt,'yyyy-MM-dd HH:mm:ss')}"></div>
+            <div class="k">사용자</div><div class="v" th:text="|${item.loginId} / ${item.userName} (ID:${item.userId})|"></div>
+            <div class="k">구분</div><div class="v" th:text="${item.type}"></div>
+            <div class="k">금액</div><div class="v" th:text="|${item.amount} P|"></div>
+            <div class="k">메모</div><div class="v" th:text="${item.memo}"></div>
+            <div class="k">현재 잔액</div><div class="v" th:text="|${item.pointBalance} P|"></div>
+            <div class="k">강의</div><div class="v" th:text="${item.courseId == null ? '-' : item.courseCode + ' / ' + item.courseTitle}"></div>
+            <div class="k">관련 수강신청 상태</div><div class="v" th:text="${item.enrollmentStatus == null ? '-' : item.enrollmentStatus}"></div>
+        </div>
+    </section>
+</main>
+</body>
+</html>
