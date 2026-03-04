@@ -303,14 +303,15 @@ public class HomeController {
     }
 
     private MyPaymentItem toMyPointItem(MyPointTransactionProjection p) {
-        String status = switch (p.getType()) {
-            case "SPEND" -> "PAID";
-            case "REFUND" -> "REFUND";
-            default -> "EARN";
-        };
+        String status;
+        if ("SPEND".equals(p.getType())) status = "PAID";
+        else if ("REFUND".equals(p.getType())) status = "REFUND";
+        else status = "CHARGE";
 
         String courseLabel = "-";
-        if (p.getCourseTitle() != null && !p.getCourseTitle().isBlank()) {
+        if ("EARN".equals(p.getType())) {
+            courseLabel = "포인트 충전";
+        } else if (p.getCourseTitle() != null && !p.getCourseTitle().isBlank()) {
             courseLabel = p.getCourseTitle() + (p.getSubjectCode() == null || p.getSubjectCode().isBlank() ? "" : " / " + p.getSubjectCode());
         }
 
