@@ -99,7 +99,7 @@ public class HomeController {
         return "redirect:/enrollments/apply";
     }
 
-    @GetMapping("/enrollments/me")
+    @GetMapping({"/enrollments/me", "/mypage"})
     public String myPage(
             @RequestParam(required = false, defaultValue = "ongoing") String tab,
             Authentication authentication,
@@ -213,7 +213,7 @@ public class HomeController {
     public String customerCenterPage() { return "redirect:/cs"; }
 
     @GetMapping("/payments")
-    public String paymentsPage() { return "pages/payments"; }
+    public String paymentsPage() { return "redirect:/mypage?tab=payments"; }
 
     private List<Course> readCourses() {
         List<CourseListProjection> rows = courseSessionJpaRepository.findAllCourseRows();

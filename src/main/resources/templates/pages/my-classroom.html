@@ -170,25 +170,50 @@
 
 <script th:inline="javascript">
     (function(){
-      const initialTab = /*[[${tab}]]*/ 'ongoing';
+      const serverTab = /*[[${tab}]]*/ 'ongoing';
+      const validTabs = new Set(['ongoing', 'applied', 'payments', 'closed']);
       const tabPanes = document.querySelectorAll('.tab-pane');
       const tabButtons = document.querySelectorAll('.tab-btn');
       const ongoingCards = document.getElementById('ongoingCards');
       const appliedTimetable = document.getElementById('appliedTimetable');
 
-      function showTab(tab) {
-        tabPanes.forEach(p => p.style.display = 'none');
-        document.getElementById('tab-' + tab).style.display = 'block';
-        tabButtons.forEach(b => b.classList.remove('active'));
-        document.querySelector('.tab-btn[data-tab="' + tab + '"]')?.classList.add('active');
-
-        ongoingCards.style.display = (tab === 'ongoing') ? '' : 'none';
-        appliedTimetable.style.display = (tab === 'applied') ? '' : 'none';
-
-        if (tab === 'applied') loadTimetable();
+      function normalizeTab(tab) {
+        return validTabs.has(tab) ? tab : 'ongoing';
       }
 
-      tabButtons.forEach(btn => btn.addEventListener('click', () => showTab(btn.dataset.tab)));
+      function resolveTabFromUrl() {
+        const url = new URL(window.location.href);
+        const fromQuery = url.searchParams.get('tab');
+        if (validTabs.has(fromQuery)) return fromQuery;
+
+        const hash = (window.location.hash || '').replace('#', '');
+        if (validTabs.has(hash)) return hash;
+        if (hash === 'payments') return 'payments';
+
+        return normalizeTab(serverTab);
+      }
+
+      function showTab(tab, syncUrl = true) {
+        const activeTab = normalizeTab(tab);
+
+        tabPanes.forEach(p => p.style.display = 'none');
+        document.getElementById('tab-' + activeTab).style.display = 'block';
+        tabButtons.forEach(b => b.classList.remove('active'));
+        document.querySelector('.tab-btn[data-tab="' + activeTab + '"]')?.classList.add('active');
+
+        ongoingCards.style.display = (activeTab === 'ongoing') ? '' : 'none';
+        appliedTimetable.style.display = (activeTab === 'applied') ? '' : 'none';
+
+        if (syncUrl) {
+          const url = new URL(window.location.href);
+          url.searchParams.set('tab', activeTab);
+          history.replaceState({}, '', url.pathname + '?' + url.searchParams.toString());
+        }
+
+        if (activeTab === 'applied') loadTimetable();
+      }
+
+      tabButtons.forEach(btn => btn.addEventListener('click', () => showTab(btn.dataset.tab, true)));
 
       const weeklyBody = document.getElementById('weeklyBody');
       const weeklyEvents = document.getElementById('weeklyEvents');
@@ -253,7 +278,10 @@
         timetableLoaded = true;
       }
 
-      showTab(initialTab || 'ongoing');
+      window.addEventListener('popstate', () => showTab(resolveTabFromUrl(), false));
+      window.addEventListener('hashchange', () => showTab(resolveTabFromUrl(), false));
+
+      showTab(resolveTabFromUrl(), false);
     })();
 </script>
 
