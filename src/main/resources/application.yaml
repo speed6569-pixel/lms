@@ -2,41 +2,35 @@ spring:
   application:
     name: lms
 
+  servlet:
+    multipart:
+      max-file-size: 1024MB
+      max-request-size: 1024MB
+
   datasource:
-    url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3308}/${DB_NAME:lms_db}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-    username: ${DB_USERNAME:lms_user}
-    password: ${DB_PASSWORD:LmsUser!2026#}
+    url: jdbc:mysql://127.0.0.1:3308/lms_db?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: lms_user
+    password: LmsUser!2026#
     driver-class-name: com.mysql.cj.jdbc.Driver
 
-  # JPA는 테이블/매핑 검증용으로만 사용
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-
-  thymeleaf:
-    cache: false
 
   mail:
-    host: ${MAIL_HOST:}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
+    host: smtp.gmail.com
+    port: 587
+    username: speed6569@gmail.com
+    password: "vwmz dsgm qgnz pzbb"
     properties:
       mail:
         smtp:
-          auth: ${MAIL_SMTP_AUTH:true}
+          auth: true
           starttls:
-            enable: ${MAIL_SMTP_STARTTLS:true}
+            enable: true
 
 mail:
-  from: ${MAIL_FROM:no-reply@lms.local}
+  from: speed6569@gmail.com
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: 8080
 
 logging:
   level:

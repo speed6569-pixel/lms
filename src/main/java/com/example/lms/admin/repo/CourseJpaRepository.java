@@ -9,5 +9,6 @@ public interface CourseJpaRepository extends JpaRepository<CourseEntity, Long> {
     boolean existsByCourseCode(String courseCode);
     boolean existsBySubjectCode(String subjectCode);
 
-    List<CourseEntity> findTop4ByStatusInAndActiveIsNotOrderByCreatedAtDesc(List<String> statuses, Boolean active);
+    List<CourseEntity> findTop4ByStatusInAndActiveIsNotAndIsDeletedFalseOrderByCreatedAtDesc(List<String> statuses, Boolean active);
+    List<CourseEntity> findByIsDeletedFalseOrderByIdDesc();
 }

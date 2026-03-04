@@ -7,7 +7,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -67,6 +69,31 @@ public class AdminApiController {
         return ResponseEntity.ok(adminService.createSession(id, req, adminId(auth), request.getRemoteAddr()));
     }
 
+    @GetMapping("/courses/{id}/lessons")
+    public ResponseEntity<?> getLessons(@PathVariable Long id) {
+        return ResponseEntity.ok(adminService.getLessons(id));
+    }
+
+    @PostMapping("/courses/{id}/lessons")
+    public ResponseEntity<?> addLessons(@PathVariable Long id, @RequestBody List<AdminDtos.LessonInput> req) {
+        return ResponseEntity.ok(adminService.addLessons(id, req));
+    }
+
+    @PatchMapping("/lessons/{lessonId}")
+    public ResponseEntity<?> updateLesson(@PathVariable Long lessonId, @RequestBody AdminDtos.LessonInput req) {
+        return ResponseEntity.ok(adminService.updateLesson(lessonId, req));
+    }
+
+    @DeleteMapping("/lessons/{lessonId}")
+    public ResponseEntity<?> deleteLesson(@PathVariable Long lessonId) {
+        return ResponseEntity.ok(adminService.deleteLesson(lessonId));
+    }
+
+    @PostMapping("/uploads/video")
+    public ResponseEntity<?> uploadVideo(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(adminService.uploadVideo(file));
+    }
+
     @GetMapping("/sessions")
     public ResponseEntity<?> sessions(@RequestParam(required = false) Long courseId) {
         return ResponseEntity.ok(adminService.getSessions(courseId));
@@ -85,6 +112,12 @@ public class AdminApiController {
     @PostMapping("/enrollments/{id}/reject")
     public ResponseEntity<?> reject(@PathVariable Long id, Authentication auth, HttpServletRequest request) {
         return ResponseEntity.ok(adminService.rejectEnrollment(id, adminId(auth), request.getRemoteAddr()));
+    }
+
+    @GetMapping("/courses/{id}/learners")
+    public ResponseEntity<?> learners(@PathVariable Long id,
+                                      @RequestParam(required = false) String q) {
+        return ResponseEntity.ok(adminService.getCourseLearners(id, q));
     }
 
     @PostMapping("/attendance/check")

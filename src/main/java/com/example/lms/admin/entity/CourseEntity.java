@@ -34,6 +34,9 @@ public class CourseEntity {
     private String instructor;
     private Integer capacity;
     private String status;
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -74,4 +77,6 @@ public class CourseEntity {
     public void setCapacity(Integer capacity) { this.capacity = capacity; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public Boolean getIsDeleted() { return isDeleted; }
+    public void setIsDeleted(Boolean isDeleted) { this.isDeleted = isDeleted; }
 }

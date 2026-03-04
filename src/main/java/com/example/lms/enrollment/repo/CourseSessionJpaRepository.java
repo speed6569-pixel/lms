@@ -47,6 +47,7 @@ public interface CourseSessionJpaRepository extends JpaRepository<CourseSessionE
                    DATE_FORMAT(c.created_at, '%Y-%m-%d') AS createdAt
             FROM course_sessions cs
             JOIN courses c ON cs.course_id = c.id
+            WHERE COALESCE(c.is_deleted, 0) = 0
             ORDER BY FIELD(cs.day_of_week, '월','화','수','목','금','토','일'), cs.start_time
             """, nativeQuery = true)
     List<CourseListProjection> findAllCourseRows();

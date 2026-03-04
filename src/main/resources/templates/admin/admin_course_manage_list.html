@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>강의 콘텐츠 관리</title>
+<link rel="stylesheet" th:href="@{/css/home.css}"><link rel="stylesheet" th:href="@{/css/header-profile.css}"></head>
+<body>
+<div th:replace="~{fragments/header :: siteHeader(${userName}, ${userEmail})}"></div>
+<main style="max-width:1100px;margin:24px auto;padding:0 16px;">
+<h2>강의 콘텐츠 관리</h2>
+<table style="width:100%;border-collapse:collapse;">
+<thead><tr><th>ID</th><th>과목코드</th><th>교과목명</th><th>교수</th><th>가격</th><th>인원제한</th><th>관리</th></tr></thead>
+<tbody>
+<tr th:each="c : ${courses}">
+<td th:text="${c.id}"></td><td th:text="${c.subjectCode}"></td><td th:text="${c.subjectName}"></td><td th:text="${c.instructor}"></td><td th:text="${c.price}"></td><td th:text="${c.capacity}"></td>
+<td><a th:href="@{/admin/courses/{id}/manage(id=${c.id})}">상세관리</a></td>
+</tr>
+<tr th:if="${#lists.isEmpty(courses)}"><td colspan="7">강의가 없습니다.</td></tr>
+</tbody></table>
+</main>
+</body></html>

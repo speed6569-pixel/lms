@@ -1,5 +1,6 @@
 package com.example.lms.enrollment.repo;
 
+import com.example.lms.admin.repo.AdminCourseLearnerProjection;
 import com.example.lms.admin.repo.AdminEnrollmentFlatProjection;
 import com.example.lms.enrollment.entity.EnrollmentEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -229,5 +230,20 @@ public interface EnrollmentJpaRepository extends JpaRepository<EnrollmentEntity,
             WHERE cs.course_id = :courseId
             """, nativeQuery = true)
     int deleteEnrollmentsByCourseId(@Param("courseId") Long courseId);
+
+    @Query(value = """
+            SELECT u.login_id AS userId,
+                   u.name AS name,
+                   COALESCE(u.email, '-') AS email,
+                   e.status AS status,
+                   DATE_FORMAT(e.applied_at, '%Y-%m-%d %H:%i') AS appliedAt
+            FROM enrollments e
+            JOIN users u ON u.id = e.user_id
+            WHERE e.course_id = :courseId
+              AND e.status IN ('APPROVED','RUNNING','APPLIED','WAITLIST','CANCELLED')
+              AND (:q IS NULL OR :q = '' OR u.login_id LIKE CONCAT('%', :q, '%') OR u.name LIKE CONCAT('%', :q, '%'))
+            ORDER BY e.id DESC
+            """, nativeQuery = true)
+    List<AdminCourseLearnerProjection> findCourseLearners(@Param("courseId") Long courseId, @Param("q") String q);
 }
 

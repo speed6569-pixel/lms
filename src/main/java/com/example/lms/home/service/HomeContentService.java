@@ -25,7 +25,7 @@ public class HomeContentService {
     @Transactional(readOnly = true)
     public List<HomeDtos.CourseCardDto> latestCourses() {
         List<CourseEntity> courses = courseJpaRepository
-                .findTop4ByStatusInAndActiveIsNotOrderByCreatedAtDesc(List.of("OPEN", "CLOSED"), false);
+                .findTop4ByStatusInAndActiveIsNotAndIsDeletedFalseOrderByCreatedAtDesc(List.of("OPEN", "CLOSED"), false);
 
         return courses.stream().map(c -> {
             String courseName = firstNonBlank(c.getSubjectName(), c.getTitle(), "제목 없음");
