@@ -5,6 +5,8 @@ import com.example.lms.enrollment.repo.UserJpaRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 public class UserService {
 
@@ -14,6 +16,11 @@ public class UserService {
     public UserService(UserJpaRepository userJpaRepository, PasswordEncoder passwordEncoder) {
         this.userJpaRepository = userJpaRepository;
         this.passwordEncoder = passwordEncoder;
+    }
+
+    public Optional<UserEntity> findByEmail(String email) {
+        if (email == null || email.isBlank()) return Optional.empty();
+        return userJpaRepository.findByEmail(email.trim());
     }
 
     public void registerUser(String loginId, String rawPassword, String name) {

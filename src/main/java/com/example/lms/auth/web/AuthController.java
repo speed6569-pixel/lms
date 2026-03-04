@@ -55,6 +55,28 @@ public class AuthController {
         return "auth/login";
     }
 
+    @GetMapping("/find-id")
+    public String findIdPage() {
+        return "auth/find-id";
+    }
+
+    @PostMapping("/find-id")
+    public String findId(@RequestParam String email, Model model) {
+        var userOpt = userService.findByEmail(email);
+        if (userOpt.isPresent()) {
+            String masked = maskLoginId(userOpt.get().getLoginId());
+            model.addAttribute("maskedLoginId", masked);
+            try {
+                emailSenderService.sendLoginIdHint(email, masked);
+            } catch (Exception e) {
+                // dev fallback
+                System.out.println("[DEV FIND ID] email=" + email + ", maskedId=" + masked);
+            }
+        }
+        model.addAttribute("message", "입력하신 이메일로 안내를 전송했습니다. 메일을 확인해주세요.");
+        return "auth/find-id";
+    }
+
     @GetMapping("/forgot-password")
     public String forgotPasswordPage() {
         return "auth/forgot-password";
@@ -193,5 +215,12 @@ public class AuthController {
 
         redirectAttributes.addFlashAttribute("message", "회원가입이 완료되었습니다. 로그인해주세요.");
         return "redirect:/login";
+    }
+
+    private String maskLoginId(String loginId) {
+        if (loginId == null || loginId.isBlank()) return "***";
+        if (loginId.length() <= 2) return loginId.charAt(0) + "*";
+        if (loginId.length() <= 4) return loginId.substring(0, 2) + "*".repeat(loginId.length() - 2);
+        return loginId.substring(0, 2) + "*".repeat(loginId.length() - 4) + loginId.substring(loginId.length() - 2);
     }
 }

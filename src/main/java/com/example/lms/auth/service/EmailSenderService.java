@@ -35,4 +35,13 @@ public class EmailSenderService {
         message.setText("아래 링크에서 비밀번호를 재설정해주세요.\n" + resetLink + "\n\n링크 유효시간: 60분");
         mailSender.send(message);
     }
+
+    public void sendLoginIdHint(String to, String maskedLoginId) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(from);
+        message.setTo(to);
+        message.setSubject("[LMS] 아이디 찾기 안내");
+        message.setText("요청하신 아이디 정보입니다.\n아이디: " + maskedLoginId);
+        mailSender.send(message);
+    }
 }
