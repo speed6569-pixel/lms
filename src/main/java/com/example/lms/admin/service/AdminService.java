@@ -10,6 +10,7 @@ import com.example.lms.enrollment.entity.UserEntity;
 import com.example.lms.enrollment.repo.CourseSessionJpaRepository;
 import com.example.lms.enrollment.repo.EnrollmentJpaRepository;
 import com.example.lms.enrollment.repo.UserJpaRepository;
+import com.example.lms.enrollment.service.PointService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,7 @@ public class AdminService {
     private final ProgressRecordJpaRepository progressRecordJpaRepository;
     private final UserJpaRepository userJpaRepository;
     private final AuditLogJpaRepository auditLogJpaRepository;
+    private final PointService pointService;
 
     public AdminService(CourseJpaRepository courseJpaRepository,
                         AdminCourseSessionJpaRepository adminCourseSessionJpaRepository,
@@ -34,7 +36,8 @@ public class AdminService {
                         AttendanceRecordJpaRepository attendanceRecordJpaRepository,
                         ProgressRecordJpaRepository progressRecordJpaRepository,
                         UserJpaRepository userJpaRepository,
-                        AuditLogJpaRepository auditLogJpaRepository) {
+                        AuditLogJpaRepository auditLogJpaRepository,
+                        PointService pointService) {
         this.courseJpaRepository = courseJpaRepository;
         this.adminCourseSessionJpaRepository = adminCourseSessionJpaRepository;
         this.courseSessionJpaRepository = courseSessionJpaRepository;
@@ -43,6 +46,7 @@ public class AdminService {
         this.progressRecordJpaRepository = progressRecordJpaRepository;
         this.userJpaRepository = userJpaRepository;
         this.auditLogJpaRepository = auditLogJpaRepository;
+        this.pointService = pointService;
     }
 
     @Transactional
@@ -218,6 +222,19 @@ public class AdminService {
         EnrollmentEntity e = enrollmentJpaRepository.findById(enrollmentId).orElseThrow();
         CourseSessionEntity s = courseSessionJpaRepository.findById(e.getCourseSessionId()).orElseThrow();
 
+        if ("CANCEL_REQUESTED".equalsIgnoreCase(e.getStatus())) {
+            e.setStatus("CANCELLED");
+            int current = s.getEnrolledCount() == null ? 0 : s.getEnrolledCount();
+            s.setEnrolledCount(Math.max(0, current - 1));
+            courseSessionJpaRepository.save(s);
+
+            int refunded = pointService.refundCoursePayment(e.getUserId(), e.getCourseId(), "관리자 승인 취소 환불");
+            EnrollmentEntity saved = enrollmentJpaRepository.save(e);
+            audit(adminUserId, "APPROVE_CANCEL_REQUEST", "ENROLLMENT", enrollmentId, ip,
+                    "status=CANCELLED,refunded=" + refunded);
+            return saved;
+        }
+
         if (s.getEnrolledCount() != null && s.getMaxCount() != null && s.getEnrolledCount() >= s.getMaxCount()) {
             e.setStatus("WAITLIST");
         } else {
@@ -234,6 +251,14 @@ public class AdminService {
     @Transactional
     public EnrollmentEntity rejectEnrollment(Long enrollmentId, Long adminUserId, String ip) {
         EnrollmentEntity e = enrollmentJpaRepository.findById(enrollmentId).orElseThrow();
+
+        if ("CANCEL_REQUESTED".equalsIgnoreCase(e.getStatus())) {
+            e.setStatus("RUNNING");
+            EnrollmentEntity saved = enrollmentJpaRepository.save(e);
+            audit(adminUserId, "REJECT_CANCEL_REQUEST", "ENROLLMENT", enrollmentId, ip, "RUNNING");
+            return saved;
+        }
+
         e.setStatus("REJECTED");
         EnrollmentEntity saved = enrollmentJpaRepository.save(e);
         audit(adminUserId, "REJECT_ENROLLMENT", "ENROLLMENT", enrollmentId, ip, "REJECTED");
