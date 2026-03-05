@@ -20,7 +20,7 @@
         <td th:text="${p.id}"></td>
         <td><a th:href="@{/customer-center/{id}(id=${p.id})}" th:text="${p.title}"></a></td>
         <td th:text="${p.createdAt != null ? #temporals.format(p.createdAt, 'yyyy-MM-dd HH:mm') : ''}"></td>
-        <td th:text="${p.status.name() == 'ANSWERED'} ? '답변완료' : '답변대기'"></td>
+        <td th:text="${p.status.name() == 'ANSWERED' ? '답변완료' : '답변대기'}"></td>
       </tr>
       <tr th:if="${#lists.isEmpty(posts)}"><td colspan="4">등록된 문의가 없습니다.</td></tr>
       </tbody>

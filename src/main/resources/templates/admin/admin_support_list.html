@@ -10,7 +10,7 @@
         <td th:text="${p.id}"></td>
         <td th:text="${p.writer}"></td>
         <td th:text="${p.title}"></td>
-        <td th:text="${p.status.name() == 'ANSWERED'} ? '답변완료' : '답변대기'"></td>
+        <td th:text="${p.status.name() == 'ANSWERED' ? '답변완료' : '답변대기'}"></td>
         <td th:text="${p.createdAt != null ? #temporals.format(p.createdAt, 'yyyy-MM-dd HH:mm') : ''}"></td>
         <td>
           <a class="btn-primary" th:href="@{/admin/support/{id}/answer(id=${p.id})}">답변</a>
