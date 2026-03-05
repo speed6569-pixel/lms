@@ -1,33 +1,29 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>강의 상세 관리</title>
-<link rel="stylesheet" th:href="@{/css/home.css}"><link rel="stylesheet" th:href="@{/css/header-profile.css}"></head>
 <body>
-<div th:replace="~{fragments/header :: siteHeader(${userName}, ${userEmail})}"></div>
-<main style="max-width:1200px;margin:24px auto;padding:0 16px;display:grid;gap:16px;">
-<section style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px;">
+<th:block th:fragment="content">
+<section style="border:1px solid #e5e7eb;border-radius:12px;padding:14px;margin-bottom:12px;">
 <h3>강의 기본정보</h3>
 <div th:text="|${course.subjectCode} / ${course.subjectName} / ${course.instructor} / ${course.price}원 / 정원 ${course.capacity}|"></div>
 </section>
 
-<section style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px;">
+<section style="border:1px solid #e5e7eb;border-radius:12px;padding:14px;margin-bottom:12px;">
 <h3>차시(동영상) 관리</h3>
 <div id="lessonRows" style="display:grid;gap:8px;"></div>
-<div style="margin:8px 0;"><button onclick="addRow()">차시 추가</button> <button onclick="saveRows()">저장</button></div>
-<table style="width:100%;border-collapse:collapse;"><thead><tr><th>순서</th><th>차시명</th><th>영상URL</th><th>삭제</th></tr></thead><tbody>
-<tr th:each="l : ${lessons}"><td th:text="${l.orderNo}"></td><td th:text="${l.title}"></td><td th:text="${l.videoUrl}"></td><td><button th:attr="onclick=|deleteLesson(${l.id})|">삭제</button></td></tr>
+<div style="margin:8px 0;"><button class="action" onclick="addRow()">차시 추가</button> <button class="action" onclick="saveRows()">저장</button></div>
+<table class="table"><thead><tr><th>순서</th><th>차시명</th><th>영상URL</th><th>삭제</th></tr></thead><tbody>
+<tr th:each="l : ${lessons}"><td th:text="${l.orderNo}"></td><td th:text="${l.title}"></td><td th:text="${l.videoUrl}"></td><td><button class="action danger" th:attr="onclick=|deleteLesson(${l.id})|">삭제</button></td></tr>
 <tr th:if="${#lists.isEmpty(lessons)}"><td colspan="4">차시가 없습니다.</td></tr>
 </tbody></table>
 </section>
 
-<section style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px;">
+<section style="border:1px solid #e5e7eb;border-radius:12px;padding:14px;">
 <h3>수강자 조회</h3>
-<table style="width:100%;border-collapse:collapse;"><thead><tr><th>아이디</th><th>이름</th><th>이메일</th><th>상태</th><th>신청일</th></tr></thead><tbody>
+<table class="table"><thead><tr><th>아이디</th><th>이름</th><th>이메일</th><th>상태</th><th>신청일</th></tr></thead><tbody>
 <tr th:each="u : ${learners}"><td th:text="${u.userId}"></td><td th:text="${u.name}"></td><td th:text="${u.email}"></td><td th:text="${u.status}"></td><td th:text="${u.appliedAt}"></td></tr>
 <tr th:if="${#lists.isEmpty(learners)}"><td colspan="5">수강자가 없습니다.</td></tr>
 </tbody></table>
 </section>
-</main>
 <script th:inline="javascript">
 const courseId = /*[[${course.id}]]*/ 0;
 async function uploadVideo(file){ const fd=new FormData(); fd.append('file', file); const r=await fetch('/admin/api/uploads/video',{method:'POST',body:fd}); const j=await r.json(); if(!r.ok) throw new Error(j.message||'업로드 실패'); return j.url; }
@@ -36,4 +32,6 @@ async function saveRows(){ const rows=[...document.querySelectorAll('#lessonRows
  if(lessons.length===0){alert('추가할 차시가 없습니다.');return;} const res=await fetch(`/admin/api/courses/${courseId}/lessons`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(lessons)}); if(!res.ok){const j=await res.json().catch(()=>({})); alert(j.message||'저장 실패'); return;} location.reload(); }
 async function deleteLesson(id){ if(!confirm('삭제하시겠습니까?')) return; await fetch('/admin/api/lessons/'+id,{method:'DELETE'}); location.reload(); }
 </script>
-</body></html>
+</th:block>
+</body>
+</html>

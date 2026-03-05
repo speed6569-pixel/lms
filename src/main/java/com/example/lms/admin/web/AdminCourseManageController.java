@@ -21,7 +21,7 @@ public class AdminCourseManageController {
     @GetMapping("/manage")
     public String manageList(Model model) {
         model.addAttribute("courses", adminService.getCourses());
-        return "admin/admin_course_manage_list";
+        return adminLayout(model, "강의 콘텐츠 관리", "admin/admin_course_manage_list :: content");
     }
 
     @GetMapping("/{courseId}/manage")
@@ -31,6 +31,13 @@ public class AdminCourseManageController {
         model.addAttribute("course", adminService.getCourse(courseId));
         model.addAttribute("lessons", adminService.getLessons(courseId));
         model.addAttribute("learners", adminService.getCourseLearners(courseId, q));
-        return "admin/admin_course_manage_detail";
+        return adminLayout(model, "강의 상세 관리", "admin/admin_course_manage_detail :: content");
+    }
+
+    private String adminLayout(Model model, String title, String content) {
+        model.addAttribute("title", title);
+        model.addAttribute("activeMenu", "course-content");
+        model.addAttribute("content", content);
+        return "admin/layout";
     }
 }

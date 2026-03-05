@@ -28,21 +28,21 @@ public class AdminPostController {
         model.addAttribute("posts", postService.adminList(category, q));
         model.addAttribute("category", category);
         model.addAttribute("q", q);
-        return "admin/admin_posts_list";
+        return adminLayout(model, "게시물 관리", "admin/admin_posts_list :: content");
     }
 
     @GetMapping("/new")
     public String formNew(Model model) {
         model.addAttribute("mode", "new");
         model.addAttribute("post", null);
-        return "admin/admin_posts_form";
+        return adminLayout(model, "게시물 등록", "admin/admin_posts_form :: content");
     }
 
     @GetMapping("/{id}/edit")
     public String formEdit(@PathVariable Long id, Model model) {
         model.addAttribute("mode", "edit");
         model.addAttribute("post", postService.get(id));
-        return "admin/admin_posts_form";
+        return adminLayout(model, "게시물 수정", "admin/admin_posts_form :: content");
     }
 
     @PostMapping
@@ -85,5 +85,12 @@ public class AdminPostController {
         postService.softDelete(id);
         ra.addFlashAttribute("message", "삭제되었습니다.");
         return "redirect:/admin/posts";
+    }
+
+    private String adminLayout(Model model, String title, String content) {
+        model.addAttribute("title", title);
+        model.addAttribute("activeMenu", "posts");
+        model.addAttribute("content", content);
+        return "admin/layout";
     }
 }

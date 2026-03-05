@@ -1,221 +1,170 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>관리자 대시보드</title>
-    <link rel="stylesheet" th:href="@{/css/home.css}">
-    <link rel="stylesheet" th:href="@{/css/header-profile.css}">
-    <link rel="stylesheet" th:href="@{/css/admin.css}">
-</head>
 <body>
-<div th:replace="~{fragments/header :: siteHeader(${userName}, ${userEmail})}"></div>
+<th:block th:fragment="content">
+    <div id="sec-stats" class="section active">
+        <h2>대시보드 통계</h2>
+        <div class="cards" id="statsCards"></div>
+    </div>
 
-<main class="admin-wrap">
-    <aside th:replace="~{fragments/admin-layout :: adminSidebar('dashboard')}"></aside>
-
-    <section class="panel">
-        <div id="sec-stats" class="section active">
-            <h2>대시보드 통계</h2>
-            <div class="cards" id="statsCards"></div>
-        </div>
-
-        <div id="sec-courses" class="section">
-            <h2>강의 관리</h2>
-            <div class="row">
-                <select id="cStatus"><option value="OPEN">모집중</option><option value="CLOSED">마감</option></select>
-                <input id="cCode" placeholder="과목코드">
-                <select id="cJobGroup"><option>개발</option><option>영업</option><option>CS</option><option>물류</option><option>기획</option></select>
-                <select id="cJobLevel"><option>사원</option><option>대리</option><option>과장</option><option>부장</option></select>
-                <input id="cTitle" placeholder="교과목명">
-                <input id="cProfessor" placeholder="교수">
-                <input id="cPrice" placeholder="가격" type="number" min="0">
-                <input id="cMax" placeholder="인원제한" type="number" min="0">
-                <label><input type="radio" name="dayMode" value="MULTI" checked>개별 선택</label>
-                <label><input type="radio" name="dayMode" value="RANGE">범위 선택</label>
-                <div id="multiDayBox">
-                    <label><input type="checkbox" class="day-check" value="MON">월</label>
-                    <label><input type="checkbox" class="day-check" value="TUE">화</label>
-                    <label><input type="checkbox" class="day-check" value="WED">수</label>
-                    <label><input type="checkbox" class="day-check" value="THU">목</label>
-                    <label><input type="checkbox" class="day-check" value="FRI">금</label>
-                </div>
-                <div id="rangeDayBox" style="display:none;">
-                    <select id="startDay"><option value="MON">월</option><option value="TUE">화</option><option value="WED">수</option><option value="THU">목</option><option value="FRI">금</option></select>
-                    ~
-                    <select id="endDay"><option value="MON">월</option><option value="TUE">화</option><option value="WED">수</option><option value="THU">목</option><option value="FRI">금</option></select>
-                </div>
-                <input id="cStart" type="time" value="09:00">
-                <input id="cEnd" type="time" value="11:00">
-                <button type="button" class="action" onclick="addLessonRow()">차시 추가</button>
-                <button class="action" onclick="createCourse()">강의 생성</button>
+    <div id="sec-courses" class="section">
+        <h2>강의 관리</h2>
+        <div class="row">
+            <select id="cStatus"><option value="OPEN">모집중</option><option value="CLOSED">마감</option></select>
+            <input id="cCode" placeholder="과목코드">
+            <select id="cJobGroup"><option>개발</option><option>영업</option><option>CS</option><option>물류</option><option>기획</option></select>
+            <select id="cJobLevel"><option>사원</option><option>대리</option><option>과장</option><option>부장</option></select>
+            <input id="cTitle" placeholder="교과목명">
+            <input id="cProfessor" placeholder="교수">
+            <input id="cPrice" placeholder="가격" type="number" min="0">
+            <input id="cMax" placeholder="인원제한" type="number" min="0">
+            <label><input type="radio" name="dayMode" value="MULTI" checked>개별 선택</label>
+            <label><input type="radio" name="dayMode" value="RANGE">범위 선택</label>
+            <div id="multiDayBox">
+                <label><input type="checkbox" class="day-check" value="MON">월</label>
+                <label><input type="checkbox" class="day-check" value="TUE">화</label>
+                <label><input type="checkbox" class="day-check" value="WED">수</label>
+                <label><input type="checkbox" class="day-check" value="THU">목</label>
+                <label><input type="checkbox" class="day-check" value="FRI">금</label>
             </div>
-            <div id="lessonRows" class="row" style="display:grid;grid-template-columns:1fr;gap:8px;"></div>
-            <table><thead><tr><th>신청</th><th>ID</th><th>과목코드</th><th>직군</th><th>직급</th><th>교과목명</th><th>교수</th><th>강의 시간</th><th>가격</th><th>인원제한</th><th>삭제</th></tr></thead><tbody id="courseBody"></tbody></table>
-        </div>
-
-        <div id="sec-enrollments" class="section">
-            <h2>수강신청 관리</h2>
-            <div class="row">
-                <select id="eStatus" onchange="loadEnrollments()"><option>APPLIED</option><option>WAITLIST</option><option>APPROVED</option><option>REJECTED</option><option>CANCELLED</option></select>
+            <div id="rangeDayBox" style="display:none;">
+                <select id="startDay"><option value="MON">월</option><option value="TUE">화</option><option value="WED">수</option><option value="THU">목</option><option value="FRI">금</option></select>
+                ~
+                <select id="endDay"><option value="MON">월</option><option value="TUE">화</option><option value="WED">수</option><option value="THU">목</option><option value="FRI">금</option></select>
             </div>
-            <table><thead><tr><th>ID</th><th>사용자(아이디/이름)</th><th>강의(과목코드/강의명)</th><th>강의시간</th><th>가격</th><th>결제여부</th><th>상태</th><th>처리</th></tr></thead><tbody id="enrollmentBody"></tbody></table>
+            <input id="cStart" type="time" value="09:00">
+            <input id="cEnd" type="time" value="11:00">
+            <button type="button" class="action" onclick="addLessonRow()">차시 추가</button>
+            <button class="action" onclick="createCourse()">강의 생성</button>
         </div>
+        <div id="lessonRows" class="row" style="display:grid;grid-template-columns:1fr;gap:8px;"></div>
+        <table class="table"><thead><tr><th>신청</th><th>ID</th><th>과목코드</th><th>직군</th><th>직급</th><th>교과목명</th><th>교수</th><th>강의 시간</th><th>가격</th><th>인원제한</th><th>삭제</th></tr></thead><tbody id="courseBody"></tbody></table>
+    </div>
 
-        <div id="sec-users" class="section">
-            <h2>사용자 관리</h2>
-            <div class="row">
-                <input id="uq" placeholder="아이디(username) 또는 이름(name)" style="min-width:280px">
-                <button class="action" onclick="loadAdminUsers()">검색</button>
-            </div>
-            <table>
-                <thead>
-                <tr><th>ID</th><th>username</th><th>name</th><th>status</th><th>role</th><th>이용기간</th><th>총결제액</th><th>참여강의수</th><th>변경</th></tr>
-                </thead>
-                <tbody id="adminUserBody"></tbody>
-            </table>
+    <div id="sec-enrollments" class="section">
+        <h2>수강신청 관리</h2>
+        <div class="row">
+            <select id="eStatus" onchange="loadEnrollments()"><option>APPLIED</option><option>WAITLIST</option><option>APPROVED</option><option>REJECTED</option><option>CANCELLED</option></select>
         </div>
-    </section>
-</main>
+        <table class="table"><thead><tr><th>ID</th><th>사용자(아이디/이름)</th><th>강의(과목코드/강의명)</th><th>강의시간</th><th>가격</th><th>결제여부</th><th>상태</th><th>처리</th></tr></thead><tbody id="enrollmentBody"></tbody></table>
+    </div>
 
-<div th:replace="~{fragments/footer :: siteFooter}"></div>
+    <div id="sec-users" class="section">
+        <h2>사용자 관리</h2>
+        <div class="row">
+            <input id="uq" placeholder="아이디(username) 또는 이름(name)" style="min-width:280px">
+            <button class="action" onclick="loadAdminUsers()">검색</button>
+        </div>
+        <table class="table">
+            <thead>
+            <tr><th>ID</th><th>username</th><th>name</th><th>status</th><th>role</th><th>이용기간</th><th>총결제액</th><th>참여강의수</th><th>변경</th></tr>
+            </thead>
+            <tbody id="adminUserBody"></tbody>
+        </table>
+    </div>
 
-<script>
-  const sections = ['stats','courses','enrollments','users'];
+    <script>
+      const sections = ['stats','courses','enrollments','users'];
+      function activateSection(target){
+        const next = sections.includes(target) ? target : 'stats';
+        sections.forEach(s=>document.getElementById('sec-'+s).classList.remove('active'));
+        document.getElementById('sec-'+next)?.classList.add('active');
+      }
 
-  function activateSection(target){
-    const next = sections.includes(target) ? target : 'stats';
-    document.querySelectorAll('.nav-btn[data-target]').forEach(b=>b.classList.remove('active'));
-    document.querySelector('.nav-btn[data-target="'+next+'"]')?.classList.add('active');
-    sections.forEach(s=>document.getElementById('sec-'+s).classList.remove('active'));
-    document.getElementById('sec-'+next)?.classList.add('active');
-  }
-
-  document.querySelectorAll('.nav-btn[data-target]').forEach(btn=>btn.addEventListener('click',()=>{
-    activateSection(btn.dataset.target);
-  }));
-
-  async function loadStats(){
-    const stats = await (await fetch('/admin/api/stats')).json();
-    document.getElementById('statsCards').innerHTML = Object.entries(stats).map(([k,v]) => `<div class='card'><strong>${k}</strong><div style='font-size:24px;margin-top:6px;'>${v}</div></div>`).join('');
-  }
-  async function loadCourses(){
-    const rows = await (await fetch('/admin/api/courses')).json();
-    document.getElementById('courseBody').innerHTML = rows.map(v=>`<tr><td><button class='action' onclick="toggleStatus(${v.id},'${v.status||'OPEN'}')">${v.applyStatus||'모집중'}</button></td><td>${v.id}</td><td>${v.subjectCode||''}</td><td>${v.jobGroup||''}</td><td>${v.jobLevel||''}</td><td>${v.subjectName||''}</td><td>${v.instructor||''}</td><td>${v.classTime||'-'}</td><td>${v.price||0}</td><td>${v.capacity||0}</td><td><button class='action' style='background:#ef4444' onclick='deleteCourse(${v.id})'>삭제</button></td></tr>`).join('');
-  }
-  function currentDayMode(){ return document.querySelector('input[name="dayMode"]:checked')?.value || 'MULTI'; }
-  function toggleDayMode(){
-    const mode = currentDayMode();
-    document.getElementById('multiDayBox').style.display = mode==='MULTI' ? '' : 'none';
-    document.getElementById('rangeDayBox').style.display = mode==='RANGE' ? '' : 'none';
-  }
-
-  async function uploadLessonVideo(file){
-    const fd = new FormData();
-    fd.append('file', file);
-    const res = await fetch('/admin/api/uploads/video', {method:'POST', body:fd});
-    const json = await res.json().catch(()=>({}));
-    if(!res.ok || !json.url) throw new Error(json.message || '영상 업로드 실패');
-    return json.url;
-  }
-
-  function addLessonRow(){
-    const box = document.getElementById('lessonRows');
-    const idx = box.children.length + 1;
-    const row = document.createElement('div');
-    row.className = 'row';
-    row.style.border = '1px solid #e5e7eb';
-    row.style.padding = '8px';
-    row.style.borderRadius = '10px';
-    row.innerHTML = `<input class='l-order' type='number' min='1' value='${idx}' style='width:90px' placeholder='차시번호'> <input class='l-title' placeholder='차시명' style='min-width:180px'> <input class='l-desc' placeholder='설명' style='min-width:220px'> <input class='l-file' type='file' accept='video/mp4,video/webm,video/quicktime'> <button type='button' class='action' style='background:#6b7280' onclick='this.closest(".row").remove()'>삭제</button>`;
-    box.appendChild(row);
-  }
-
-  async function collectLessons(){
-    const rows = [...document.querySelectorAll('#lessonRows > .row')];
-    const lessons = [];
-    for (const row of rows){
-      const title = row.querySelector('.l-title')?.value?.trim();
-      const description = row.querySelector('.l-desc')?.value?.trim();
-      const orderNo = Number(row.querySelector('.l-order')?.value || 1);
-      const file = row.querySelector('.l-file')?.files?.[0];
-      if (!title && !file) continue;
-      if (!file) throw new Error('차시 영상 파일을 선택하세요.');
-      const videoUrl = await uploadLessonVideo(file);
-      lessons.push({ title: title || '차시', description, orderNo, videoUrl });
-    }
-    return lessons;
-  }
-
-  async function createCourse(){
-    const mode = currentDayMode();
-    const days = [...document.querySelectorAll('.day-check:checked')].map(v=>v.value);
-    if(mode==='MULTI' && days.length===0){ alert('요일을 1개 이상 선택하세요.'); return; }
-
-    let lessons = [];
-    try { lessons = await collectLessons(); } catch (e) { alert(e.message || '차시 수집 실패'); return; }
-
-    await fetch('/admin/api/courses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      subjectCode:cCode.value,jobGroup:cJobGroup.value,jobLevel:cJobLevel.value,subjectName:cTitle.value,instructor:cProfessor.value,
-      price:Number(cPrice.value||0),capacity:Number(cMax.value||0),status:cStatus.value,
-      dayMode:mode, days,
-      startDay:document.getElementById('startDay').value,
-      endDay:document.getElementById('endDay').value,
-      startTime:cStart.value,endTime:cEnd.value,
-      lessons
-    })});
-    document.getElementById('lessonRows').innerHTML='';
-    await loadCourses(); await loadStats();
-  }
-  async function toggleStatus(id,current){
-    const next = current==='OPEN' ? 'CLOSED' : 'OPEN';
-    await fetch('/admin/api/courses/'+id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:next})});
-    await loadCourses();
-  }
-  async function deleteCourse(id){
-    if(!confirm('강의를 삭제하시겠습니까? 연결된 세션/신청/출석/진도 데이터도 삭제됩니다.')) return;
-    await fetch('/admin/api/courses/'+id,{method:'DELETE'});
-    await loadCourses(); await loadEnrollments(); await loadStats();
-  }
-  async function loadEnrollments(){
-    const rows = await (await fetch('/admin/api/enrollments?status='+eStatus.value)).json();
-    document.getElementById('enrollmentBody').innerHTML = rows.map(v=>`<tr><td>${v.enrollmentId}</td><td>${v.username||''} / ${v.name||''}</td><td>${v.subjectCode||''} / ${v.courseName||''}</td><td>${v.scheduleText||'-'}</td><td>${Number(v.price||0).toLocaleString()}원</td><td>${v.paymentStatus||'UNPAID'}</td><td>${v.status||''}</td><td><button class='action' onclick='approve(${v.enrollmentId})'>승인</button> <button class='action' style='background:#ef4444' onclick='reject(${v.enrollmentId})'>반려</button></td></tr>`).join('');
-  }
-  async function approve(id){ await fetch('/admin/api/enrollments/'+id+'/approve',{method:'POST'}); await loadEnrollments(); await loadStats(); }
-  async function reject(id){ await fetch('/admin/api/enrollments/'+id+'/reject',{method:'POST'}); await loadEnrollments(); await loadStats(); }
-  async function loadAdminUsers(){
-    const q = document.getElementById('uq').value || '';
-    const rows = await (await fetch('/admin/api/users?q='+encodeURIComponent(q))).json();
-    const body = document.getElementById('adminUserBody');
-    if(!rows || rows.length===0){ body.innerHTML = `<tr><td colspan='9'>검색 결과가 없습니다.</td></tr>`; return; }
-    body.innerHTML = rows.map(v => `
-      <tr>
-        <td>${v.id}</td>
-        <td>${v.username||''}</td>
-        <td>${v.name||''}</td>
-        <td><select id='ust-${v.id}'><option value='ACTIVE' ${v.status==='ACTIVE'?'selected':''}>ACTIVE</option><option value='BLOCKED' ${v.status==='BLOCKED'?'selected':''}>BLOCKED</option></select></td>
-        <td><select id='url-${v.id}'><option value='ROLE_USER' ${v.role==='ROLE_USER'?'selected':''}>USER</option><option value='ROLE_ADMIN' ${v.role==='ROLE_ADMIN'?'selected':''}>ADMIN</option></select></td>
-        <td>${v.usagePeriod||''}</td>
-        <td>${Number(v.totalPayment||0).toLocaleString()}원</td>
-        <td>${v.runningCourseCount||0}</td>
-        <td><button class='action' onclick='saveAdminUser(${v.id})'>저장</button></td>
-      </tr>`).join('');
-  }
-
-  async function saveAdminUser(id){
-    const role = document.getElementById('url-'+id).value;
-    const status = document.getElementById('ust-'+id).value;
-    const res = await fetch('/admin/api/users/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({role,status})});
-    const json = await res.json().catch(()=>({message:'저장 실패'}));
-    if(!res.ok){ alert(json.message||'저장 실패'); return; }
-    alert('저장되었습니다.');
-    await loadAdminUsers();
-  }
-
-  document.getElementById('uq')?.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); loadAdminUsers(); }});
-  document.querySelectorAll('input[name="dayMode"]').forEach(v=>v.addEventListener('change', toggleDayMode));
-  toggleDayMode();
-  loadStats(); loadCourses(); loadEnrollments(); loadAdminUsers();
-</script>
+      async function loadStats(){
+        const stats = await (await fetch('/admin/api/stats')).json();
+        document.getElementById('statsCards').innerHTML = Object.entries(stats).map(([k,v]) => `<div class='card'><strong>${k}</strong><div style='font-size:24px;margin-top:6px;'>${v}</div></div>`).join('');
+      }
+      async function loadCourses(){
+        const rows = await (await fetch('/admin/api/courses')).json();
+        document.getElementById('courseBody').innerHTML = rows.map(v=>`<tr><td><button class='action' onclick="toggleStatus(${v.id},'${v.status||'OPEN'}')">${v.applyStatus||'모집중'}</button></td><td>${v.id}</td><td>${v.subjectCode||''}</td><td>${v.jobGroup||''}</td><td>${v.jobLevel||''}</td><td>${v.subjectName||''}</td><td>${v.instructor||''}</td><td>${v.classTime||'-'}</td><td>${v.price||0}</td><td>${v.capacity||0}</td><td><button class='action danger' onclick='deleteCourse(${v.id})'>삭제</button></td></tr>`).join('');
+      }
+      function currentDayMode(){ return document.querySelector('input[name="dayMode"]:checked')?.value || 'MULTI'; }
+      function toggleDayMode(){
+        const mode = currentDayMode();
+        document.getElementById('multiDayBox').style.display = mode==='MULTI' ? '' : 'none';
+        document.getElementById('rangeDayBox').style.display = mode==='RANGE' ? '' : 'none';
+      }
+      async function uploadLessonVideo(file){
+        const fd = new FormData(); fd.append('file', file);
+        const res = await fetch('/admin/api/uploads/video', {method:'POST', body:fd});
+        const json = await res.json().catch(()=>({}));
+        if(!res.ok || !json.url) throw new Error(json.message || '영상 업로드 실패');
+        return json.url;
+      }
+      function addLessonRow(){
+        const box = document.getElementById('lessonRows');
+        const idx = box.children.length + 1;
+        const row = document.createElement('div');
+        row.className = 'row'; row.style.border='1px solid #e5e7eb'; row.style.padding='8px'; row.style.borderRadius='10px';
+        row.innerHTML = `<input class='l-order' type='number' min='1' value='${idx}' style='width:90px' placeholder='차시번호'> <input class='l-title' placeholder='차시명' style='min-width:180px'> <input class='l-desc' placeholder='설명' style='min-width:220px'> <input class='l-file' type='file' accept='video/mp4,video/webm,video/quicktime'> <button type='button' class='action gray' onclick='this.closest(".row").remove()'>삭제</button>`;
+        box.appendChild(row);
+      }
+      async function collectLessons(){
+        const rows = [...document.querySelectorAll('#lessonRows > .row')]; const lessons = [];
+        for (const row of rows){
+          const title = row.querySelector('.l-title')?.value?.trim();
+          const description = row.querySelector('.l-desc')?.value?.trim();
+          const orderNo = Number(row.querySelector('.l-order')?.value || 1);
+          const file = row.querySelector('.l-file')?.files?.[0];
+          if (!title && !file) continue;
+          if (!file) throw new Error('차시 영상 파일을 선택하세요.');
+          const videoUrl = await uploadLessonVideo(file);
+          lessons.push({ title: title || '차시', description, orderNo, videoUrl });
+        }
+        return lessons;
+      }
+      async function createCourse(){
+        const mode = currentDayMode();
+        const days = [...document.querySelectorAll('.day-check:checked')].map(v=>v.value);
+        if(mode==='MULTI' && days.length===0){ alert('요일을 1개 이상 선택하세요.'); return; }
+        let lessons = []; try { lessons = await collectLessons(); } catch (e) { alert(e.message || '차시 수집 실패'); return; }
+        await fetch('/admin/api/courses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+          subjectCode:cCode.value,jobGroup:cJobGroup.value,jobLevel:cJobLevel.value,subjectName:cTitle.value,instructor:cProfessor.value,
+          price:Number(cPrice.value||0),capacity:Number(cMax.value||0),status:cStatus.value,dayMode:mode, days,
+          startDay:document.getElementById('startDay').value,endDay:document.getElementById('endDay').value,startTime:cStart.value,endTime:cEnd.value,lessons
+        })});
+        document.getElementById('lessonRows').innerHTML='';
+        await loadCourses(); await loadStats();
+      }
+      async function toggleStatus(id,current){
+        const next = current==='OPEN' ? 'CLOSED' : 'OPEN';
+        await fetch('/admin/api/courses/'+id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:next})});
+        await loadCourses();
+      }
+      async function deleteCourse(id){
+        if(!confirm('강의를 삭제하시겠습니까? 연결된 세션/신청/출석/진도 데이터도 삭제됩니다.')) return;
+        await fetch('/admin/api/courses/'+id,{method:'DELETE'});
+        await loadCourses(); await loadEnrollments(); await loadStats();
+      }
+      async function loadEnrollments(){
+        const rows = await (await fetch('/admin/api/enrollments?status='+eStatus.value)).json();
+        document.getElementById('enrollmentBody').innerHTML = rows.map(v=>`<tr><td>${v.enrollmentId}</td><td>${v.username||''} / ${v.name||''}</td><td>${v.subjectCode||''} / ${v.courseName||''}</td><td>${v.scheduleText||'-'}</td><td>${Number(v.price||0).toLocaleString()}원</td><td>${v.paymentStatus||'UNPAID'}</td><td>${v.status||''}</td><td><button class='action' onclick='approve(${v.enrollmentId})'>승인</button> <button class='action danger' onclick='reject(${v.enrollmentId})'>반려</button></td></tr>`).join('');
+      }
+      async function approve(id){ await fetch('/admin/api/enrollments/'+id+'/approve',{method:'POST'}); await loadEnrollments(); await loadStats(); }
+      async function reject(id){ await fetch('/admin/api/enrollments/'+id+'/reject',{method:'POST'}); await loadEnrollments(); await loadStats(); }
+      async function loadAdminUsers(){
+        const q = document.getElementById('uq').value || '';
+        const rows = await (await fetch('/admin/api/users?q='+encodeURIComponent(q))).json();
+        const body = document.getElementById('adminUserBody');
+        if(!rows || rows.length===0){ body.innerHTML = `<tr><td colspan='9'>검색 결과가 없습니다.</td></tr>`; return; }
+        body.innerHTML = rows.map(v => `<tr><td>${v.id}</td><td>${v.username||''}</td><td>${v.name||''}</td><td><select id='ust-${v.id}'><option value='ACTIVE' ${v.status==='ACTIVE'?'selected':''}>ACTIVE</option><option value='BLOCKED' ${v.status==='BLOCKED'?'selected':''}>BLOCKED</option></select></td><td><select id='url-${v.id}'><option value='ROLE_USER' ${v.role==='ROLE_USER'?'selected':''}>USER</option><option value='ROLE_ADMIN' ${v.role==='ROLE_ADMIN'?'selected':''}>ADMIN</option></select></td><td>${v.usagePeriod||''}</td><td>${Number(v.totalPayment||0).toLocaleString()}원</td><td>${v.runningCourseCount||0}</td><td><button class='action' onclick='saveAdminUser(${v.id})'>저장</button></td></tr>`).join('');
+      }
+      async function saveAdminUser(id){
+        const role = document.getElementById('url-'+id).value;
+        const status = document.getElementById('ust-'+id).value;
+        const res = await fetch('/admin/api/users/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({role,status})});
+        const json = await res.json().catch(()=>({message:'저장 실패'}));
+        if(!res.ok){ alert(json.message||'저장 실패'); return; }
+        alert('저장되었습니다.');
+        await loadAdminUsers();
+      }
+      document.getElementById('uq')?.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); loadAdminUsers(); }});
+      document.querySelectorAll('input[name="dayMode"]').forEach(v=>v.addEventListener('change', toggleDayMode));
+      toggleDayMode();
+      loadStats(); loadCourses(); loadEnrollments(); loadAdminUsers();
+      const hash = (window.location.hash || '').replace('#',''); if(hash) activateSection(hash);
+    </script>
+</th:block>
 </body>
 </html>
