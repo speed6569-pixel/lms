@@ -6,35 +6,13 @@
     <title>관리자 대시보드</title>
     <link rel="stylesheet" th:href="@{/css/home.css}">
     <link rel="stylesheet" th:href="@{/css/header-profile.css}">
-    <style>
-        .admin-wrap{max-width:1200px;margin:24px auto;padding:0 16px;display:grid;grid-template-columns:220px 1fr;gap:16px}
-        .side,.panel{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.06)}
-        .side .nav-btn{display:block;width:100%;text-align:left;padding:9px 10px;border-radius:10px;text-decoration:none;color:#1f2937;border:0;background:#fff;cursor:pointer}
-        .side .nav-btn:hover,.side .nav-btn.active{background:#eff6ff}
-        .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-        .card{background:#f8fbff;border:1px solid #dbeafe;border-radius:12px;padding:12px}
-        .section{display:none}.section.active{display:block}
-        .row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-        input,select{height:36px;border:1px solid #d1d5db;border-radius:8px;padding:0 10px}
-        button.action{height:36px;border:0;border-radius:8px;background:#2563eb;color:#fff;padding:0 12px;cursor:pointer}
-        table{width:100%;border-collapse:collapse} th,td{border-bottom:1px solid #e5e7eb;padding:8px;text-align:left;font-size:13px}
-        @media (max-width:900px){.admin-wrap{grid-template-columns:1fr}.cards{grid-template-columns:1fr}}
-    </style>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
 </head>
 <body>
 <div th:replace="~{fragments/header :: siteHeader(${userName}, ${userEmail})}"></div>
 
 <main class="admin-wrap">
-    <aside class="side">
-        <h3>관리 메뉴</h3>
-        <button class="nav-btn active" data-target="stats">통계(대시보드)</button>
-        <button class="nav-btn" data-target="courses">강의 관리</button>
-        <a class="nav-btn" href="/admin/courses/manage" style="display:block;text-decoration:none;">강의 콘텐츠 관리</a>
-        <button class="nav-btn" data-target="enrollments">수강신청 관리</button>
-        <a class="nav-btn" href="/admin/payments" style="display:block;text-decoration:none;">결제 내역 관리</a>
-        <button class="nav-btn" data-target="users">사용자 관리</button>
-        <a class="nav-btn" href="/admin/posts" style="display:block;text-decoration:none;">게시물 관리</a>
-    </aside>
+    <aside th:replace="~{fragments/admin-layout :: adminSidebar('dashboard')}"></aside>
 
     <section class="panel">
         <div id="sec-stats" class="section active">
@@ -104,10 +82,17 @@
 
 <script>
   const sections = ['stats','courses','enrollments','users'];
-  document.querySelectorAll('.nav-btn[data-target]').forEach(btn=>btn.addEventListener('click',()=>{
-    document.querySelectorAll('.nav-btn[data-target]').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+
+  function activateSection(target){
+    const next = sections.includes(target) ? target : 'stats';
+    document.querySelectorAll('.nav-btn[data-target]').forEach(b=>b.classList.remove('active'));
+    document.querySelector('.nav-btn[data-target="'+next+'"]')?.classList.add('active');
     sections.forEach(s=>document.getElementById('sec-'+s).classList.remove('active'));
-    document.getElementById('sec-'+btn.dataset.target).classList.add('active');
+    document.getElementById('sec-'+next)?.classList.add('active');
+  }
+
+  document.querySelectorAll('.nav-btn[data-target]').forEach(btn=>btn.addEventListener('click',()=>{
+    activateSection(btn.dataset.target);
   }));
 
   async function loadStats(){
