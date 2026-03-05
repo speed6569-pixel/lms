@@ -13,10 +13,9 @@
         .lesson-item{border:1px solid #e5e7eb;border-radius:10px;padding:10px;cursor:pointer;margin-bottom:8px}
         .lesson-item.active{border-color:#2563eb;background:#eff6ff}
         .thumb{width:60px;height:40px;background:#e5e7eb;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px}
-        .li-row{display:flex;gap:10px}
-        .tabs{display:flex;gap:6px;margin-bottom:8px}
-        .tab-btn{padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer}
-        .tab-btn.active{background:#eff6ff;border-color:#93c5fd}
+        .li-row{display:flex;gap:10px;justify-content:space-between;align-items:flex-start}
+        .lesson-main{display:flex;gap:10px;flex:1}
+        .done-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;background:#16a34a;color:#fff;font-size:12px;font-weight:700}
         .nav-row{display:flex;gap:8px;justify-content:space-between;margin-top:10px}
         .action{border:0;background:#2563eb;color:#fff;border-radius:8px;padding:8px 12px;cursor:pointer}
     </style>
@@ -34,16 +33,11 @@
     </section>
 
     <aside class="box">
-        <div class="tabs">
-            <button type="button" class="tab-btn active" data-tab="todo">수강예정 강의</button>
-            <button type="button" class="tab-btn" data-tab="done">수강완료 강의</button>
-        </div>
-
+        <h3 style="margin-bottom:10px;">차시 목록</h3>
         <div id="lessonList"></div>
 
         <div class="nav-row">
             <button type="button" id="prevBtn" class="action">이전강의</button>
-            <button type="button" id="completeBtn" class="action">완료 처리</button>
             <button type="button" id="nextBtn" class="action">다음강의</button>
         </div>
     </aside>
@@ -51,6 +45,7 @@
 
 <script th:inline="javascript">
 (() => {
+  const courseId = /*[[${courseId}]]*/ null;
   const lessons = /*[[${lessons}]]*/ [];
   const progressMap = /*[[${progressMap}]]*/ {};
   const selectedLessonId = /*[[${selectedLessonId}]]*/ null;
@@ -59,40 +54,45 @@
   const listEl = document.getElementById('lessonList');
   const prevBtn = document.getElementById('prevBtn');
   const nextBtn = document.getElementById('nextBtn');
-  const completeBtn = document.getElementById('completeBtn');
-  const tabBtns = document.querySelectorAll('.tab-btn');
 
-  let activeTab = 'todo';
   let currentIndex = Math.max(0, lessons.findIndex(l => l.id === selectedLessonId));
   if (currentIndex < 0) currentIndex = 0;
+  let lastSavedPercent = -1;
 
   function getProgress(lessonId){
     return progressMap[String(lessonId)] || progressMap[lessonId] || null;
   }
+
   function isDone(lessonId){
     const p = getProgress(lessonId);
     return !!(p && p.completed);
   }
 
-  function filteredLessons(){
-    return lessons.filter(l => activeTab === 'done' ? isDone(l.id) : !isDone(l.id));
-  }
-
   function currentLesson(){ return lessons[currentIndex] || null; }
 
   function renderList(){
-    const arr = filteredLessons();
     listEl.innerHTML = '';
-    if (!arr.length){
+    if (!lessons.length){
       listEl.innerHTML = '<div style="color:#6b7280;">표시할 차시가 없습니다.</div>';
       return;
     }
 
-    arr.forEach(l => {
+    lessons.forEach(l => {
       const div = document.createElement('div');
       const active = currentLesson() && currentLesson().id === l.id;
+      const done = isDone(l.id);
       div.className = 'lesson-item' + (active ? ' active' : '');
-      div.innerHTML = `<div class='li-row'><div class='thumb'>${l.thumbnailUrl ? '<img src="'+l.thumbnailUrl+'" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">' : '썸네일'}</div><div><strong>${l.orderNo}. ${l.title}</strong><div style='font-size:12px;color:#6b7280;'>${l.description || '-'}</div></div></div>`;
+      div.innerHTML = `
+        <div class='li-row'>
+          <div class='lesson-main'>
+            <div class='thumb'>${l.thumbnailUrl ? '<img src="'+l.thumbnailUrl+'" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">' : '썸네일'}</div>
+            <div>
+              <strong>${l.orderNo}. ${l.title}</strong>
+              <div style='font-size:12px;color:#6b7280;'>${l.description || '-'}</div>
+            </div>
+          </div>
+          ${done ? "<span class='done-badge'>완료</span>" : ""}
+        </div>`;
       div.addEventListener('click', () => {
         currentIndex = lessons.findIndex(x => x.id === l.id);
         loadLesson();
@@ -105,42 +105,58 @@
     const lesson = currentLesson();
     if (!lesson) return;
     player.src = lesson.videoUrl;
+    const p = getProgress(lesson.id);
+    lastSavedPercent = p ? Number(p.progressPercent || 0) : -1;
     renderList();
+  }
+
+  function emitCourseProgressUpdated(updatedCourseId) {
+    try {
+      localStorage.setItem('lms-course-progress-updated', JSON.stringify({
+        courseId: updatedCourseId,
+        ts: Date.now()
+      }));
+    } catch (_) {}
   }
 
   async function saveProgress(percent, completed){
     const lesson = currentLesson();
     if (!lesson) return;
-    const res = await fetch(`/api/learn/${lesson.id}/progress`, {
+
+    const clamped = Math.max(0, Math.min(100, Math.floor(percent)));
+    const doneAlready = isDone(lesson.id);
+    if (!completed && doneAlready) return;
+    if (!completed && clamped < 90 && clamped - lastSavedPercent < 5) return;
+
+    const res = await fetch(`/api/lessons/${lesson.id}/progress`, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({progressPercent: percent, completed})
+      body: JSON.stringify({progressPercent: clamped, completed})
     });
     const json = await res.json().catch(()=>({}));
     if (json.success !== false) {
-      progressMap[String(lesson.id)] = { progressPercent: json.progressPercent || percent, completed: !!json.completed };
+      progressMap[String(lesson.id)] = {
+        progressPercent: Number(json.progressPercent ?? clamped),
+        completed: !!json.completed
+      };
+      lastSavedPercent = Number(json.progressPercent ?? clamped);
       renderList();
+      emitCourseProgressUpdated(json.courseId || courseId);
     }
   }
 
-  tabBtns.forEach(b => b.addEventListener('click', () => {
-    tabBtns.forEach(x => x.classList.remove('active'));
-    b.classList.add('active');
-    activeTab = b.dataset.tab;
-    renderList();
-  }));
-
   prevBtn.addEventListener('click', () => { if (currentIndex > 0) { currentIndex--; loadLesson(); }});
   nextBtn.addEventListener('click', () => { if (currentIndex < lessons.length - 1) { currentIndex++; loadLesson(); }});
-  completeBtn.addEventListener('click', async () => {
-    await saveProgress(100, true);
-    alert('완료 처리되었습니다.');
-  });
 
   player.addEventListener('timeupdate', () => {
     if (!player.duration || !isFinite(player.duration)) return;
-    const percent = Math.floor((player.currentTime / player.duration) * 100);
-    if (percent >= 90 && !isDone(currentLesson()?.id)) {
+    const percent = (player.currentTime / player.duration) * 100;
+    const lesson = currentLesson();
+    if (!lesson) return;
+
+    if (percent >= 90 && !isDone(lesson.id)) {
       saveProgress(percent, true);
+    } else {
+      saveProgress(percent, false);
     }
   });
 

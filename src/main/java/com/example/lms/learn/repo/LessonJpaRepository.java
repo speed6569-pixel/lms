@@ -7,6 +7,7 @@ import java.util.List;
 
 public interface LessonJpaRepository extends JpaRepository<LessonEntity, Long> {
     List<LessonEntity> findByCourseIdOrderByOrderNoAsc(Long courseId);
+    long countByCourseId(Long courseId);
     void deleteByIdAndCourseId(Long id, Long courseId);
     void deleteByCourseId(Long courseId);
 }

@@ -22,4 +22,14 @@ public interface LessonProgressJpaRepository extends JpaRepository<LessonProgres
             LIMIT 1
             """, nativeQuery = true)
     Optional<LessonProgressEntity> findLatestByUserAndCourse(@Param("userId") Long userId, @Param("courseId") Long courseId);
+
+    @Query(value = """
+            SELECT COUNT(*)
+            FROM lesson_progress lp
+            JOIN lessons l ON l.id = lp.lesson_id
+            WHERE lp.user_id = :userId
+              AND l.course_id = :courseId
+              AND lp.completed = TRUE
+            """, nativeQuery = true)
+    long countCompletedByUserIdAndCourseId(@Param("userId") Long userId, @Param("courseId") Long courseId);
 }

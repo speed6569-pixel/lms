@@ -32,7 +32,7 @@ public class LearnService {
 
     @Transactional(readOnly = true)
     public LearnPageData loadPage(Long userId, Long courseId) {
-        if (!enrollmentJpaRepository.existsByUserIdAndCourseIdAndStatusIn(userId, courseId, List.of("APPROVED"))) {
+        if (!enrollmentJpaRepository.existsByUserIdAndCourseIdAndStatusIn(userId, courseId, List.of("APPROVED", "RUNNING"))) {
             throw new IllegalStateException("승인 후 수강 가능합니다.");
         }
 
@@ -63,7 +63,7 @@ public class LearnService {
         LessonEntity lesson = lessonJpaRepository.findById(lessonId)
                 .orElseThrow(() -> new IllegalArgumentException("차시를 찾을 수 없습니다."));
 
-        if (!enrollmentJpaRepository.existsByUserIdAndCourseIdAndStatusIn(userId, lesson.getCourseId(), List.of("APPROVED"))) {
+        if (!enrollmentJpaRepository.existsByUserIdAndCourseIdAndStatusIn(userId, lesson.getCourseId(), List.of("APPROVED", "RUNNING"))) {
             throw new IllegalStateException("승인 후 수강 가능합니다.");
         }
 
@@ -79,7 +79,31 @@ public class LearnService {
         p.setCompleted(completed || clamped >= 90);
         lessonProgressJpaRepository.save(p);
 
-        return Map.of("success", true, "progressPercent", p.getProgressPercent(), "completed", p.getCompleted());
+        CourseProgress courseProgress = getCourseProgress(userId, lesson.getCourseId());
+
+        return Map.of(
+                "success", true,
+                "progressPercent", p.getProgressPercent(),
+                "completed", p.getCompleted(),
+                "courseId", lesson.getCourseId(),
+                "courseProgress", courseProgress
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public CourseProgress getCourseProgress(Long userId, Long courseId) {
+        if (!enrollmentJpaRepository.existsByUserIdAndCourseIdAndStatusIn(userId, courseId, List.of("APPROVED", "RUNNING"))) {
+            throw new IllegalStateException("승인 후 수강 가능합니다.");
+        }
+
+        long totalLessons = lessonJpaRepository.countByCourseId(courseId);
+        if (totalLessons <= 0) {
+            return new CourseProgress(0L, 0L, 0);
+        }
+
+        long completedLessons = lessonProgressJpaRepository.countCompletedByUserIdAndCourseId(userId, courseId);
+        int percent = (int) Math.max(0, Math.min(100, Math.round((completedLessons * 100.0) / totalLessons)));
+        return new CourseProgress(completedLessons, totalLessons, percent);
     }
 
     public record LearnPageData(
@@ -89,5 +113,11 @@ public class LearnService {
             List<LessonEntity> lessons,
             Map<Long, LessonProgressEntity> progressMap,
             Long selectedLessonId
+    ) {}
+
+    public record CourseProgress(
+            Long completedLessons,
+            Long totalLessons,
+            Integer percent
     ) {}
 }

@@ -28,6 +28,11 @@ public class LearnController {
                             Authentication authentication,
                             Model model,
                             RedirectAttributes redirectAttributes) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "로그인이 필요합니다.");
+            return "redirect:/login";
+        }
+
         Long userId = userJpaRepository.findByLoginId(authentication.getName()).map(u -> u.getId()).orElse(null);
         if (userId == null) {
             redirectAttributes.addFlashAttribute("errorMessage", "로그인이 필요합니다.");
@@ -49,11 +54,15 @@ public class LearnController {
         }
     }
 
-    @PostMapping("/api/learn/{lessonId}/progress")
+    @PostMapping("/api/lessons/{lessonId}/progress")
     @ResponseBody
     public ResponseEntity<?> saveProgress(@PathVariable Long lessonId,
                                           @RequestBody Map<String, Object> body,
                                           Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "로그인이 필요합니다."));
+        }
+
         Long userId = userJpaRepository.findByLoginId(authentication.getName()).map(u -> u.getId()).orElse(null);
         if (userId == null) return ResponseEntity.badRequest().body(Map.of("success", false, "message", "로그인이 필요합니다."));
 
@@ -63,6 +72,37 @@ public class LearnController {
             return ResponseEntity.ok(learnService.saveProgress(userId, lessonId, progress, completed));
         } catch (IllegalStateException | IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/api/learn/{lessonId}/progress")
+    @ResponseBody
+    public ResponseEntity<?> saveProgressLegacy(@PathVariable Long lessonId,
+                                                @RequestBody Map<String, Object> body,
+                                                Authentication authentication) {
+        return saveProgress(lessonId, body, authentication);
+    }
+
+    @GetMapping("/api/courses/{courseId}/progress")
+    @ResponseBody
+    public ResponseEntity<?> getCourseProgress(@PathVariable Long courseId,
+                                               Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "로그인이 필요합니다."));
+        }
+
+        Long userId = userJpaRepository.findByLoginId(authentication.getName()).map(u -> u.getId()).orElse(null);
+        if (userId == null) return ResponseEntity.badRequest().body(Map.of("message", "로그인이 필요합니다."));
+
+        try {
+            LearnService.CourseProgress progress = learnService.getCourseProgress(userId, courseId);
+            return ResponseEntity.ok(Map.of(
+                    "completedLessons", progress.completedLessons(),
+                    "totalLessons", progress.totalLessons(),
+                    "percent", progress.percent()
+            ));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
 }

@@ -18,14 +18,6 @@
         <p class="profile-sub">LMS 마이페이지</p>
         <p class="profile-sub" th:text="|포인트 잔액: ${#numbers.formatInteger(pointBalance, 1, 'COMMA')}P|"></p>
 
-        <div th:if="${hasEnrolledCourses}" class="status-item">
-            <div class="status-head"><span>출석률</span><strong th:text="|${#numbers.formatDecimal(attendanceRate, 1, 1)}%|">0.0%</strong></div>
-            <div class="progress-track"><span th:style="|width:${attendanceRate}%|"></span></div>
-        </div>
-        <div th:if="${hasEnrolledCourses}" class="status-item">
-            <div class="status-head"><span>진도율</span><strong th:text="|${#numbers.formatDecimal(progressRate, 1, 1)}%|">0.0%</strong></div>
-            <div class="progress-track"><span th:style="|width:${progressRate}%|"></span></div>
-        </div>
         <p th:if="${summaryMessage != null}" class="profile-sub" th:text="${summaryMessage}"></p>
     </aside>
 
@@ -152,11 +144,16 @@
         </div>
 
         <div class="dashboard-grid" id="ongoingCards">
-            <article class="card-surface lecture-card" th:each="course : ${ongoingCourses}" th:onclick="|location.href='/learn/${course.courseId}'|" style="cursor:pointer;">
+            <article class="card-surface lecture-card" th:each="course : ${ongoingCourses}" th:attr="data-course-id=${course.courseId}" th:onclick="|location.href='/learn/${course.courseId}'|" style="cursor:pointer;">
                 <div class="lecture-thumb" th:text="${course.courseCode}"></div>
                 <div class="lecture-body">
                     <h3 th:text="${course.title}"></h3>
                     <p th:text="|${course.professor} · ${course.classTime} · ${course.price}|"></p>
+                    <div class="status-head">
+                        <span class="course-progress-text" th:text="|진도율 ${course.progressPercent}%|">진도율 0%</span>
+                        <strong class="course-progress-count" th:text="|${course.completedLessons}/${course.totalLessons}차시|">0/0차시</strong>
+                    </div>
+                    <div class="progress-track"><span class="course-progress-bar" th:style="|width:${course.progressPercent}%|"></span></div>
                     <div class="status-head"><span>수강 인원</span><strong th:text="|${course.enrolledCount}/${course.maxCount}|"></strong></div>
                     <div class="progress-track"><span th:style="|width:${course.maxCount > 0 ? (course.enrolledCount * 100) / course.maxCount : 0}%|"></span></div>
                 </div>
@@ -285,6 +282,34 @@
           .catch(() => renderWeeklyGrid([]));
         timetableLoaded = true;
       }
+
+      async function refreshCourseProgress(courseId) {
+        if (!courseId) return;
+        const card = document.querySelector(`.lecture-card[data-course-id='${courseId}']`);
+        if (!card) return;
+        try {
+          const res = await fetch(`/api/courses/${courseId}/progress`);
+          if (!res.ok) return;
+          const json = await res.json();
+          const percent = Number(json.percent || 0);
+          const completed = Number(json.completedLessons || 0);
+          const total = Number(json.totalLessons || 0);
+          const textEl = card.querySelector('.course-progress-text');
+          const countEl = card.querySelector('.course-progress-count');
+          const barEl = card.querySelector('.course-progress-bar');
+          if (textEl) textEl.textContent = `진도율 ${percent}%`;
+          if (countEl) countEl.textContent = `${completed}/${total}차시`;
+          if (barEl) barEl.style.width = `${percent}%`;
+        } catch (_) {}
+      }
+
+      window.addEventListener('storage', (e) => {
+        if (e.key !== 'lms-course-progress-updated' || !e.newValue) return;
+        try {
+          const payload = JSON.parse(e.newValue);
+          refreshCourseProgress(payload.courseId);
+        } catch (_) {}
+      });
 
       window.addEventListener('popstate', () => showTab(resolveTabFromUrl(), false));
       window.addEventListener('hashchange', () => showTab(resolveTabFromUrl(), false));

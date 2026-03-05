@@ -9,6 +9,7 @@ import com.example.lms.enrollment.repo.MyPageCourseProjection;
 import com.example.lms.enrollment.repo.MyPointTransactionProjection;
 import com.example.lms.enrollment.repo.PointTransactionJpaRepository;
 import com.example.lms.enrollment.repo.UserJpaRepository;
+import com.example.lms.learn.service.LearnService;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -29,19 +30,22 @@ public class HomeController {
     private final PointTransactionJpaRepository pointTransactionJpaRepository;
     private final CourseInfoService courseInfoService;
     private final HomeContentService homeContentService;
+    private final LearnService learnService;
 
     public HomeController(CourseSessionJpaRepository courseSessionJpaRepository,
                           EnrollmentJpaRepository enrollmentJpaRepository,
                           UserJpaRepository userJpaRepository,
                           PointTransactionJpaRepository pointTransactionJpaRepository,
                           CourseInfoService courseInfoService,
-                          HomeContentService homeContentService) {
+                          HomeContentService homeContentService,
+                          LearnService learnService) {
         this.courseSessionJpaRepository = courseSessionJpaRepository;
         this.enrollmentJpaRepository = enrollmentJpaRepository;
         this.userJpaRepository = userJpaRepository;
         this.pointTransactionJpaRepository = pointTransactionJpaRepository;
         this.courseInfoService = courseInfoService;
         this.homeContentService = homeContentService;
+        this.learnService = learnService;
     }
 
     @GetMapping({"/", "/homepage"})
@@ -143,13 +147,13 @@ public class HomeController {
         Long userId = user.getId();
 
         List<MyCourseItem> ongoingCourses = enrollmentJpaRepository.findMyCoursesByStatuses(userId, Set.of("APPROVED", "RUNNING")).stream()
-                .map(this::toMyCourseItem)
+                .map(p -> toMyCourseItem(p, userId, true))
                 .toList();
         List<MyCourseItem> appliedCourses = enrollmentJpaRepository.findMyCoursesByStatuses(userId, Set.of("APPLIED", "WAITLIST")).stream()
-                .map(this::toMyCourseItem)
+                .map(p -> toMyCourseItem(p, userId, false))
                 .toList();
         List<MyCourseItem> closedCourses = enrollmentJpaRepository.findMyCoursesByStatuses(userId, Set.of("REJECTED", "CANCELLED")).stream()
-                .map(this::toMyCourseItem)
+                .map(p -> toMyCourseItem(p, userId, false))
                 .toList();
 
         List<MyPaymentItem> paymentItems = pointTransactionJpaRepository.findHistoryByUserId(userId).stream()
@@ -158,17 +162,8 @@ public class HomeController {
 
         boolean hasEnrolledCourses = !ongoingCourses.isEmpty();
 
-        double attendanceRate = 0.0;
-        double progressRate = 0.0;
         String summaryMessage = null;
-
-        if (hasEnrolledCourses) {
-            attendanceRate = safeRate(enrollmentJpaRepository.findAttendanceRate(userId));
-            progressRate = safeRate(enrollmentJpaRepository.findProgressRate(userId));
-            if (attendanceRate == 0.0 && progressRate == 0.0) {
-                summaryMessage = "출석/진도 데이터가 아직 없습니다.";
-            }
-        } else {
+        if (!hasEnrolledCourses) {
             summaryMessage = "현재 수강 중인 강의가 없습니다.";
         }
 
@@ -178,8 +173,6 @@ public class HomeController {
         model.addAttribute("paymentItems", paymentItems);
         model.addAttribute("pointBalance", Optional.ofNullable(user.getPointBalance()).orElse(0));
         model.addAttribute("tab", tab);
-        model.addAttribute("attendanceRate", attendanceRate);
-        model.addAttribute("progressRate", progressRate);
         model.addAttribute("hasEnrolledCourses", hasEnrolledCourses);
         model.addAttribute("summaryMessage", summaryMessage);
         return "pages/my-classroom";
@@ -294,7 +287,11 @@ public class HomeController {
         return String.join("/", chunks);
     }
 
-    private MyCourseItem toMyCourseItem(MyPageCourseProjection p) {
+    private MyCourseItem toMyCourseItem(MyPageCourseProjection p, Long userId, boolean includeProgress) {
+        LearnService.CourseProgress courseProgress = includeProgress
+                ? learnService.getCourseProgress(userId, p.getCourseId())
+                : new LearnService.CourseProgress(0L, 0L, 0);
+
         return new MyCourseItem(
                 p.getCourseId(),
                 p.getTitle(),
@@ -305,7 +302,10 @@ public class HomeController {
                 p.getSection(),
                 p.getEnrolledCount() == null ? 0 : p.getEnrolledCount(),
                 p.getMaxCount() == null ? 0 : p.getMaxCount(),
-                p.getStatus()
+                p.getStatus(),
+                courseProgress.completedLessons() == null ? 0 : courseProgress.completedLessons().intValue(),
+                courseProgress.totalLessons() == null ? 0 : courseProgress.totalLessons().intValue(),
+                courseProgress.percent() == null ? 0 : courseProgress.percent()
         );
     }
 
@@ -365,7 +365,10 @@ public class HomeController {
             String section,
             int enrolledCount,
             int maxCount,
-            String status
+            String status,
+            int completedLessons,
+            int totalLessons,
+            int progressPercent
     ) {
     }
 
