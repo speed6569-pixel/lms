@@ -209,8 +209,8 @@ public class HomeController {
         return result;
     }
 
-    @GetMapping("/customer-center")
-    public String customerCenterPage() { return "redirect:/cs"; }
+    @GetMapping("/customer-center-legacy")
+    public String customerCenterPage() { return "redirect:/customer-center"; }
 
     @GetMapping("/payments")
     public String paymentsPage() { return "redirect:/mypage?tab=payments"; }

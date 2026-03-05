@@ -13,6 +13,7 @@ import com.example.lms.enrollment.repo.UserJpaRepository;
 import com.example.lms.enrollment.service.PointService;
 import com.example.lms.learn.entity.LessonEntity;
 import com.example.lms.learn.repo.LessonJpaRepository;
+import com.example.lms.support.service.SupportPostService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -36,6 +37,7 @@ public class AdminService {
     private final AuditLogJpaRepository auditLogJpaRepository;
     private final PointService pointService;
     private final LessonJpaRepository lessonJpaRepository;
+    private final SupportPostService supportPostService;
 
     public AdminService(CourseJpaRepository courseJpaRepository,
                         AdminCourseSessionJpaRepository adminCourseSessionJpaRepository,
@@ -46,7 +48,8 @@ public class AdminService {
                         UserJpaRepository userJpaRepository,
                         AuditLogJpaRepository auditLogJpaRepository,
                         PointService pointService,
-                        LessonJpaRepository lessonJpaRepository) {
+                        LessonJpaRepository lessonJpaRepository,
+                        SupportPostService supportPostService) {
         this.courseJpaRepository = courseJpaRepository;
         this.adminCourseSessionJpaRepository = adminCourseSessionJpaRepository;
         this.courseSessionJpaRepository = courseSessionJpaRepository;
@@ -57,6 +60,7 @@ public class AdminService {
         this.auditLogJpaRepository = auditLogJpaRepository;
         this.pointService = pointService;
         this.lessonJpaRepository = lessonJpaRepository;
+        this.supportPostService = supportPostService;
     }
 
     @Transactional
@@ -344,6 +348,7 @@ public class AdminService {
         m.put("waitlist", enrollmentJpaRepository.findByStatusOrderByIdAsc("WAITLIST").size());
         m.put("applied", enrollmentJpaRepository.findByStatusOrderByIdAsc("APPLIED").size());
         m.put("pendingRequests", enrollmentJpaRepository.findByStatusOrderByIdAsc("APPLIED").size() + enrollmentJpaRepository.findByStatusOrderByIdAsc("WAITLIST").size());
+        m.put("customerRequests", supportPostService.countWaiting());
         return m;
     }
 
