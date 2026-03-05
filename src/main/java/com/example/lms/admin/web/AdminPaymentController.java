@@ -34,19 +34,19 @@ public class AdminPaymentController {
         model.addAttribute("type", type == null ? "" : type);
         model.addAttribute("from", from);
         model.addAttribute("to", to);
-        return adminLayout(model, "결제 내역 관리", "admin/admin_payments_list");
+        return adminLayout(model, "결제 내역 관리", "admin/admin_payments_list :: content");
     }
 
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Model model) {
         model.addAttribute("item", adminPaymentService.getDetail(id));
-        return adminLayout(model, "결제 내역 상세", "admin/admin_payment_detail");
+        return adminLayout(model, "결제 내역 상세", "admin/admin_payment_detail :: content");
     }
 
-    private String adminLayout(Model model, String title, String contentTemplate) {
+    private String adminLayout(Model model, String title, String content) {
         model.addAttribute("title", title);
         model.addAttribute("activeMenu", "payments");
-        model.addAttribute("contentTemplate", contentTemplate);
+        model.addAttribute("content", content);
         return "admin/layout";
     }
 }
