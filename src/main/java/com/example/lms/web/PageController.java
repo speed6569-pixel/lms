@@ -14,23 +14,23 @@ public class PageController {
 
     @GetMapping("/admin/dashboard")
     public String adminDashboard(Model model) {
-        return adminLayout(model, "관리자 대시보드", "dashboard", "admin/dashboard :: content");
+        return adminLayout(model, "관리자 대시보드", "dashboard", "admin/dashboard");
     }
 
     @GetMapping("/admin/courses")
     public String adminCourses(Model model) {
-        return adminLayout(model, "관리자 강의관리", "courses", "admin/admin_courses :: content");
+        return adminLayout(model, "관리자 강의관리", "courses", "admin/admin_courses");
     }
 
     @GetMapping("/admin/users")
     public String adminUsers(Model model) {
-        return adminLayout(model, "관리자 사용자관리", "users", "admin/admin_users :: content");
+        return adminLayout(model, "관리자 사용자관리", "users", "admin/admin_users");
     }
 
-    private String adminLayout(Model model, String title, String activeMenu, String content) {
+    private String adminLayout(Model model, String title, String activeMenu, String contentTemplate) {
         model.addAttribute("title", title);
         model.addAttribute("activeMenu", activeMenu);
-        model.addAttribute("content", content);
+        model.addAttribute("contentTemplate", contentTemplate);
         return "admin/layout";
     }
 }
