@@ -6,31 +6,13 @@
     <title>결제 내역 관리</title>
     <link rel="stylesheet" th:href="@{/css/home.css}">
     <link rel="stylesheet" th:href="@{/css/header-profile.css}">
-    <style>
-        .admin-wrap{max-width:1200px;margin:24px auto;padding:0 16px;display:grid;grid-template-columns:220px 1fr;gap:16px}
-        .side,.panel{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.06)}
-        .side .nav-btn{display:block;width:100%;text-align:left;padding:9px 10px;border-radius:10px;text-decoration:none;color:#1f2937;border:0;background:#fff}
-        .side .nav-btn:hover,.side .nav-btn.active{background:#eff6ff}
-        .row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-        input,select{height:36px;border:1px solid #d1d5db;border-radius:8px;padding:0 10px}
-        button.action{height:36px;border:0;border-radius:8px;background:#2563eb;color:#fff;padding:0 12px;cursor:pointer}
-        table{width:100%;border-collapse:collapse} th,td{border-bottom:1px solid #e5e7eb;padding:8px;text-align:left;font-size:13px}
-    </style>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
 </head>
 <body>
 <div th:replace="~{fragments/header :: siteHeader(${userName}, ${userEmail})}"></div>
 
 <main class="admin-wrap">
-    <aside class="side">
-        <h3>관리 메뉴</h3>
-        <a class="nav-btn" href="/admin/dashboard">통계(대시보드)</a>
-        <a class="nav-btn" href="/admin/dashboard">강의 관리</a>
-        <a class="nav-btn" href="/admin/dashboard">수강신청 관리</a>
-        <a class="nav-btn active" href="/admin/payments">결제 내역 관리</a>
-        <a class="nav-btn" href="/admin/dashboard">출석 관리</a>
-        <a class="nav-btn" href="/admin/users">사용자 관리</a>
-        <a class="nav-btn" href="/admin/posts">게시물 관리</a>
-    </aside>
+    <aside th:replace="~{fragments/admin-layout :: adminSidebar('payments')}"></aside>
 
     <section class="panel">
         <h2>결제/포인트 내역</h2>

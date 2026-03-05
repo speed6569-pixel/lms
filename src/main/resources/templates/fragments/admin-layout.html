@@ -9,7 +9,7 @@
         <button class="nav-btn" data-target="courses" type="button">강의 관리</button>
         <a class="nav-btn" href="/admin/courses/manage">강의 콘텐츠 관리</a>
         <button class="nav-btn" data-target="enrollments" type="button">수강신청 관리</button>
-        <a class="nav-btn" href="/admin/payments">결제 내역 관리</a>
+        <a class="nav-btn" th:classappend="${activeMenu == 'payments'} ? ' active' : ''" href="/admin/payments">결제 내역 관리</a>
         <button class="nav-btn" data-target="users" type="button">사용자 관리</button>
         <a class="nav-btn" href="/admin/posts">게시물 관리</a>
     </th:block>
@@ -19,7 +19,7 @@
         <a class="nav-btn" href="/admin/dashboard#courses">강의 관리</a>
         <a class="nav-btn" href="/admin/courses/manage">강의 콘텐츠 관리</a>
         <a class="nav-btn" href="/admin/dashboard#enrollments">수강신청 관리</a>
-        <a class="nav-btn" href="/admin/payments">결제 내역 관리</a>
+        <a class="nav-btn" th:classappend="${activeMenu == 'payments'} ? ' active' : ''" href="/admin/payments">결제 내역 관리</a>
         <a class="nav-btn" href="/admin/dashboard#users">사용자 관리</a>
         <a class="nav-btn" th:classappend="${activeMenu == 'posts'} ? ' active' : ''" href="/admin/posts">게시물 관리</a>
     </th:block>
