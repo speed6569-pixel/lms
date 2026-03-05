@@ -98,15 +98,36 @@
         <div class="card" th:if="${#lists.isEmpty(latestCourses)}">표시할 최신 강의가 없습니다.</div>
     </section>
 
-    <section class="container section-block" id="schedule">
-        <h3>공지사항</h3>
-        <div class="cards-grid notice-grid" th:if="${!#lists.isEmpty(latestNotices)}">
-            <article class="card notice-card" th:each="n : ${latestNotices}">
-                <h4><a th:href="@{/posts/{id}(id=${n.id})}" th:text="${n.title}" style="text-decoration:none;color:inherit;"></a></h4>
-                <p th:text="${n.summary}"></p>
+    <section class="container section-block" id="board-cards">
+        <div class="home-board-grid">
+            <article class="card home-board-card">
+                <div class="home-board-head">
+                    <h3>공지사항</h3>
+                    <a href="/notices">더보기</a>
+                </div>
+                <ul class="home-board-list" th:if="${!#lists.isEmpty(latestNotices)}">
+                    <li th:each="n : ${latestNotices}">
+                        <a th:href="@{/notices/{id}(id=${n.id})}" th:text="${n.title}"></a>
+                        <span th:text="${n.createdAt != null ? #temporals.format(n.createdAt, 'yyyy-MM-dd') : ''}"></span>
+                    </li>
+                </ul>
+                <div class="card" th:if="${#lists.isEmpty(latestNotices)}">등록된 글이 없습니다.</div>
+            </article>
+
+            <article class="card home-board-card">
+                <div class="home-board-head">
+                    <h3>FAQ</h3>
+                    <a href="/support">더보기</a>
+                </div>
+                <ul class="home-board-list" th:if="${!#lists.isEmpty(latestFaqs)}">
+                    <li th:each="f : ${latestFaqs}">
+                        <a th:href="@{/support/{id}(id=${f.id})}" th:text="${f.title}"></a>
+                        <span th:text="${f.createdAt != null ? #temporals.format(f.createdAt, 'yyyy-MM-dd') : ''}"></span>
+                    </li>
+                </ul>
+                <div class="card" th:if="${#lists.isEmpty(latestFaqs)}">등록된 글이 없습니다.</div>
             </article>
         </div>
-        <div class="card" th:if="${#lists.isEmpty(latestNotices)}">등록된 공지사항이 없습니다.</div>
     </section>
 </main>
 

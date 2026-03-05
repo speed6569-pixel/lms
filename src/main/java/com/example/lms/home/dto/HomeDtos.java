@@ -1,5 +1,7 @@
 package com.example.lms.home.dto;
 
+import java.time.LocalDateTime;
+
 public class HomeDtos {
     public record CourseCardDto(
             Long courseId,
@@ -7,9 +9,9 @@ public class HomeDtos {
             String summary
     ) {}
 
-    public record NoticeSummaryDto(
+    public record HomePostSummaryDto(
             Long id,
             String title,
-            String summary
+            LocalDateTime createdAt
     ) {}
 }

@@ -40,13 +40,27 @@ public class HomeContentService {
     }
 
     @Transactional(readOnly = true)
-    public List<HomeDtos.NoticeSummaryDto> latestNotices() {
-        List<PostEntity> posts = postJpaRepository.findTop3ByDeletedFalseAndCategoryAndStatusOrderByCreatedAtDesc("SUPPORT", "PUBLISHED");
+    public List<HomeDtos.HomePostSummaryDto> latestNotices() {
+        List<PostEntity> posts = postJpaRepository
+                .findTop5ByDeletedFalseAndCategoryAndStatusOrderByPinnedDescCreatedAtDesc("SUPPORT", "PUBLISHED");
         return posts.stream()
-                .map(p -> new HomeDtos.NoticeSummaryDto(
+                .map(p -> new HomeDtos.HomePostSummaryDto(
                         p.getId(),
                         firstNonBlank(p.getTitle(), "제목 없음"),
-                        firstNonBlank(p.getContent(), "")
+                        p.getCreatedAt()
+                ))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<HomeDtos.HomePostSummaryDto> latestFaqs() {
+        List<PostEntity> posts = postJpaRepository
+                .findTop5ByDeletedFalseAndCategoryAndStatusOrderByPinnedDescCreatedAtDesc("CS", "PUBLISHED");
+        return posts.stream()
+                .map(p -> new HomeDtos.HomePostSummaryDto(
+                        p.getId(),
+                        firstNonBlank(p.getTitle(), "제목 없음"),
+                        p.getCreatedAt()
                 ))
                 .toList();
     }

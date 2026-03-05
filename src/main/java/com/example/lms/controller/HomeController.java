@@ -52,6 +52,7 @@ public class HomeController {
     public String home(Model model) {
         model.addAttribute("latestCourses", homeContentService.latestCourses());
         model.addAttribute("latestNotices", homeContentService.latestNotices());
+        model.addAttribute("latestFaqs", homeContentService.latestFaqs());
         return "index";
     }
 

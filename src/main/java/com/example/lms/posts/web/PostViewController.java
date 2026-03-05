@@ -15,19 +15,21 @@ public class PostViewController {
         this.postService = postService;
     }
 
-    @GetMapping("/support")
-    public String support(Model model) {
+    @GetMapping("/notices")
+    public String notices(Model model) {
         model.addAttribute("title", "공지사항");
         model.addAttribute("posts", postService.userList("SUPPORT"));
         model.addAttribute("category", "SUPPORT");
+        model.addAttribute("detailBasePath", "/notices");
         return "posts/posts_list";
     }
 
-    @GetMapping("/cs")
-    public String cs(Model model) {
-        model.addAttribute("title", "고객센터");
+    @GetMapping({"/support", "/faqs", "/cs"})
+    public String support(Model model) {
+        model.addAttribute("title", "FAQ");
         model.addAttribute("posts", postService.userList("CS"));
         model.addAttribute("category", "CS");
+        model.addAttribute("detailBasePath", "/support");
         return "posts/posts_list";
     }
 
@@ -39,7 +41,7 @@ public class PostViewController {
         return "posts/posts_list";
     }
 
-    @GetMapping("/posts/{id}")
+    @GetMapping({"/posts/{id}", "/notices/{id}", "/support/{id}", "/faqs/{id}"})
     public String detail(@PathVariable Long id, Model model) {
         model.addAttribute("post", postService.get(id));
         return "posts/post_detail";

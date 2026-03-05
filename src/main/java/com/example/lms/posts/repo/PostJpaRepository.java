@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface PostJpaRepository extends JpaRepository<PostEntity, Long> {
-    List<PostEntity> findTop3ByDeletedFalseAndCategoryAndStatusOrderByCreatedAtDesc(String category, String status);
+    List<PostEntity> findTop5ByDeletedFalseAndCategoryAndStatusOrderByPinnedDescCreatedAtDesc(String category, String status);
     List<PostEntity> findByDeletedFalseAndCategoryAndStatusOrderByPinnedDescIdDesc(String category, String status);
     List<PostEntity> findByDeletedFalseAndCategoryAndTitleContainingIgnoreCaseOrderByPinnedDescIdDesc(String category, String title);
     List<PostEntity> findByDeletedFalseAndCategoryOrderByPinnedDescIdDesc(String category);
