@@ -16,8 +16,8 @@
 <main class="container content-wrap">
     <section class="tab-row">
         <button id="tabOpen" type="button" class="tab-btn active">개설과목 조회/신청</button>
-        <button id="tabHistory" type="button" class="tab-btn">수강신청 내역</button>
-        <button id="tabTime" type="button" class="tab-btn">시간표 조회</button>
+        <button id="tabHistory" type="button" class="tab-btn" th:if="${!hasApprovedEnrollment}">수강신청 내역</button>
+        <button id="tabTime" type="button" class="tab-btn" th:if="${!hasApprovedEnrollment}">시간표 조회</button>
     </section>
 
     <section id="openPanel">
@@ -56,10 +56,11 @@
                 <tr th:each="course : ${courses}" class="course-row"
                     th:attr="data-code=${course.courseCode},data-job=${course.job},data-position=${course.position}">
                     <td>
-                        <button type="button" class="apply-btn"
-                                th:attr="data-code=${course.courseCode},data-section=${course.section},data-title=${course.title},data-course-id=${course.courseId}"
-                                th:disabled="${!course.open or course.enrolledCount >= course.maxCount}"
-                                th:data-full="${!course.open or course.enrolledCount >= course.maxCount}"
+                        <span th:if="${course.myStatus == 'APPROVED' or course.myStatus == 'RUNNING'}" style="display:inline-block;padding:4px 8px;border-radius:999px;background:#16a34a;color:#fff;font-size:12px;">승인됨</span>
+                        <button th:if="${!(course.myStatus == 'APPROVED' or course.myStatus == 'RUNNING')}" type="button" class="apply-btn"
+                                th:attr="data-code=${course.courseCode},data-section=${course.section},data-title=${course.title},data-course-id=${course.courseId},data-my-status=${course.myStatus}"
+                                th:disabled="${!course.canApply}"
+                                th:data-full="${!course.canApply}"
                                 onclick="toggleApply(this)"
                                 th:text="${!course.open} ? '모집마감' : (course.enrolledCount >= course.maxCount ? '신청불가' : '신청')">신청</button>
                     </td>
@@ -71,7 +72,7 @@
                     <td th:text="${course.classTime}"></td>
                     <td th:text="${course.price}"></td>
                     <td th:text="|${course.enrolledCount}/${course.maxCount}|"></td>
-                    <td th:text="${course.note}"></td>
+                    <td th:text="${(course.myStatus == 'APPROVED' or course.myStatus == 'RUNNING') ? '신청 불가' : course.note}"></td>
                 </tr>
                 <tr id="noResultRow" th:if="${#lists.isEmpty(courses)}"><td colspan="11">검색 결과가 없습니다.</td></tr>
                 </tbody>
@@ -176,17 +177,17 @@
     }
 
     function activate(tab) {
-      [tabOpen, tabHistory, tabTime].forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
+      [tabOpen, tabHistory, tabTime].filter(Boolean).forEach(t => t.classList.remove('active'));
+      tab?.classList.add('active');
     }
 
-    tabOpen.addEventListener('click', () => {
+    tabOpen?.addEventListener('click', () => {
       activate(tabOpen); openPanel.style.display=''; historyPanel.style.display='none'; timePanel.style.display='none';
     });
-    tabHistory.addEventListener('click', () => {
+    tabHistory?.addEventListener('click', () => {
       activate(tabHistory); openPanel.style.display='none'; historyPanel.style.display=''; timePanel.style.display='none';
     });
-    tabTime.addEventListener('click', async () => {
+    tabTime?.addEventListener('click', async () => {
       activate(tabTime); openPanel.style.display='none'; historyPanel.style.display='none'; timePanel.style.display='';
       await loadState();
       renderHistory();

@@ -75,9 +75,19 @@ public class HomeController {
             @RequestParam(required = false) String job,
             @RequestParam(required = false) String position,
             @RequestParam(required = false) String keyword,
+            Authentication authentication,
             Model model
     ) {
-        List<Course> filtered = readCourses().stream()
+        Long userId = authentication == null || !authentication.isAuthenticated()
+                ? null
+                : userJpaRepository.findByLoginId(authentication.getName()).map(u -> u.getId()).orElse(null);
+
+        Map<Long, String> myStatusByCourseId = userId == null
+                ? Map.of()
+                : findMyStatusByCourseId(userId);
+        boolean hasApprovedEnrollment = userId != null && hasApprovedEnrollment(userId);
+
+        List<Course> filtered = readCourses(myStatusByCourseId).stream()
                 .filter(c -> isBlank(job) || c.job().equalsIgnoreCase(job))
                 .filter(c -> isBlank(position) || c.position().equalsIgnoreCase(position))
                 .filter(c -> isBlank(keyword) || contains(c, keyword))
@@ -87,7 +97,30 @@ public class HomeController {
         model.addAttribute("job", job);
         model.addAttribute("position", position);
         model.addAttribute("keyword", keyword);
+        model.addAttribute("hasApprovedEnrollment", hasApprovedEnrollment);
         return "enrollment/apply";
+    }
+
+    @GetMapping("/enrollments/history")
+    public String enrollmentHistoryPage(Authentication authentication) {
+        Long userId = authentication == null || !authentication.isAuthenticated()
+                ? null
+                : userJpaRepository.findByLoginId(authentication.getName()).map(u -> u.getId()).orElse(null);
+        if (userId != null && hasApprovedEnrollment(userId)) {
+            return "redirect:/enrollments/apply";
+        }
+        return "redirect:/enrollments/apply#history";
+    }
+
+    @GetMapping("/timetable")
+    public String timetablePage(Authentication authentication) {
+        Long userId = authentication == null || !authentication.isAuthenticated()
+                ? null
+                : userJpaRepository.findByLoginId(authentication.getName()).map(u -> u.getId()).orElse(null);
+        if (userId != null && hasApprovedEnrollment(userId)) {
+            return "redirect:/enrollments/apply";
+        }
+        return "redirect:/enrollments/apply#timetable";
     }
 
     @PostMapping("/enrollments/apply/request")
@@ -215,7 +248,7 @@ public class HomeController {
     @GetMapping("/payments")
     public String paymentsPage() { return "redirect:/mypage?tab=payments"; }
 
-    private List<Course> readCourses() {
+    private List<Course> readCourses(Map<Long, String> myStatusByCourseId) {
         List<CourseListProjection> rows = courseSessionJpaRepository.findAllCourseRows();
         Map<String, Integer> enrollCountMap = new HashMap<>();
         courseSessionJpaRepository.findCourseEnrollmentCounts()
@@ -232,7 +265,12 @@ public class HomeController {
             int maxCount = first.getMaxCount() == null ? 0 : first.getMaxCount();
             int enrolled = enrollCountMap.getOrDefault(first.getCourseCode(), 0);
             boolean open = "OPEN".equalsIgnoreCase(first.getCourseStatus());
-            String note = !open ? "모집마감" : (enrolled >= maxCount && maxCount > 0 ? "신청불가" : "신청가능");
+            String myStatus = myStatusByCourseId.get(first.getCourseId());
+            boolean approvedOwned = "APPROVED".equalsIgnoreCase(myStatus) || "RUNNING".equalsIgnoreCase(myStatus);
+            boolean canApply = open && !approvedOwned && !(enrolled >= maxCount && maxCount > 0);
+            String note = approvedOwned
+                    ? "신청 불가"
+                    : (!open ? "모집마감" : (enrolled >= maxCount && maxCount > 0 ? "신청불가" : "신청가능"));
 
             out.add(new Course(
                     0, "", "", "", first.getTitle(), "",
@@ -243,7 +281,9 @@ public class HomeController {
                     enrolled, maxCount,
                     first.getPrice(),
                     first.getCourseId(),
-                    open
+                    open,
+                    myStatus,
+                    canApply
             ));
         }
         return out;
@@ -334,10 +374,43 @@ public class HomeController {
     }
 
     private Course findCourse(String courseCode, String section) {
-        return readCourses().stream()
+        return readCourses(Map.of()).stream()
                 .filter(c -> c.courseCode().equalsIgnoreCase(courseCode) && c.section().equalsIgnoreCase(section))
                 .findFirst()
                 .orElse(null);
+    }
+
+    private boolean hasApprovedEnrollment(Long userId) {
+        return !enrollmentJpaRepository.findCourseIdsByUserIdAndStatuses(userId, List.of("APPROVED", "RUNNING")).isEmpty();
+    }
+
+    private Map<Long, String> findMyStatusByCourseId(Long userId) {
+        List<MyPageCourseProjection> rows = enrollmentJpaRepository.findMyCoursesByStatuses(
+                userId,
+                Set.of("APPLIED", "WAITLIST", "APPROVED", "RUNNING", "REJECTED", "CANCELLED", "CANCEL_REQUESTED")
+        );
+
+        Map<String, Integer> priority = Map.of(
+                "APPROVED", 1,
+                "RUNNING", 1,
+                "APPLIED", 2,
+                "WAITLIST", 3,
+                "CANCEL_REQUESTED", 4,
+                "REJECTED", 5,
+                "CANCELLED", 6
+        );
+
+        Map<Long, String> result = new HashMap<>();
+        Map<Long, Integer> score = new HashMap<>();
+        for (MyPageCourseProjection r : rows) {
+            String status = r.getStatus() == null ? "" : r.getStatus().toUpperCase(Locale.ROOT);
+            int p = priority.getOrDefault(status, 99);
+            if (!score.containsKey(r.getCourseId()) || p < score.get(r.getCourseId())) {
+                score.put(r.getCourseId(), p);
+                result.put(r.getCourseId(), status);
+            }
+        }
+        return result;
     }
 
     private double safeRate(Double value) {
@@ -405,7 +478,9 @@ public class HomeController {
             int maxCount,
             String price,
             Long courseId,
-            boolean open
+            boolean open,
+            String myStatus,
+            boolean canApply
     ) {
     }
 }
