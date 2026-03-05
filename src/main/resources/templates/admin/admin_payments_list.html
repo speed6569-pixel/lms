@@ -1,40 +1,56 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>결제 내역 관리</title>
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/header-profile.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
 <body>
-<th:block th:fragment="content">
-    <h2>결제/포인트 내역</h2>
-    <form class="row" method="get" action="/admin/payments">
-        <input name="qUser" placeholder="사용자 아이디/이름" th:value="${qUser}">
-        <input name="qCourse" placeholder="강의명/과목코드" th:value="${qCourse}">
-        <select name="type">
-            <option value="" th:selected="${type == ''}">전체</option>
-            <option value="EARN" th:selected="${type == 'EARN'}">충전(EARN)</option>
-            <option value="SPEND" th:selected="${type == 'SPEND'}">사용(SPEND)</option>
-            <option value="REFUND" th:selected="${type == 'REFUND'}">환불(REFUND)</option>
-        </select>
-        <input type="date" name="from" th:value="${from}">
-        <input type="date" name="to" th:value="${to}">
-        <button class="action" type="submit">조회</button>
-    </form>
+<div th:replace="~{fragments/header :: siteHeader(${userName}, ${userEmail})}"></div>
 
-    <table class="table">
-        <thead>
-        <tr><th>결제ID</th><th>결제일시</th><th>사용자(아이디/이름)</th><th>구분</th><th>강의(코드/명)</th><th>금액(포인트)</th><th>메모</th><th>상세</th></tr>
-        </thead>
-        <tbody>
-        <tr th:each="r : ${rows}">
-            <td th:text="${r.paymentId}"></td>
-            <td th:text="${#temporals.format(r.createdAt, 'yyyy-MM-dd HH:mm:ss')}"></td>
-            <td th:text="|${r.loginId} / ${r.userName}|"></td>
-            <td th:text="${r.type}"></td>
-            <td th:text="${r.courseId == null ? '-' : r.courseCode + ' / ' + r.courseTitle}"></td>
-            <td th:text="${r.amount}"></td>
-            <td th:text="${r.memo}"></td>
-            <td><a th:href="@{/admin/payments/{id}(id=${r.paymentId})}">보기</a></td>
-        </tr>
-        <tr th:if="${#lists.isEmpty(rows)}"><td colspan="8">조회 결과가 없습니다.</td></tr>
-        </tbody>
-    </table>
-</th:block>
+<main class="admin-wrap">
+    <aside th:replace="~{fragments/admin-layout :: adminSidebar('payments')}"></aside>
+
+    <section class="panel">
+        <h2>결제/포인트 내역</h2>
+        <form class="row" method="get" action="/admin/payments">
+            <input name="qUser" placeholder="사용자 아이디/이름" th:value="${qUser}">
+            <input name="qCourse" placeholder="강의명/과목코드" th:value="${qCourse}">
+            <select name="type">
+                <option value="" th:selected="${type == ''}">전체</option>
+                <option value="EARN" th:selected="${type == 'EARN'}">충전(EARN)</option>
+                <option value="SPEND" th:selected="${type == 'SPEND'}">사용(SPEND)</option>
+                <option value="REFUND" th:selected="${type == 'REFUND'}">환불(REFUND)</option>
+            </select>
+            <input type="date" name="from" th:value="${from}">
+            <input type="date" name="to" th:value="${to}">
+            <button class="action" type="submit">조회</button>
+        </form>
+
+        <table>
+            <thead>
+            <tr>
+                <th>결제ID</th><th>결제일시</th><th>사용자(아이디/이름)</th><th>구분</th><th>강의(코드/명)</th><th>금액(포인트)</th><th>메모</th><th>상세</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="r : ${rows}">
+                <td th:text="${r.paymentId}"></td>
+                <td th:text="${#temporals.format(r.createdAt, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                <td th:text="|${r.loginId} / ${r.userName}|"></td>
+                <td th:text="${r.type}"></td>
+                <td th:text="${r.courseId == null ? '-' : r.courseCode + ' / ' + r.courseTitle}"></td>
+                <td th:text="${r.amount}"></td>
+                <td th:text="${r.memo}"></td>
+                <td><a th:href="@{/admin/payments/{id}(id=${r.paymentId})}">보기</a></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(rows)}"><td colspan="8">조회 결과가 없습니다.</td></tr>
+            </tbody>
+        </table>
+    </section>
+</main>
 </body>
 </html>
