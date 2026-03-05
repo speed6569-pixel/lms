@@ -14,4 +14,11 @@ public class HomeDtos {
             String title,
             LocalDateTime createdAt
     ) {}
+
+    public record HomeSupportSummaryDto(
+            Long id,
+            String title,
+            LocalDateTime createdAt,
+            String statusLabel
+    ) {}
 }

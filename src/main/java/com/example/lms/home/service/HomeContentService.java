@@ -5,6 +5,9 @@ import com.example.lms.admin.repo.CourseJpaRepository;
 import com.example.lms.home.dto.HomeDtos;
 import com.example.lms.posts.entity.PostEntity;
 import com.example.lms.posts.repo.PostJpaRepository;
+import com.example.lms.support.entity.PostStatus;
+import com.example.lms.support.entity.SupportPostEntity;
+import com.example.lms.support.repo.SupportPostRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,11 +18,14 @@ public class HomeContentService {
 
     private final CourseJpaRepository courseJpaRepository;
     private final PostJpaRepository postJpaRepository;
+    private final SupportPostRepository supportPostRepository;
 
     public HomeContentService(CourseJpaRepository courseJpaRepository,
-                              PostJpaRepository postJpaRepository) {
+                              PostJpaRepository postJpaRepository,
+                              SupportPostRepository supportPostRepository) {
         this.courseJpaRepository = courseJpaRepository;
         this.postJpaRepository = postJpaRepository;
+        this.supportPostRepository = supportPostRepository;
     }
 
     @Transactional(readOnly = true)
@@ -53,14 +59,14 @@ public class HomeContentService {
     }
 
     @Transactional(readOnly = true)
-    public List<HomeDtos.HomePostSummaryDto> latestFaqs() {
-        List<PostEntity> posts = postJpaRepository
-                .findTop5ByDeletedFalseAndCategoryAndStatusOrderByPinnedDescCreatedAtDesc("CS", "PUBLISHED");
+    public List<HomeDtos.HomeSupportSummaryDto> latestSupportPosts() {
+        List<SupportPostEntity> posts = supportPostRepository.findTop5ByOrderByCreatedAtDesc();
         return posts.stream()
-                .map(p -> new HomeDtos.HomePostSummaryDto(
+                .map(p -> new HomeDtos.HomeSupportSummaryDto(
                         p.getId(),
                         firstNonBlank(p.getTitle(), "제목 없음"),
-                        p.getCreatedAt()
+                        p.getCreatedAt(),
+                        p.getStatus() == PostStatus.ANSWERED ? "답변완료" : "대기"
                 ))
                 .toList();
     }

@@ -24,13 +24,9 @@ public class PostViewController {
         return "posts/posts_list";
     }
 
-    @GetMapping({"/support", "/faqs", "/cs"})
-    public String support(Model model) {
-        model.addAttribute("title", "FAQ");
-        model.addAttribute("posts", postService.userList("CS"));
-        model.addAttribute("category", "CS");
-        model.addAttribute("detailBasePath", "/support");
-        return "posts/posts_list";
+    @GetMapping({"/support", "/faqs", "/faq", "/cs"})
+    public String supportRedirect() {
+        return "redirect:/customer-center";
     }
 
     @GetMapping("/schedule")
@@ -41,7 +37,12 @@ public class PostViewController {
         return "posts/posts_list";
     }
 
-    @GetMapping({"/posts/{id}", "/notices/{id}", "/support/{id}", "/faqs/{id}"})
+    @GetMapping({"/support/{id}", "/faqs/{id}", "/faq/{id}", "/cs/{id}"})
+    public String supportDetailRedirect(@PathVariable Long id) {
+        return "redirect:/customer-center/" + id;
+    }
+
+    @GetMapping({"/posts/{id}", "/notices/{id}"})
     public String detail(@PathVariable Long id, Model model) {
         model.addAttribute("post", postService.get(id));
         return "posts/post_detail";

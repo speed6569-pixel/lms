@@ -117,15 +117,15 @@
             <article class="card home-board-card">
                 <div class="home-board-head">
                     <h3>고객 센터</h3>
-                    <a href="/support">더보기</a>
+                    <a href="/customer-center">더보기</a>
                 </div>
-                <ul class="home-board-list" th:if="${!#lists.isEmpty(latestFaqs)}">
-                    <li th:each="f : ${latestFaqs}">
-                        <a th:href="@{/support/{id}(id=${f.id})}" th:text="${f.title}"></a>
-                        <span th:text="${f.createdAt != null ? #temporals.format(f.createdAt, 'yyyy-MM-dd') : ''}"></span>
+                <ul class="home-board-list" th:if="${!#lists.isEmpty(latestSupportPosts)}">
+                    <li th:each="f : ${latestSupportPosts}">
+                        <a th:href="@{/customer-center/{id}(id=${f.id})}" th:text="${f.title}"></a>
+                        <span th:text="|${f.statusLabel} · ${f.createdAt != null ? #temporals.format(f.createdAt, 'yyyy-MM-dd') : ''}|"></span>
                     </li>
                 </ul>
-                <div class="card" th:if="${#lists.isEmpty(latestFaqs)}">등록된 글이 없습니다.</div>
+                <div class="card" th:if="${#lists.isEmpty(latestSupportPosts)}">등록된 글이 없습니다.</div>
             </article>
         </div>
     </section>
