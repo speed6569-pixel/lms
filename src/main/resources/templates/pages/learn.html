@@ -30,6 +30,15 @@
         <div style="margin-top:10px;">
             <a href="/mypage?tab=ongoing" class="action" style="text-decoration:none;display:inline-block;">나의 수강 현황(마이페이지)</a>
         </div>
+
+        <div style="margin-top:14px;border-top:1px solid #e5e7eb;padding-top:12px;">
+            <h3 style="margin:0 0 8px;">AI 튜터</h3>
+            <div id="chatMessages" style="max-height:220px;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;padding:8px;background:#fafafa;"></div>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+                <textarea id="chatQuestion" placeholder="질문을 입력하세요" style="flex:1;min-height:58px;border:1px solid #d1d5db;border-radius:8px;padding:8px;"></textarea>
+                <button type="button" id="chatSendBtn" class="action">전송</button>
+            </div>
+        </div>
     </section>
 
     <aside class="box">
@@ -161,6 +170,60 @@
   });
 
   player.addEventListener('ended', () => saveProgress(100, true));
+
+  const chatMessages = document.getElementById('chatMessages');
+  const chatQuestion = document.getElementById('chatQuestion');
+  const chatSendBtn = document.getElementById('chatSendBtn');
+
+  function addChat(role, text){
+    if (!chatMessages) return;
+    const item = document.createElement('div');
+    item.style.marginBottom = '8px';
+    item.innerHTML = `<strong>${role}</strong><div style="white-space:pre-wrap;">${text || ''}</div>`;
+    chatMessages.appendChild(item);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  function buildRagContext(){
+    const lesson = currentLesson();
+    if (!lesson) return `${courseId || ''}`;
+    return [
+      `강의명: ${lesson.title || ''}`,
+      `설명: ${lesson.description || ''}`,
+      `차시번호: ${lesson.orderNo || ''}`
+    ].join('\n');
+  }
+
+  async function sendChat(){
+    const q = (chatQuestion?.value || '').trim();
+    if (!q) return;
+    addChat('나', q);
+    if (chatQuestion) chatQuestion.value = '';
+    try {
+      const res = await fetch(`/api/learn/${courseId}/chat/query`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ question: q, ragContext: buildRagContext() })
+      });
+      const json = await res.json().catch(()=>({}));
+      if (!res.ok) {
+        addChat('AI', json.message || '오류가 발생했습니다.');
+        return;
+      }
+      addChat('AI', json.answer || '(응답 없음)');
+    } catch (_) {
+      addChat('AI', '챗봇 호출 중 오류가 발생했습니다.');
+    }
+  }
+
+  chatSendBtn?.addEventListener('click', sendChat);
+  chatQuestion?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendChat();
+    }
+  });
+
   loadLesson();
 })();
 </script>

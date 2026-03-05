@@ -1,6 +1,8 @@
 package com.example.lms.learn.web;
 
 import com.example.lms.enrollment.repo.UserJpaRepository;
+import com.example.lms.learn.dto.LearnChatQueryRequest;
+import com.example.lms.learn.service.LearnChatService;
 import com.example.lms.learn.service.LearnService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -16,11 +18,14 @@ public class LearnController {
 
     private final UserJpaRepository userJpaRepository;
     private final LearnService learnService;
+    private final LearnChatService learnChatService;
 
     public LearnController(UserJpaRepository userJpaRepository,
-                           LearnService learnService) {
+                           LearnService learnService,
+                           LearnChatService learnChatService) {
         this.userJpaRepository = userJpaRepository;
         this.learnService = learnService;
+        this.learnChatService = learnChatService;
     }
 
     @GetMapping("/learn/{courseId}")
@@ -81,6 +86,29 @@ public class LearnController {
                                                 @RequestBody Map<String, Object> body,
                                                 Authentication authentication) {
         return saveProgress(lessonId, body, authentication);
+    }
+
+    @PostMapping("/api/learn/{courseId}/chat/query")
+    @ResponseBody
+    public ResponseEntity<?> queryLearnChat(@PathVariable Long courseId,
+                                            @RequestBody LearnChatQueryRequest request,
+                                            Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "로그인이 필요합니다."));
+        }
+
+        Long userId = userJpaRepository.findByLoginId(authentication.getName()).map(u -> u.getId()).orElse(null);
+        if (userId == null) return ResponseEntity.badRequest().body(Map.of("message", "로그인이 필요합니다."));
+
+        try {
+            learnService.validateCourseAccess(userId, courseId);
+            String answer = learnChatService.ask(userId, courseId, request.question(), request.ragContext());
+            return ResponseEntity.ok(Map.of("answer", answer));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "챗봇 응답 생성 중 오류가 발생했습니다."));
+        }
     }
 
     @GetMapping("/api/courses/{courseId}/progress")

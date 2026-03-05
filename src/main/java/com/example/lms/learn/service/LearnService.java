@@ -91,10 +91,15 @@ public class LearnService {
     }
 
     @Transactional(readOnly = true)
-    public CourseProgress getCourseProgress(Long userId, Long courseId) {
+    public void validateCourseAccess(Long userId, Long courseId) {
         if (!enrollmentJpaRepository.existsByUserIdAndCourseIdAndStatusIn(userId, courseId, List.of("APPROVED", "RUNNING"))) {
             throw new IllegalStateException("승인 후 수강 가능합니다.");
         }
+    }
+
+    @Transactional(readOnly = true)
+    public CourseProgress getCourseProgress(Long userId, Long courseId) {
+        validateCourseAccess(userId, courseId);
 
         long totalLessons = lessonJpaRepository.countByCourseId(courseId);
         if (totalLessons <= 0) {
