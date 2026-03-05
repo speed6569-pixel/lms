@@ -194,16 +194,45 @@
     ].join('\n');
   }
 
+  function getPlaybackContext(){
+    const lesson = currentLesson();
+    const duration = Number(player?.duration || 0);
+    const current = Number(player?.currentTime || 0);
+    const watchedPercent = duration > 0 ? (current / duration) * 100 : 0;
+    const lessonCompleted = !!(lesson && isDone(lesson.id));
+
+    const totalLessons = lessons.length;
+    const completedLessons = lessons.filter(l => isDone(l.id)).length;
+    const coursePercent = totalLessons > 0 ? Math.round((completedLessons * 100) / totalLessons) : 0;
+
+    return {
+      lessonId: lesson?.id || null,
+      lessonTitle: lesson?.title || '',
+      currentTimeSec: current,
+      durationSec: duration,
+      watchedPercent,
+      lessonCompleted,
+      courseCompletedLessons: completedLessons,
+      courseTotalLessons: totalLessons,
+      coursePercent
+    };
+  }
+
   async function sendChat(){
     const q = (chatQuestion?.value || '').trim();
     if (!q) return;
     addChat('나', q);
     if (chatQuestion) chatQuestion.value = '';
     try {
+      const playback = getPlaybackContext();
       const res = await fetch(`/api/learn/${courseId}/chat/query`, {
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ question: q, ragContext: buildRagContext() })
+        body: JSON.stringify({
+          question: q,
+          ragContext: buildRagContext(),
+          ...playback
+        })
       });
       const json = await res.json().catch(()=>({}));
       if (!res.ok) {

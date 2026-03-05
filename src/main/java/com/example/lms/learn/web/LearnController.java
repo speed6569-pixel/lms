@@ -102,13 +102,32 @@ public class LearnController {
 
         try {
             learnService.validateCourseAccess(userId, courseId);
-            String answer = learnChatService.ask(userId, courseId, request.question(), request.ragContext());
+            String mergedContext = mergeRagContextWithPlayback(request);
+            String answer = learnChatService.ask(userId, courseId, request.question(), mergedContext);
             return ResponseEntity.ok(Map.of("answer", answer));
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("message", "챗봇 응답 생성 중 오류가 발생했습니다."));
         }
+    }
+
+    private String mergeRagContextWithPlayback(LearnChatQueryRequest request) {
+        String base = request.ragContext() == null ? "" : request.ragContext();
+
+        StringBuilder sb = new StringBuilder(base);
+        sb.append("\n\n[재생 컨텍스트]\n")
+          .append("- lessonId: ").append(request.lessonId() == null ? "" : request.lessonId()).append("\n")
+          .append("- lessonTitle: ").append(request.lessonTitle() == null ? "" : request.lessonTitle()).append("\n")
+          .append("- currentTimeSec: ").append(request.currentTimeSec() == null ? 0 : Math.round(request.currentTimeSec())).append("\n")
+          .append("- durationSec: ").append(request.durationSec() == null ? 0 : Math.round(request.durationSec())).append("\n")
+          .append("- watchedPercent: ").append(request.watchedPercent() == null ? 0 : Math.round(request.watchedPercent())).append("\n")
+          .append("- lessonCompleted: ").append(Boolean.TRUE.equals(request.lessonCompleted()) ? "true" : "false").append("\n")
+          .append("- courseCompletedLessons: ").append(request.courseCompletedLessons() == null ? 0 : request.courseCompletedLessons()).append("\n")
+          .append("- courseTotalLessons: ").append(request.courseTotalLessons() == null ? 0 : request.courseTotalLessons()).append("\n")
+          .append("- coursePercent: ").append(request.coursePercent() == null ? 0 : request.coursePercent()).append("\n")
+          .append("- 지시: 시간/완료/진도 질문에는 위 재생 컨텍스트 숫자를 우선 근거로 답변하라.");
+        return sb.toString();
     }
 
     @GetMapping("/api/courses/{courseId}/progress")
