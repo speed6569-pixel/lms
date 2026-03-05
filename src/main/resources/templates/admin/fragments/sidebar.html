@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<aside class="admin-sidebar" th:fragment="sidebar(activeMenu)">
+  <h3>관리 메뉴</h3>
+  <a class="nav-btn" th:classappend="${activeMenu == 'dashboard'} ? ' active' : ''" href="/admin/dashboard">통계(대시보드)</a>
+  <a class="nav-btn" th:classappend="${activeMenu == 'courses'} ? ' active' : ''" href="/admin/courses">강의 관리</a>
+  <a class="nav-btn" th:classappend="${activeMenu == 'course-content'} ? ' active' : ''" href="/admin/course-contents">강의 콘텐츠 관리</a>
+  <a class="nav-btn" th:classappend="${activeMenu == 'enrollments'} ? ' active' : ''" href="/admin/enrollments">수강신청 관리</a>
+  <a class="nav-btn" th:classappend="${activeMenu == 'payments'} ? ' active' : ''" href="/admin/payments">결제 내역 관리</a>
+  <a class="nav-btn" th:classappend="${activeMenu == 'users'} ? ' active' : ''" href="/admin/users">사용자 관리</a>
+  <a class="nav-btn" th:classappend="${activeMenu == 'posts'} ? ' active' : ''" href="/admin/posts">게시물 관리</a>
+</aside>
+</body>
+</html>

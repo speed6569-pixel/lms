@@ -1,72 +1,10 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>강의 콘텐츠 관리</title>
-    <link rel="stylesheet" th:href="@{/css/home.css}">
-    <link rel="stylesheet" th:href="@{/css/header-profile.css}">
-    <style>
-        .admin-wrap{max-width:1200px;margin:24px auto;padding:0 16px;display:grid;grid-template-columns:220px 1fr;gap:16px}
-        .side,.panel{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.06)}
-        .side .nav-btn{display:block;width:100%;text-align:left;padding:9px 10px;border-radius:10px;text-decoration:none;color:#1f2937;border:0;background:#fff;cursor:pointer}
-        .side .nav-btn:hover,.side .nav-btn.active{background:#eff6ff}
-        .action-link{display:inline-block;padding:6px 10px;border-radius:8px;background:#2563eb;color:#fff;text-decoration:none;font-size:12px}
-        table{width:100%;border-collapse:collapse}
-        th,td{border-bottom:1px solid #e5e7eb;padding:8px;text-align:left;font-size:13px}
-        thead th{background:#f8fafc;font-weight:700}
-        @media (max-width:900px){.admin-wrap{grid-template-columns:1fr}}
-    </style>
-</head>
-<body>
-<div th:replace="~{fragments/header :: siteHeader(${userName}, ${userEmail})}"></div>
-
-<main class="admin-wrap">
-    <aside class="side">
-        <h3>관리 메뉴</h3>
-        <a class="nav-btn" href="/admin/dashboard">통계(대시보드)</a>
-        <a class="nav-btn" href="/admin/dashboard">강의 관리</a>
-        <a class="nav-btn active" href="/admin/courses/manage">강의 콘텐츠 관리</a>
-        <a class="nav-btn" href="/admin/dashboard">수강신청 관리</a>
-        <a class="nav-btn" href="/admin/payments">결제 내역 관리</a>
-        <a class="nav-btn" href="/admin/users">사용자 관리</a>
-        <a class="nav-btn" href="/admin/posts">게시물 관리</a>
-    </aside>
-
-    <section class="panel">
-        <h2>강의 콘텐츠 관리</h2>
-        <table>
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>과목코드</th>
-                <th>교과목명</th>
-                <th>교수</th>
-                <th>가격</th>
-                <th>인원제한</th>
-                <th>관리</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="c : ${courses}">
-                <td th:text="${c.id}"></td>
-                <td th:text="${c.subjectCode}"></td>
-                <td th:text="${c.subjectName}"></td>
-                <td th:text="${c.instructor}"></td>
-                <td th:text="${c.price}"></td>
-                <td th:text="${c.capacity}"></td>
-                <td>
-                    <a class="action-link" th:href="@{/admin/courses/{id}/manage(id=${c.id})}">상세관리</a>
-                </td>
-            </tr>
-            <tr th:if="${#lists.isEmpty(courses)}">
-                <td colspan="7">강의가 없습니다.</td>
-            </tr>
-            </tbody>
-        </table>
-    </section>
-</main>
-
-<div th:replace="~{fragments/footer :: siteFooter}"></div>
-</body>
-</html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"><body>
+<th:block th:fragment="content">
+  <h2>강의 콘텐츠 관리</h2>
+  <div class="admin-table table-wrap"><table><thead><tr><th>ID</th><th>과목코드</th><th>교과목명</th><th>교수</th><th>가격</th><th>인원제한</th><th>관리</th></tr></thead><tbody>
+  <tr th:each="c : ${courses}"><td th:text="${c.id}"></td><td th:text="${c.subjectCode}"></td><td th:text="${c.subjectName}"></td><td th:text="${c.instructor}"></td><td th:text="${c.price}"></td><td th:text="${c.capacity}"></td><td><a class="btn-primary" th:href="@{/admin/course-contents/{id}(id=${c.id})}">상세관리</a></td></tr>
+  <tr th:if="${#lists.isEmpty(courses)}"><td colspan="7">강의가 없습니다.</td></tr>
+  </tbody></table></div>
+</th:block>
+</body></html>
