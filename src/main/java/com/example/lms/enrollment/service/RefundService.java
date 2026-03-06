@@ -32,7 +32,6 @@ public class RefundService {
         this.learnService = learnService;
     }
 
-    @Transactional(readOnly = true)
     public RefundEligibility evaluateEligibility(PointTransactionEntity payment) {
         if (payment.getType() != PointTransactionType.SPEND) {
             return RefundEligibility.notAllowed("강의 결제 건만 환불 신청할 수 있습니다.", 0, false);
