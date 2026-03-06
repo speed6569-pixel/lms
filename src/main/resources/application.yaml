@@ -31,6 +31,9 @@ mail:
 
 server:
   port: 8080
+  servlet:
+    session:
+      timeout: 300m
 
 logging:
   level:

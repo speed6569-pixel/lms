@@ -69,6 +69,10 @@ public class SecurityConfig {
                 .rememberMeParameter("remember-me")
                 .tokenValiditySeconds(14 * 24 * 60 * 60)
             )
+            .sessionManagement(session -> session
+                .invalidSessionUrl("/login?expired")
+                .sessionFixation(fixation -> fixation.migrateSession())
+            )
             .logout(logout -> logout
                 .logoutUrl("/logout")
                 .logoutSuccessUrl("/login?logout")
