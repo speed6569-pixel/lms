@@ -549,6 +549,7 @@ public Optional<Course> findById(Long courseId) {
 - [ ] 문서/README 변경사항 반영
 - [ ] 다음 날 작업 우선순위 3개 작성
 
+
 ---
 
 필요하면 다음 단계로, 위 15일 작업표를 기준으로 **Jira/Trello 티켓 형식(담당자/우선순위/완료조건 포함)**으로 변환해줄 수 있다.
