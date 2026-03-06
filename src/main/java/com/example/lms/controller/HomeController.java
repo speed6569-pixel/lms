@@ -10,6 +10,7 @@ import com.example.lms.enrollment.repo.MyPointTransactionProjection;
 import com.example.lms.enrollment.repo.PointTransactionJpaRepository;
 import com.example.lms.enrollment.repo.UserJpaRepository;
 import com.example.lms.learn.service.LearnService;
+import com.example.lms.enrollment.service.RefundService;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -31,6 +32,7 @@ public class HomeController {
     private final CourseInfoService courseInfoService;
     private final HomeContentService homeContentService;
     private final LearnService learnService;
+    private final RefundService refundService;
 
     public HomeController(CourseSessionJpaRepository courseSessionJpaRepository,
                           EnrollmentJpaRepository enrollmentJpaRepository,
@@ -38,7 +40,8 @@ public class HomeController {
                           PointTransactionJpaRepository pointTransactionJpaRepository,
                           CourseInfoService courseInfoService,
                           HomeContentService homeContentService,
-                          LearnService learnService) {
+                          LearnService learnService,
+                          RefundService refundService) {
         this.courseSessionJpaRepository = courseSessionJpaRepository;
         this.enrollmentJpaRepository = enrollmentJpaRepository;
         this.userJpaRepository = userJpaRepository;
@@ -46,6 +49,7 @@ public class HomeController {
         this.courseInfoService = courseInfoService;
         this.homeContentService = homeContentService;
         this.learnService = learnService;
+        this.refundService = refundService;
     }
 
     @GetMapping({"/", "/homepage"})
@@ -352,8 +356,8 @@ public class HomeController {
 
     private MyPaymentItem toMyPointItem(MyPointTransactionProjection p) {
         String status = switch (p.getType()) {
-            case "SPEND" -> "PAID";
-            case "REFUND" -> "REFUND";
+            case "SPEND" -> (p.getRefundStatus() == null || p.getRefundStatus().isBlank()) ? "PAID" : p.getRefundStatus();
+            case "REFUND" -> "REFUND_APPROVED";
             default -> "EARN";
         };
 
@@ -362,14 +366,34 @@ public class HomeController {
             courseLabel = p.getCourseTitle() + (p.getSubjectCode() == null || p.getSubjectCode().isBlank() ? "" : " / " + p.getSubjectCode());
         }
 
+        boolean canRequestRefund = false;
+        String refundGuide = "";
+        int progressPercent = 0;
+
+        if ("SPEND".equalsIgnoreCase(p.getType()) && p.getCourseId() != null) {
+            var entity = pointTransactionJpaRepository.findById(p.getId()).orElse(null);
+            if (entity != null) {
+                var eligibility = refundService.evaluateEligibility(entity);
+                canRequestRefund = eligibility.refundable() && "PAID".equalsIgnoreCase(status);
+                refundGuide = eligibility.refundable() ? "" : eligibility.reason();
+                progressPercent = eligibility.progressPercent();
+            }
+        }
+
         return new MyPaymentItem(
+                p.getId(),
                 p.getCreatedAt(),
+                p.getCourseId(),
                 courseLabel,
                 p.getAmount(),
                 "POINT",
                 status,
                 p.getBalanceAfter(),
-                p.getMemo()
+                p.getMemo(),
+                canRequestRefund,
+                refundGuide,
+                p.getRefundRejectReason(),
+                progressPercent
         );
     }
 
@@ -447,13 +471,19 @@ public class HomeController {
     }
 
     public record MyPaymentItem(
+            Long paymentId,
             java.time.LocalDateTime createdAt,
+            Long courseId,
             String courseLabel,
             Integer amount,
             String method,
             String status,
             Integer balanceAfter,
-            String memo
+            String memo,
+            boolean canRequestRefund,
+            String refundGuide,
+            String refundRejectReason,
+            int progressPercent
     ) {
     }
 

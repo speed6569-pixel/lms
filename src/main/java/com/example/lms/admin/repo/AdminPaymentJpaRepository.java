@@ -22,7 +22,9 @@ public interface AdminPaymentJpaRepository extends JpaRepository<PointTransactio
                    COALESCE(c.subject_code, c.course_code) AS courseCode,
                    COALESCE(c.subject_name, c.title) AS courseTitle,
                    pt.amount AS amount,
-                   pt.memo AS memo
+                   pt.memo AS memo,
+                   pt.refund_status AS refundStatus,
+                   pt.refund_requested_at AS refundRequestedAt
             FROM point_transactions pt
             JOIN users u ON u.id = pt.user_id
             LEFT JOIN courses c ON c.id = pt.course_id
@@ -52,7 +54,11 @@ public interface AdminPaymentJpaRepository extends JpaRepository<PointTransactio
                    c.id AS courseId,
                    COALESCE(c.subject_code, c.course_code) AS courseCode,
                    COALESCE(c.subject_name, c.title) AS courseTitle,
-                   e.status AS enrollmentStatus
+                   e.status AS enrollmentStatus,
+                   pt.refund_status AS refundStatus,
+                   pt.refund_requested_at AS refundRequestedAt,
+                   pt.refund_processed_at AS refundProcessedAt,
+                   pt.refund_reject_reason AS refundRejectReason
             FROM point_transactions pt
             JOIN users u ON u.id = pt.user_id
             LEFT JOIN courses c ON c.id = pt.course_id

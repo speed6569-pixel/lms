@@ -2,6 +2,7 @@ package com.example.lms.enrollment.service;
 
 import com.example.lms.enrollment.entity.PointTransactionEntity;
 import com.example.lms.enrollment.entity.PointTransactionType;
+import com.example.lms.enrollment.entity.RefundStatus;
 import com.example.lms.enrollment.entity.UserEntity;
 import com.example.lms.enrollment.repo.PointTransactionJpaRepository;
 import com.example.lms.enrollment.repo.UserJpaRepository;
@@ -64,6 +65,7 @@ public class PointService {
         tx.setAmount(refundable);
         tx.setBalanceAfter(nextBalance);
         tx.setMemo(memo == null || memo.isBlank() ? "수강 취소 환불" : memo);
+        tx.setRefundStatus(RefundStatus.REFUND_APPROVED);
         pointTransactionJpaRepository.save(tx);
 
         return refundable;

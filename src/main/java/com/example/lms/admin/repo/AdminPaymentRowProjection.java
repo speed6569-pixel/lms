@@ -14,4 +14,6 @@ public interface AdminPaymentRowProjection {
     String getCourseTitle();
     Integer getAmount();
     String getMemo();
+    String getRefundStatus();
+    LocalDateTime getRefundRequestedAt();
 }

@@ -30,6 +30,19 @@ public class PointTransactionEntity {
     @Column(name = "memo", length = 255)
     private String memo;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "refund_status", length = 30)
+    private RefundStatus refundStatus;
+
+    @Column(name = "refund_requested_at")
+    private LocalDateTime refundRequestedAt;
+
+    @Column(name = "refund_processed_at")
+    private LocalDateTime refundProcessedAt;
+
+    @Column(name = "refund_reject_reason", length = 255)
+    private String refundRejectReason;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -40,6 +53,10 @@ public class PointTransactionEntity {
     public Integer getAmount() { return amount; }
     public Integer getBalanceAfter() { return balanceAfter; }
     public String getMemo() { return memo; }
+    public RefundStatus getRefundStatus() { return refundStatus; }
+    public LocalDateTime getRefundRequestedAt() { return refundRequestedAt; }
+    public LocalDateTime getRefundProcessedAt() { return refundProcessedAt; }
+    public String getRefundRejectReason() { return refundRejectReason; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 
     public void setUserId(Long userId) { this.userId = userId; }
@@ -48,4 +65,8 @@ public class PointTransactionEntity {
     public void setAmount(Integer amount) { this.amount = amount; }
     public void setBalanceAfter(Integer balanceAfter) { this.balanceAfter = balanceAfter; }
     public void setMemo(String memo) { this.memo = memo; }
+    public void setRefundStatus(RefundStatus refundStatus) { this.refundStatus = refundStatus; }
+    public void setRefundRequestedAt(LocalDateTime refundRequestedAt) { this.refundRequestedAt = refundRequestedAt; }
+    public void setRefundProcessedAt(LocalDateTime refundProcessedAt) { this.refundProcessedAt = refundProcessedAt; }
+    public void setRefundRejectReason(String refundRejectReason) { this.refundRejectReason = refundRejectReason; }
 }

@@ -3,6 +3,8 @@ package com.example.lms.admin.service;
 import com.example.lms.admin.repo.AdminPaymentDetailProjection;
 import com.example.lms.admin.repo.AdminPaymentJpaRepository;
 import com.example.lms.admin.repo.AdminPaymentRowProjection;
+import com.example.lms.enrollment.repo.PointTransactionJpaRepository;
+import com.example.lms.enrollment.service.RefundService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,9 +17,15 @@ import java.util.List;
 public class AdminPaymentService {
 
     private final AdminPaymentJpaRepository adminPaymentJpaRepository;
+    private final PointTransactionJpaRepository pointTransactionJpaRepository;
+    private final RefundService refundService;
 
-    public AdminPaymentService(AdminPaymentJpaRepository adminPaymentJpaRepository) {
+    public AdminPaymentService(AdminPaymentJpaRepository adminPaymentJpaRepository,
+                               PointTransactionJpaRepository pointTransactionJpaRepository,
+                               RefundService refundService) {
         this.adminPaymentJpaRepository = adminPaymentJpaRepository;
+        this.pointTransactionJpaRepository = pointTransactionJpaRepository;
+        this.refundService = refundService;
     }
 
     @Transactional(readOnly = true)
@@ -28,8 +36,37 @@ public class AdminPaymentService {
     }
 
     @Transactional(readOnly = true)
-    public AdminPaymentDetailProjection getDetail(Long id) {
-        return adminPaymentJpaRepository.findDetail(id)
+    public PaymentDetailView getDetail(Long id) {
+        AdminPaymentDetailProjection item = adminPaymentJpaRepository.findDetail(id)
                 .orElseThrow(() -> new IllegalArgumentException("결제/포인트 내역을 찾을 수 없습니다."));
+
+        int progressPercent = 0;
+        boolean refundable = false;
+        String refundableReason = "";
+        var entity = pointTransactionJpaRepository.findById(id).orElse(null);
+        if (entity != null) {
+            var eligibility = refundService.evaluateEligibility(entity);
+            progressPercent = eligibility.progressPercent();
+            refundable = eligibility.refundable();
+            refundableReason = eligibility.reason();
+        }
+
+        return new PaymentDetailView(item, progressPercent, refundable, refundableReason);
+    }
+
+    @Transactional
+    public void approveRefund(Long id) {
+        refundService.approveRefund(id);
+    }
+
+    @Transactional
+    public void rejectRefund(Long id, String reason) {
+        refundService.rejectRefund(id, reason);
+    }
+
+    public record PaymentDetailView(AdminPaymentDetailProjection item,
+                                    int progressPercent,
+                                    boolean refundable,
+                                    String refundableReason) {
     }
 }

@@ -16,4 +16,8 @@ public interface AdminPaymentDetailProjection {
     String getCourseCode();
     String getCourseTitle();
     String getEnrollmentStatus();
+    String getRefundStatus();
+    LocalDateTime getRefundRequestedAt();
+    LocalDateTime getRefundProcessedAt();
+    String getRefundRejectReason();
 }

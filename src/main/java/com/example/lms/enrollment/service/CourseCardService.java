@@ -5,6 +5,7 @@ import com.example.lms.admin.repo.CourseJpaRepository;
 import com.example.lms.enrollment.entity.CourseSessionEntity;
 import com.example.lms.enrollment.entity.PointTransactionEntity;
 import com.example.lms.enrollment.entity.PointTransactionType;
+import com.example.lms.enrollment.entity.RefundStatus;
 import com.example.lms.enrollment.entity.UserEntity;
 import com.example.lms.enrollment.repo.CourseSessionJpaRepository;
 import com.example.lms.enrollment.repo.EnrollmentJpaRepository;
@@ -114,6 +115,7 @@ public class CourseCardService {
         tx.setAmount(price);
         tx.setBalanceAfter(nextBalance);
         tx.setMemo("강의 결제");
+        tx.setRefundStatus(RefundStatus.PAID);
         pointTransactionJpaRepository.save(tx);
 
         return Map.of("paid", true, "balance", nextBalance, "message", "결제 완료");

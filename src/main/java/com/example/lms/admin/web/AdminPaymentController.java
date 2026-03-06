@@ -4,10 +4,8 @@ import com.example.lms.admin.service.AdminPaymentService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
 
@@ -39,8 +37,32 @@ public class AdminPaymentController {
 
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Model model) {
-        model.addAttribute("item", adminPaymentService.getDetail(id));
+        model.addAttribute("view", adminPaymentService.getDetail(id));
         return adminLayout(model, "결제 내역 상세", "admin/admin_payment_detail");
+    }
+
+    @PostMapping("/{id}/refund/approve")
+    public String approve(@PathVariable Long id, RedirectAttributes ra) {
+        try {
+            adminPaymentService.approveRefund(id);
+            ra.addFlashAttribute("message", "환불 승인 처리되었습니다.");
+        } catch (Exception e) {
+            ra.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/payments/" + id;
+    }
+
+    @PostMapping("/{id}/refund/reject")
+    public String reject(@PathVariable Long id,
+                         @RequestParam(required = false) String reason,
+                         RedirectAttributes ra) {
+        try {
+            adminPaymentService.rejectRefund(id, reason);
+            ra.addFlashAttribute("message", "환불 거절 처리되었습니다.");
+        } catch (Exception e) {
+            ra.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/payments/" + id;
     }
 
     private String adminLayout(Model model, String title, String contentTemplate) {

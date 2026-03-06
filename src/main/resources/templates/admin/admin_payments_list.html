@@ -9,9 +9,9 @@
     <input type="date" name="from" th:value="${from}"><input type="date" name="to" th:value="${to}">
     <button class="btn-primary" type="submit">조회</button>
   </form>
-  <div class="admin-table table-wrap"><table><thead><tr><th>결제ID</th><th>결제일시</th><th>사용자</th><th>구분</th><th>강의</th><th>금액</th><th>메모</th><th>상세</th></tr></thead><tbody>
-  <tr th:each="r : ${rows}"><td th:text="${r.paymentId}"></td><td th:text="${#temporals.format(r.createdAt, 'yyyy-MM-dd HH:mm:ss')}"></td><td th:text="|${r.loginId} / ${r.userName}|"></td><td th:text="${r.type}"></td><td th:text="${r.courseId == null ? '-' : r.courseCode + ' / ' + r.courseTitle}"></td><td th:text="${r.amount}"></td><td th:text="${r.memo}"></td><td><a class="btn-primary" th:href="@{/admin/payments/{id}(id=${r.paymentId})}">보기</a></td></tr>
-  <tr th:if="${#lists.isEmpty(rows)}"><td colspan="8">조회 결과가 없습니다.</td></tr>
+  <div class="admin-table table-wrap"><table><thead><tr><th>결제ID</th><th>결제일시</th><th>사용자</th><th>구분</th><th>강의</th><th>금액</th><th>환불상태</th><th>메모</th><th>상세</th></tr></thead><tbody>
+  <tr th:each="r : ${rows}"><td th:text="${r.paymentId}"></td><td th:text="${#temporals.format(r.createdAt, 'yyyy-MM-dd HH:mm:ss')}"></td><td th:text="|${r.loginId} / ${r.userName}|"></td><td th:text="${r.type}"></td><td th:text="${r.courseId == null ? '-' : r.courseCode + ' / ' + r.courseTitle}"></td><td th:text="${r.amount}"></td><td th:text="${r.refundStatus == null ? '-' : r.refundStatus}"></td><td th:text="${r.memo}"></td><td><a class="btn-primary" th:href="@{/admin/payments/{id}(id=${r.paymentId})}">보기</a></td></tr>
+  <tr th:if="${#lists.isEmpty(rows)}"><td colspan="9">조회 결과가 없습니다.</td></tr>
   </tbody></table></div>
 </th:block>
 </body></html>
