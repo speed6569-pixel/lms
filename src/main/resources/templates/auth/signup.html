@@ -4,94 +4,100 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>회원가입</title>
+    <link rel="stylesheet" th:href="@{/css/signup.css}">
 </head>
 <body>
-<h1>회원가입</h1>
+<div class="signup-container">
+    <main class="signup-card" aria-labelledby="signup-title">
+        <h1 id="signup-title" class="signup-title">회원가입</h1>
+        <p class="signup-subtitle">로컬 회원가입 (운영자/예외용)</p>
 
-<h2 style="font-size: 18px;">로컬 회원가입 (운영자/예외용)</h2>
-<form th:action="@{/signup}" th:object="${signupForm}" method="post">
-    <div>
-        <label for="username">아이디</label>
-        <input id="username" type="text" th:field="*{username}">
-        <p th:if="${#fields.hasErrors('username')}" th:errors="*{username}" style="color: red;"></p>
-    </div>
+        <form th:action="@{/signup}" th:object="${signupForm}" method="post" class="signup-form">
+            <div class="form-group">
+                <label for="username">아이디</label>
+                <input id="username" type="text" th:field="*{username}">
+                <p class="msg msg-error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></p>
+            </div>
 
-    <div>
-        <label for="password">비밀번호</label>
-        <input id="password" type="password" th:field="*{password}">
-        <p th:if="${#fields.hasErrors('password')}" th:errors="*{password}" style="color: red;"></p>
-    </div>
+            <div class="form-group">
+                <label for="password">비밀번호</label>
+                <input id="password" type="password" th:field="*{password}">
+                <p class="msg msg-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></p>
+            </div>
 
-    <div>
-        <label for="email">이메일</label>
-        <input id="email" type="email" th:field="*{email}">
-        <button type="submit" formaction="/signup/send-code" formmethod="post">이메일 인증번호 발송</button>
-        <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}" style="color: red;"></p>
-        <p th:if="${emailMessage}" th:text="${emailMessage}" style="color: green;"></p>
-        <p th:if="${expireSeconds}" th:text="|인증번호 남은 시간: ${expireSeconds}초|" style="color: #555;"></p>
-        <p th:if="${emailError}" th:text="${emailError}" style="color: red;"></p>
-        <p th:if="${devVerificationCode}" style="color:#b45309; font-weight:700;"
-           th:text="|[개발모드] 인증번호: ${devVerificationCode}|"></p>
-    </div>
+            <div class="form-group">
+                <label for="email">이메일</label>
+                <div class="input-row">
+                    <input id="email" type="email" th:field="*{email}">
+                    <button type="submit" formaction="/signup/send-code" formmethod="post" class="btn-secondary">이메일 인증번호 발송</button>
+                </div>
+                <p class="msg msg-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
+                <p class="msg msg-success" th:if="${emailMessage}" th:text="${emailMessage}"></p>
+                <p class="msg msg-info" th:if="${expireSeconds}" th:text="|인증번호 남은 시간: ${expireSeconds}초|"></p>
+                <p class="msg msg-error" th:if="${emailError}" th:text="${emailError}"></p>
+                <p class="msg msg-dev" th:if="${devVerificationCode}" th:text="|[개발모드] 인증번호: ${devVerificationCode}|"></p>
+            </div>
 
-    <div>
-        <label for="emailVerificationCode">이메일 확인</label>
-        <input id="emailVerificationCode" type="text" th:field="*{emailVerificationCode}" maxlength="6" placeholder="6자리 인증번호 입력">
-        <p th:if="${#fields.hasErrors('emailVerificationCode')}" th:errors="*{emailVerificationCode}" style="color: red;"></p>
-    </div>
+            <div class="form-group">
+                <label for="emailVerificationCode">이메일 확인</label>
+                <input id="emailVerificationCode" type="text" th:field="*{emailVerificationCode}" maxlength="6" placeholder="6자리 인증번호 입력">
+                <p class="msg msg-error" th:if="${#fields.hasErrors('emailVerificationCode')}" th:errors="*{emailVerificationCode}"></p>
+            </div>
 
-    <div>
-        <label for="name">이름</label>
-        <input id="name" type="text" th:field="*{name}">
-        <p th:if="${#fields.hasErrors('name')}" th:errors="*{name}" style="color: red;"></p>
-    </div>
+            <div class="form-group">
+                <label for="name">이름</label>
+                <input id="name" type="text" th:field="*{name}">
+                <p class="msg msg-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
+            </div>
 
-    <div style="display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap;">
-        <div>
-            <label for="birthDate">생년월일</label>
-            <input id="birthDate" type="text" th:field="*{birthDate}" placeholder="YYYYMMDD" maxlength="8">
-            <p th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}" style="color: red;"></p>
-        </div>
+            <div class="split-row">
+                <div class="form-group">
+                    <label for="birthDate">생년월일</label>
+                    <input id="birthDate" type="text" th:field="*{birthDate}" placeholder="YYYYMMDD" maxlength="8">
+                    <p class="msg msg-error" th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></p>
+                </div>
 
-        <div>
-            <label for="gender">성별</label>
-            <select id="gender" th:field="*{gender}">
-                <option value="">선택</option>
-                <option value="MALE">남성</option>
-                <option value="FEMALE">여성</option>
-            </select>
-            <p th:if="${#fields.hasErrors('gender')}" th:errors="*{gender}" style="color: red;"></p>
-        </div>
-    </div>
+                <div class="form-group">
+                    <label for="gender">성별</label>
+                    <select id="gender" th:field="*{gender}">
+                        <option value="">선택</option>
+                        <option value="MALE">남성</option>
+                        <option value="FEMALE">여성</option>
+                    </select>
+                    <p class="msg msg-error" th:if="${#fields.hasErrors('gender')}" th:errors="*{gender}"></p>
+                </div>
+            </div>
 
-    <div>
-        <label for="phoneNumber">휴대전화 번호</label>
-        <input id="phoneNumber" type="text" th:field="*{phoneNumber}" placeholder="010-1234-5678">
-        <p th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}" style="color: red;"></p>
-    </div>
+            <div class="form-group">
+                <label for="phoneNumber">휴대전화 번호</label>
+                <input id="phoneNumber" type="text" th:field="*{phoneNumber}" placeholder="010-1234-5678">
+                <p class="msg msg-error" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}"></p>
+            </div>
 
-    <p style="font-size: 13px; color: #666;">인증번호는 발송 후 5분간 유효하며, 재전송은 60초 후 가능합니다.</p>
+            <p class="guide-text">인증번호는 발송 후 5분간 유효하며, 재전송은 60초 후 가능합니다.</p>
 
-    <button type="submit">가입하기</button>
-</form>
+            <button type="submit" class="btn-primary">가입하기</button>
+        </form>
 
-<section style="margin-top: 24px; margin-bottom: 20px; padding: 14px; border: 1px solid #ddd; border-radius: 8px;">
-    <h2 style="margin-top: 0; font-size: 18px;">조직 SSO 가입</h2>
-    <p style="margin-top: 6px; color: #555;">회사 계정(Entra ID / Google Workspace / Okta)으로 가입합니다.</p>
+        <section class="sso-section" aria-labelledby="sso-title">
+            <h2 id="sso-title">조직 SSO 가입</h2>
+            <p class="sso-description">회사 계정(Entra ID / Google Workspace / Okta)으로 가입합니다.</p>
 
-    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
-        <a href="/oauth2/authorization/entra" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; text-decoration: none;">Entra ID로 가입</a>
-        <a href="/oauth2/authorization/google" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; text-decoration: none;">Google로 가입</a>
-        <a href="/oauth2/authorization/okta" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; text-decoration: none;">Okta로 가입</a>
-    </div>
+            <div class="sso-buttons">
+                <a href="/oauth2/authorization/entra" class="sso-button">Entra ID로 가입</a>
+                <a href="/oauth2/authorization/google" class="sso-button">Google로 가입</a>
+                <a href="/oauth2/authorization/okta" class="sso-button">Okta로 가입</a>
+            </div>
 
-    <p style="margin-top: 10px; font-size: 13px; color: #777;">
-        * SSO 연동 설정 전에는 버튼 클릭 시 동작하지 않을 수 있습니다.
-    </p>
-</section>
+            <p class="sso-note">* SSO 연동 설정 전에는 버튼 클릭 시 동작하지 않을 수 있습니다.</p>
+        </section>
 
-<p><a href="/signup/sso">SSO 회원가입 페이지로 이동</a></p>
-<p><a href="/login">로그인으로 이동</a></p>
-<p><a href="/">홈으로</a></p>
+        <nav class="bottom-links" aria-label="회원가입 관련 링크">
+            <a href="/signup/sso">SSO 회원가입 페이지로 이동</a>
+            <a href="/login">로그인으로 이동</a>
+            <a href="/">홈으로</a>
+        </nav>
+    </main>
+</div>
 </body>
 </html>
