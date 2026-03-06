@@ -28,10 +28,13 @@ public class LearnChatService {
     @Value("${app.gateway.config-path:${OPENCLAW_CONFIG_PATH:~/.openclaw/openclaw.json}}")
     private String gatewayConfigPath;
 
-    public String ask(Long loginUserId, Long courseId, String question, String ragContext) {
+    public String ask(Long loginUserId, Long courseId, String userName, String question, String ragContext) {
         try {
             String sessionKey = buildSessionKey(loginUserId, courseId);
-            String systemPrompt = "제공된 참고데이터(ragContext)를 우선 근거로 답변하세요.";
+            String safeUserName = (userName == null || userName.isBlank()) ? "사용자" : userName.trim();
+            String systemPrompt = "제공된 참고데이터(ragContext)를 우선 근거로 답변하세요. " +
+                    "현재 로그인 사용자 이름은 [" + safeUserName + "] 입니다. " +
+                    "질문이 현재 사용자(나/제/현재 사용자)의 이름을 묻는 경우 반드시 이 이름으로 답변하세요.";
             String userPrompt = "질문:\n" + question + "\n\n참고데이터:\n" + (ragContext == null ? "" : ragContext);
 
             HttpHeaders headers = new HttpHeaders();

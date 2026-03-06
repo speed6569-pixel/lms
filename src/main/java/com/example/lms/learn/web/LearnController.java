@@ -97,13 +97,15 @@ public class LearnController {
             return ResponseEntity.badRequest().body(Map.of("message", "로그인이 필요합니다."));
         }
 
-        Long userId = userJpaRepository.findByLoginId(authentication.getName()).map(u -> u.getId()).orElse(null);
+        var userOpt = userJpaRepository.findByLoginId(authentication.getName());
+        Long userId = userOpt.map(u -> u.getId()).orElse(null);
         if (userId == null) return ResponseEntity.badRequest().body(Map.of("message", "로그인이 필요합니다."));
+        String userName = userOpt.map(u -> u.getName()).orElse("");
 
         try {
             learnService.validateCourseAccess(userId, courseId);
             String mergedContext = mergeRagContextWithPlayback(request);
-            String answer = learnChatService.ask(userId, courseId, request.question(), mergedContext);
+            String answer = learnChatService.ask(userId, courseId, userName, request.question(), mergedContext);
             return ResponseEntity.ok(Map.of("answer", answer));
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
