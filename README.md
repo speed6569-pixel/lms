@@ -560,4 +560,4 @@ public Optional<Course> findById(Long courseId) {
 
 - 수행계획서(초안): `docs/수행계획서.md`
 - 수행계획서(최종 제출용): `docs/최종_수행계획서.md`
-1
+myapp
