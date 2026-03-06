@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSO 회원가입</title>
+</head>
+<body>
+<h1>조직 SSO 회원가입</h1>
+<p>회사 계정으로 가입/로그인을 진행합니다.</p>
+
+<div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;">
+    <a href="/oauth2/authorization/entra" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; text-decoration: none;">Entra ID</a>
+    <a href="/oauth2/authorization/google" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; text-decoration: none;">Google Workspace</a>
+    <a href="/oauth2/authorization/okta" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; text-decoration: none;">Okta</a>
+</div>
+
+<p style="margin-top: 10px; color: #666;">※ 아직 OIDC 설정 전이면 버튼 동작은 추후 연결됩니다.</p>
+
+<p><a href="/signup">일반 회원가입으로 돌아가기</a></p>
+<p><a href="/login">로그인으로 이동</a></p>
+</body>
+</html>
