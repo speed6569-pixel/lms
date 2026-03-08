@@ -36,9 +36,14 @@ public class AdminPaymentController {
     }
 
     @GetMapping("/{id}")
-    public String detail(@PathVariable Long id, Model model) {
-        model.addAttribute("view", adminPaymentService.getDetail(id));
-        return adminLayout(model, "결제 내역 상세", "admin/admin_payment_detail");
+    public String detail(@PathVariable Long id, Model model, RedirectAttributes ra) {
+        try {
+            model.addAttribute("view", adminPaymentService.getDetail(id));
+            return adminLayout(model, "결제 내역 상세", "admin/admin_payment_detail");
+        } catch (Exception e) {
+            ra.addFlashAttribute("errorMessage", "상세 조회 중 오류가 발생했습니다: " + e.getMessage());
+            return "redirect:/admin/payments";
+        }
     }
 
     @PostMapping("/{id}/refund/approve")
