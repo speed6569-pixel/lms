@@ -16,6 +16,8 @@
     <tr><th>현재 잔액</th><td th:text="|${view.item.pointBalance} P|"></td></tr>
     <tr><th>수강 상태</th><td th:text="${view.item.enrollmentStatus}"></td></tr>
     <tr><th>현재 학습 진도율</th><td th:text="|${view.progressPercent}%|"></td></tr>
+    <tr><th>환불 조건(진도 30% 미만)</th><td th:text="${view.under30Progress ? '충족' : '미충족'}"></td></tr>
+    <tr><th>환불 조건(구매 후 3일 이내)</th><td th:text="${view.within3Days ? '충족' : '미충족'}"></td></tr>
     <tr><th>환불 가능 여부</th><td th:text="${view.refundable ? '가능' : '불가'}"></td></tr>
     <tr><th>판정 사유</th><td th:text="${view.refundableReason}"></td></tr>
     <tr><th>환불 상태</th><td th:text="${view.item.refundStatus}"></td></tr>
@@ -25,8 +27,8 @@
   </tbody></table></div>
 
   <div style="margin-top:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-    <form th:if="${view.item.refundStatus == 'REFUND_REQUESTED' and view.refundable}" th:action="@{/admin/payments/{id}/refund/approve(id=${view.item.paymentId})}" method="post" onsubmit="return confirm('환불 승인 처리하시겠습니까?');">
-      <button class="btn-primary" type="submit">환불 승인</button>
+    <form th:if="${view.item.refundStatus == 'REFUND_REQUESTED'}" th:action="@{/admin/payments/{id}/refund/approve(id=${view.item.paymentId})}" method="post" onsubmit="return confirm('환불 승인 처리하시겠습니까?');">
+      <button class="btn-primary" type="submit" th:disabled="${!view.refundable}" th:title="${!view.refundable ? view.refundableReason : ''}">환불 승인</button>
     </form>
 
     <form th:if="${view.item.refundStatus == 'REFUND_REQUESTED'}" th:action="@{/admin/payments/{id}/refund/reject(id=${view.item.paymentId})}" method="post" style="display:flex; gap:8px; align-items:center;">

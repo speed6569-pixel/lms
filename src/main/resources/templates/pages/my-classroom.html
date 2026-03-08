@@ -113,9 +113,9 @@
                         </td>
                         <td th:text="|${#numbers.formatInteger(p.balanceAfter, 1, 'COMMA')}P|"></td>
                         <td>
-                            <div th:if="${p.status == 'PAID'}">
-                                <form th:if="${p.canRequestRefund}" th:action="@{/mypage/payments/{id}/refund-request(id=${p.paymentId})}" method="post" onsubmit="return confirm('환불을 신청하시겠습니까?');">
-                                    <button type="submit" class="btn-primary">환불 신청</button>
+                            <div th:if="${p.status == 'PAID'}" style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;">
+                                <form th:action="@{/mypage/payments/{id}/refund-request(id=${p.paymentId})}" method="post" onsubmit="return confirm('환불을 신청하시겠습니까?');">
+                                    <button type="submit" class="btn-primary" th:disabled="${!p.canRequestRefund}" th:title="${!p.canRequestRefund ? p.refundGuide : ''}">환불 신청</button>
                                 </form>
                                 <span th:if="${!p.canRequestRefund}" style="font-size:12px;color:#6b7280;" th:text="${p.refundGuide}">환불 불가(진도 30% 이상 또는 구매 후 3일 초과)</span>
                             </div>

@@ -43,15 +43,20 @@ public class AdminPaymentService {
         int progressPercent = 0;
         boolean refundable = false;
         String refundableReason = "";
+        boolean under30Progress = false;
+        boolean within3Days = false;
+
         var entity = pointTransactionJpaRepository.findById(id).orElse(null);
         if (entity != null) {
             var eligibility = refundService.evaluateEligibility(entity);
             progressPercent = eligibility.progressPercent();
             refundable = eligibility.refundable();
             refundableReason = eligibility.reason();
+            under30Progress = eligibility.under30Progress();
+            within3Days = eligibility.within3Days();
         }
 
-        return new PaymentDetailView(item, progressPercent, refundable, refundableReason);
+        return new PaymentDetailView(item, progressPercent, refundable, refundableReason, under30Progress, within3Days);
     }
 
     @Transactional
@@ -67,6 +72,8 @@ public class AdminPaymentService {
     public record PaymentDetailView(AdminPaymentDetailProjection item,
                                     int progressPercent,
                                     boolean refundable,
-                                    String refundableReason) {
+                                    String refundableReason,
+                                    boolean under30Progress,
+                                    boolean within3Days) {
     }
 }

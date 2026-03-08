@@ -53,7 +53,7 @@ public class RefundService {
         }
 
         boolean progressRule = progress < 30;
-        boolean dateRule = payment.getCreatedAt() != null && payment.getCreatedAt().plusDays(3).isAfter(LocalDateTime.now());
+        boolean dateRule = payment.getCreatedAt() != null && !LocalDateTime.now().isAfter(payment.getCreatedAt().plusDays(3));
         boolean refundable = progressRule || dateRule;
 
         if (!refundable) {
@@ -76,6 +76,7 @@ public class RefundService {
 
         payment.setRefundStatus(RefundStatus.REFUND_REQUESTED);
         payment.setRefundRequestedAt(LocalDateTime.now());
+        payment.setRefundProcessedAt(null);
         payment.setRefundRejectReason(null);
         pointTransactionJpaRepository.save(payment);
         log.info("[refund] requested paymentId={}, userId={}, courseId={}", payment.getId(), payment.getUserId(), payment.getCourseId());
@@ -88,6 +89,9 @@ public class RefundService {
 
         if (payment.getRefundStatus() != RefundStatus.REFUND_REQUESTED) {
             throw new IllegalStateException("환불 승인 대기 상태의 결제 건만 승인할 수 있습니다.");
+        }
+        if (payment.getType() != PointTransactionType.SPEND || payment.getCourseId() == null) {
+            throw new IllegalStateException("강의 결제 건만 환불 승인할 수 있습니다.");
         }
 
         RefundEligibility eligibility = evaluateEligibility(payment);
@@ -105,7 +109,7 @@ public class RefundService {
         refundTx.setType(PointTransactionType.REFUND);
         refundTx.setAmount(payment.getAmount());
         refundTx.setBalanceAfter(nextBalance);
-        refundTx.setMemo("환불 승인");
+        refundTx.setMemo("환불 승인 (원결제ID:" + payment.getId() + ")");
         refundTx.setRefundStatus(RefundStatus.REFUND_APPROVED);
         pointTransactionJpaRepository.save(refundTx);
 
