@@ -6,6 +6,7 @@ import com.example.lms.admin.repo.AdminPaymentRowProjection;
 import com.example.lms.enrollment.repo.PointTransactionJpaRepository;
 import com.example.lms.enrollment.service.RefundService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -35,7 +36,7 @@ public class AdminPaymentService {
         return adminPaymentJpaRepository.searchRows(qUser, qCourse, type, fromDt, toDt);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, propagation = Propagation.NOT_SUPPORTED)
     public PaymentDetailView getDetail(Long id) {
         AdminPaymentDetailProjection item = adminPaymentJpaRepository.findDetail(id)
                 .orElseThrow(() -> new IllegalArgumentException("결제/포인트 내역을 찾을 수 없습니다."));
