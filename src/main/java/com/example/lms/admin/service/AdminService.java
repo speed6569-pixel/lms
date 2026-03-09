@@ -290,7 +290,10 @@ public class AdminService {
 
         e.setStatus("REJECTED");
         EnrollmentEntity saved = enrollmentJpaRepository.save(e);
-        audit(adminUserId, "REJECT_ENROLLMENT", "ENROLLMENT", enrollmentId, ip, "REJECTED");
+
+        int refunded = pointService.refundCoursePayment(e.getUserId(), e.getCourseId(), "관리자 반려 자동 환불");
+        audit(adminUserId, "REJECT_ENROLLMENT", "ENROLLMENT", enrollmentId, ip,
+                "REJECTED,refunded=" + refunded);
         return saved;
     }
 
