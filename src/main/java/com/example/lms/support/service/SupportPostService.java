@@ -17,21 +17,24 @@ public class SupportPostService {
     }
 
     @Transactional
-    public SupportPostEntity createPost(String title, String content, String writer) {
+    public SupportPostEntity createPost(String title, String content, Long writerUserId, String writerLoginId, String writerDisplayName) {
         if (title == null || title.isBlank()) throw new IllegalArgumentException("제목을 입력해 주세요.");
         if (content == null || content.isBlank()) throw new IllegalArgumentException("문의 내용을 입력해 주세요.");
+        if (writerLoginId == null || writerLoginId.isBlank()) throw new IllegalArgumentException("작성자 정보가 올바르지 않습니다.");
 
         SupportPostEntity p = new SupportPostEntity();
         p.setTitle(title.trim());
         p.setContent(content.trim());
-        p.setWriter(writer);
+        p.setWriter(writerDisplayName == null || writerDisplayName.isBlank() ? writerLoginId : writerDisplayName.trim());
+        p.setWriterLoginId(writerLoginId.trim());
+        p.setWriterUserId(writerUserId);
         p.setStatus(PostStatus.WAITING);
         return supportPostRepository.save(p);
     }
 
     @Transactional(readOnly = true)
-    public List<SupportPostEntity> getPostsByWriter(String writer) {
-        return supportPostRepository.findByWriterOrderByIdDesc(writer);
+    public List<SupportPostEntity> getPostsByWriterLoginId(String writerLoginId) {
+        return supportPostRepository.findByWriterLoginIdOrderByIdDesc(writerLoginId);
     }
 
     @Transactional(readOnly = true)
@@ -47,8 +50,9 @@ public class SupportPostService {
     @Transactional
     public SupportPostEntity answerPost(Long id, String answer) {
         SupportPostEntity p = getPost(id);
-        p.setAnswer(answer);
-        p.setStatus(PostStatus.ANSWERED);
+        String normalized = answer == null ? "" : answer.trim();
+        p.setAnswer(normalized.isBlank() ? null : normalized);
+        p.setStatus(normalized.isBlank() ? PostStatus.WAITING : PostStatus.ANSWERED);
         return supportPostRepository.save(p);
     }
 

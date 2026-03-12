@@ -20,6 +20,12 @@ public class SupportPostEntity {
     @Column(nullable = false, length = 100)
     private String writer;
 
+    @Column(name = "writer_login_id", length = 100)
+    private String writerLoginId;
+
+    @Column(name = "writer_user_id")
+    private Long writerUserId;
+
     @Column(columnDefinition = "TEXT")
     private String answer;
 
@@ -40,6 +46,10 @@ public class SupportPostEntity {
     public void setContent(String content) { this.content = content; }
     public String getWriter() { return writer; }
     public void setWriter(String writer) { this.writer = writer; }
+    public String getWriterLoginId() { return writerLoginId; }
+    public void setWriterLoginId(String writerLoginId) { this.writerLoginId = writerLoginId; }
+    public Long getWriterUserId() { return writerUserId; }
+    public void setWriterUserId(Long writerUserId) { this.writerUserId = writerUserId; }
     public String getAnswer() { return answer; }
     public void setAnswer(String answer) { this.answer = answer; }
     public PostStatus getStatus() { return status; }

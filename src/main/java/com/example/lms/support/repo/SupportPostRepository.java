@@ -8,6 +8,7 @@ import java.util.List;
 
 public interface SupportPostRepository extends JpaRepository<SupportPostEntity, Long> {
     List<SupportPostEntity> findByWriterOrderByIdDesc(String writer);
+    List<SupportPostEntity> findByWriterLoginIdOrderByIdDesc(String writerLoginId);
     List<SupportPostEntity> findByStatusOrderByIdDesc(PostStatus status);
     List<SupportPostEntity> findAllByOrderByIdDesc();
     List<SupportPostEntity> findTop5ByOrderByCreatedAtDesc();
