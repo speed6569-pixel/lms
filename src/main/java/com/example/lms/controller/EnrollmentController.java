@@ -109,7 +109,7 @@ public class EnrollmentController {
 
     private Long resolveUserId(HttpSession session) {
         String loginId = (String) session.getAttribute("loginId");
-        if (loginId == null || loginId.isBlank()) loginId = "test01";
+        if (loginId == null || loginId.isBlank()) return null;
 
         var user = userJpaRepository.findByLoginId(loginId).orElse(null);
         if (user != null) {

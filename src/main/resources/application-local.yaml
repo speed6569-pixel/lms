@@ -1,0 +1,10 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+
+# Local profile overrides (optional)
+# Prefer exporting env vars instead of committing secrets.
+logging:
+  level:
+    org.springframework.jdbc.core: DEBUG

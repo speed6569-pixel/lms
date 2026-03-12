@@ -1,11 +1,11 @@
 -- Sample seed data for local/dev testing
 USE lms_db;
 
--- users (password hash below is BCrypt for '1234')
+-- users (sample seed accounts for local/dev only; replace in your own environment)
 INSERT INTO users (login_id, email, password_hash, name, role, enabled)
 VALUES
-  ('admin01', 'admin01@example.com', '$2b$12$8RW0yPjfW2opzwg7WKQkTudsVn6J1Q/dQSCex1qsWiwRNBIhpIdHK', '관리자', 'ROLE_ADMIN', 1),
-  ('user01',  'user01@example.com',  '$2b$12$8RW0yPjfW2opzwg7WKQkTudsVn6J1Q/dQSCex1qsWiwRNBIhpIdHK', '홍길동', 'ROLE_USER', 1)
+  ('seed_admin', 'seed_admin@example.local', '$2b$12$3xWdLJw9EwRpfH7D2WvO8eZrN2SR8i6Be6mMvxySN47n6MdX4N0yG', '샘플관리자', 'ROLE_ADMIN', 1),
+  ('seed_user',  'seed_user@example.local',  '$2b$12$3xWdLJw9EwRpfH7D2WvO8eZrN2SR8i6Be6mMvxySN47n6MdX4N0yG', '샘플사용자', 'ROLE_USER', 1)
 ON DUPLICATE KEY UPDATE
   name = VALUES(name),
   role = VALUES(role),
@@ -36,13 +36,13 @@ INSERT INTO course_sessions (course_id, section, day_of_week, start_time, end_ti
 SELECT c.id, '01', '수', '19:00:00', '21:00:00', 'C-102', '야간', 9, 25, 'OPEN' FROM courses c WHERE c.course_code='SQL-301'
 ON DUPLICATE KEY UPDATE room=VALUES(room), day_of_week=VALUES(day_of_week), start_time=VALUES(start_time), end_time=VALUES(end_time);
 
--- enrollments for user01
+-- enrollments for seed_user
 INSERT INTO enrollments (user_id, course_session_id, status, enrolled_at, created_at)
 SELECT u.id, cs.id, 'ENROLLED', NOW(), NOW()
 FROM users u
 JOIN courses c ON c.course_code='JAVA-101'
 JOIN course_sessions cs ON cs.course_id=c.id AND cs.section='01'
-WHERE u.login_id='user01'
+WHERE u.login_id='seed_user'
   AND NOT EXISTS (
     SELECT 1 FROM enrollments e WHERE e.user_id=u.id AND e.course_session_id=cs.id AND e.status='ENROLLED'
   );
@@ -52,30 +52,30 @@ SELECT u.id, cs.id, 'REQUESTED', NOW()
 FROM users u
 JOIN courses c ON c.course_code='SPRING-201'
 JOIN course_sessions cs ON cs.course_id=c.id AND cs.section='01'
-WHERE u.login_id='user01'
+WHERE u.login_id='seed_user'
   AND NOT EXISTS (
     SELECT 1 FROM enrollments e WHERE e.user_id=u.id AND e.course_session_id=cs.id AND e.status='REQUESTED'
   );
 
 -- attendance records for ENROLLED lecture
 INSERT INTO attendance_records (enrollment_id, session_date, status, minutes_attended, minutes_total, recorded_by)
-SELECT e.id, DATE_SUB(CURDATE(), INTERVAL 14 DAY), 'PRESENT', 120, 120, 'admin01'
+SELECT e.id, DATE_SUB(CURDATE(), INTERVAL 14 DAY), 'PRESENT', 120, 120, 'seed_admin'
 FROM enrollments e
 JOIN users u ON u.id=e.user_id
 JOIN course_sessions cs ON cs.id=e.course_session_id
 JOIN courses c ON c.id=cs.course_id
-WHERE u.login_id='user01' AND c.course_code='JAVA-101' AND e.status='ENROLLED'
+WHERE u.login_id='seed_user' AND c.course_code='JAVA-101' AND e.status='ENROLLED'
   AND NOT EXISTS (
     SELECT 1 FROM attendance_records ar WHERE ar.enrollment_id=e.id AND ar.session_date=DATE_SUB(CURDATE(), INTERVAL 14 DAY)
   );
 
 INSERT INTO attendance_records (enrollment_id, session_date, status, minutes_attended, minutes_total, recorded_by)
-SELECT e.id, DATE_SUB(CURDATE(), INTERVAL 7 DAY), 'LATE', 80, 120, 'admin01'
+SELECT e.id, DATE_SUB(CURDATE(), INTERVAL 7 DAY), 'LATE', 80, 120, 'seed_admin'
 FROM enrollments e
 JOIN users u ON u.id=e.user_id
 JOIN course_sessions cs ON cs.id=e.course_session_id
 JOIN courses c ON c.id=cs.course_id
-WHERE u.login_id='user01' AND c.course_code='JAVA-101' AND e.status='ENROLLED'
+WHERE u.login_id='seed_user' AND c.course_code='JAVA-101' AND e.status='ENROLLED'
   AND NOT EXISTS (
     SELECT 1 FROM attendance_records ar WHERE ar.enrollment_id=e.id AND ar.session_date=DATE_SUB(CURDATE(), INTERVAL 7 DAY)
   );
@@ -87,7 +87,7 @@ FROM enrollments e
 JOIN users u ON u.id=e.user_id
 JOIN course_sessions cs ON cs.id=e.course_session_id
 JOIN courses c ON c.id=cs.course_id
-WHERE u.login_id='user01' AND c.course_code='JAVA-101' AND e.status='ENROLLED'
+WHERE u.login_id='seed_user' AND c.course_code='JAVA-101' AND e.status='ENROLLED'
   AND NOT EXISTS (
     SELECT 1 FROM progress_records pr WHERE pr.enrollment_id=e.id AND pr.unit_id='JAVA-101-UNIT-1'
   );
@@ -98,7 +98,7 @@ FROM enrollments e
 JOIN users u ON u.id=e.user_id
 JOIN course_sessions cs ON cs.id=e.course_session_id
 JOIN courses c ON c.id=cs.course_id
-WHERE u.login_id='user01' AND c.course_code='JAVA-101' AND e.status='ENROLLED'
+WHERE u.login_id='seed_user' AND c.course_code='JAVA-101' AND e.status='ENROLLED'
   AND NOT EXISTS (
     SELECT 1 FROM progress_records pr WHERE pr.enrollment_id=e.id AND pr.unit_id='JAVA-101-QUIZ-1'
   );

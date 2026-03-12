@@ -8,34 +8,33 @@ spring:
       max-request-size: 1024MB
 
   datasource:
-    url: jdbc:mysql://127.0.0.1:3308/lms_db?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-    username: lms_user
-    password: LmsUser!2026#
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3308/lms_db?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
+    username: ${DB_USERNAME:}
+    password: ${DB_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
-
   mail:
-    host: smtp.gmail.com
-    port: 587
-    username: speed6569@gmail.com
-    password: "vwmz dsgm qgnz pzbb"
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
-          auth: true
+          auth: ${MAIL_SMTP_AUTH:true}
           starttls:
-            enable: true
+            enable: ${MAIL_SMTP_STARTTLS_ENABLE:true}
 
 mail:
-  from: speed6569@gmail.com
+  from: ${MAIL_FROM:${MAIL_USERNAME:no-reply@localhost}}
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
   servlet:
     session:
       timeout: 300m
 
 logging:
   level:
-    org.springframework.jdbc.core: DEBUG
-    org.springframework.security: INFO
+    org.springframework.jdbc.core: ${LOG_JDBC_LEVEL:INFO}
+    org.springframework.security: ${LOG_SECURITY_LEVEL:INFO}
