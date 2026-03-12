@@ -32,18 +32,19 @@
                 <option th:each="lv : ${jobLevelsMap[job]}" th:value="${lv}" th:text="${lv}" th:selected="${position == lv}"></option>
             </select>
             <input type="text" name="keyword" placeholder="키워드 검색" th:value="${keyword}" style="min-width:180px;">
-            <details style="display:inline-block;border:1px solid #e5e7eb;border-radius:8px;background:#fff;padding:2px 6px;">
-                <summary style="font-size:12px;cursor:pointer;color:#374151;">요일 선택</summary>
-                <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:4px 0;">
-                    <label style="font-size:12px;"><input type="checkbox" name="days" value="월" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '월')}"> 월</label>
-                    <label style="font-size:12px;"><input type="checkbox" name="days" value="화" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '화')}"> 화</label>
-                    <label style="font-size:12px;"><input type="checkbox" name="days" value="수" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '수')}"> 수</label>
-                    <label style="font-size:12px;"><input type="checkbox" name="days" value="목" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '목')}"> 목</label>
-                    <label style="font-size:12px;"><input type="checkbox" name="days" value="금" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '금')}"> 금</label>
-                    <label style="font-size:12px;"><input type="checkbox" name="days" value="토" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '토')}"> 토</label>
-                    <label style="font-size:12px;"><input type="checkbox" name="days" value="일" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '일')}"> 일</label>
-                </div>
-            </details>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:4px 8px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;">
+                <span style="font-size:12px;color:#374151;">범위 선택</span>
+                <select name="startDay" id="startDay" style="font-size:12px;padding:4px 6px;min-width:64px;">
+                    <option value="">시작</option>
+                    <option value="월" th:selected="${startDay == '월'}">월</option><option value="화" th:selected="${startDay == '화'}">화</option><option value="수" th:selected="${startDay == '수'}">수</option><option value="목" th:selected="${startDay == '목'}">목</option><option value="금" th:selected="${startDay == '금'}">금</option><option value="토" th:selected="${startDay == '토'}">토</option><option value="일" th:selected="${startDay == '일'}">일</option>
+                </select>
+                <span style="font-size:12px;">~</span>
+                <select name="endDay" id="endDay" style="font-size:12px;padding:4px 6px;min-width:64px;">
+                    <option value="">종료</option>
+                    <option value="월" th:selected="${endDay == '월'}">월</option><option value="화" th:selected="${endDay == '화'}">화</option><option value="수" th:selected="${endDay == '수'}">수</option><option value="목" th:selected="${endDay == '목'}">목</option><option value="금" th:selected="${endDay == '금'}">금</option><option value="토" th:selected="${endDay == '토'}">토</option><option value="일" th:selected="${endDay == '일'}">일</option>
+                </select>
+                <button type="button" id="rangeApplyBtn" class="btn-primary" style="padding:5px 8px;font-size:12px;">범위 적용</button>
+            </div>
             <button type="submit" id="searchBtn" class="btn-primary">검색</button>
             <button type="button" id="resetFilterBtn" class="btn-primary" style="background:#6b7280;">필터 초기화</button>
             <button type="button" class="btn-primary" onclick="submitApplyByInput()">신청</button>
@@ -132,6 +133,7 @@
     const weeklyEvents = document.getElementById('weeklyEvents');
     const enrolledMap = new Map();
     const resetFilterBtn = document.getElementById('resetFilterBtn');
+    const rangeApplyBtn = document.getElementById('rangeApplyBtn');
 
     const cardOverlay = document.getElementById('courseCardOverlay');
     const cardPanel = document.getElementById('courseCardPanel');
@@ -167,6 +169,21 @@
     });
 
     resetFilterBtn.addEventListener('click', resetCourseFilters);
+    rangeApplyBtn?.addEventListener('click', () => {
+      const start = document.getElementById('startDay')?.value || '';
+      const end = document.getElementById('endDay')?.value || '';
+      const order = ['월','화','수','목','금','토','일'];
+
+      if ((start && !end) || (!start && end)) {
+        alert('범위를 사용할 때 시작/종료 요일을 모두 선택해 주세요.');
+        return;
+      }
+      if (start && end && order.indexOf(start) > order.indexOf(end)) {
+        alert('요일 범위가 올바르지 않습니다. (예: 월~금, 토~일)');
+        return;
+      }
+      document.querySelector('#openPanel form.filter-grid')?.submit();
+    });
 
     async function bindJobLevelFilter() {
       const jobSel = document.getElementById('jobFilter');

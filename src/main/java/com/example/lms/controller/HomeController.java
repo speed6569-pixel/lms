@@ -86,7 +86,8 @@ public class HomeController {
             @RequestParam(required = false) String position,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String courseCode,
-            @RequestParam(required = false) List<String> days,
+            @RequestParam(required = false) String startDay,
+            @RequestParam(required = false) String endDay,
             Authentication authentication,
             Model model
     ) {
@@ -99,7 +100,7 @@ public class HomeController {
                 : findMyStatusByCourseId(userId);
         boolean hasApprovedEnrollment = userId != null && hasApprovedEnrollment(userId);
 
-        List<String> normalizedDays = normalizeDays(days);
+        List<String> normalizedDays = normalizeDayRange(startDay, endDay);
 
         List<Course> filtered = readCourses(myStatusByCourseId).stream()
                 .filter(c -> isBlank(job) || c.job().equalsIgnoreCase(job))
@@ -114,6 +115,8 @@ public class HomeController {
         model.addAttribute("position", position);
         model.addAttribute("keyword", keyword);
         model.addAttribute("courseCode", courseCode);
+        model.addAttribute("startDay", startDay);
+        model.addAttribute("endDay", endDay);
         model.addAttribute("selectedDays", normalizedDays);
         model.addAttribute("jobGroups", jobMetaService.getActiveGroups());
         model.addAttribute("jobLevelsMap", jobMetaService.getActiveLevelsMap());
@@ -468,18 +471,13 @@ public class HomeController {
         return result;
     }
 
-    private List<String> normalizeDays(List<String> days) {
-        if (days == null || days.isEmpty()) return List.of();
-        List<String> order = List.of("월", "화", "수", "목", "금", "토", "일");
-        List<String> normalized = days.stream()
-                .filter(Objects::nonNull)
-                .map(String::trim)
-                .filter(v -> !v.isBlank())
-                .map(this::normalizeDay)
-                .distinct()
-                .sorted(Comparator.comparingInt(order::indexOf))
-                .toList();
-        return normalized.size() == 7 ? List.of() : normalized;
+    private List<String> normalizeDayRange(String startDay, String endDay) {
+        if (isBlank(startDay) && isBlank(endDay)) return List.of();
+        if (isBlank(startDay) || isBlank(endDay)) return List.of();
+
+        List<String> range = expandDayRange(startDay, endDay);
+        if (range.isEmpty()) return List.of();
+        return range.size() == 7 ? List.of() : range;
     }
 
     private String normalizeDay(String day) {
