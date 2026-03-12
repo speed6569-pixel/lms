@@ -1,5 +1,6 @@
 package com.example.lms.controller;
 
+import com.example.lms.admin.service.JobMetaService;
 import com.example.lms.course.service.CourseInfoService;
 import com.example.lms.enrollment.repo.CourseListProjection;
 import com.example.lms.home.service.HomeContentService;
@@ -33,6 +34,7 @@ public class HomeController {
     private final HomeContentService homeContentService;
     private final LearnService learnService;
     private final RefundService refundService;
+    private final JobMetaService jobMetaService;
 
     public HomeController(CourseSessionJpaRepository courseSessionJpaRepository,
                           EnrollmentJpaRepository enrollmentJpaRepository,
@@ -41,7 +43,8 @@ public class HomeController {
                           CourseInfoService courseInfoService,
                           HomeContentService homeContentService,
                           LearnService learnService,
-                          RefundService refundService) {
+                          RefundService refundService,
+                          JobMetaService jobMetaService) {
         this.courseSessionJpaRepository = courseSessionJpaRepository;
         this.enrollmentJpaRepository = enrollmentJpaRepository;
         this.userJpaRepository = userJpaRepository;
@@ -50,6 +53,7 @@ public class HomeController {
         this.homeContentService = homeContentService;
         this.learnService = learnService;
         this.refundService = refundService;
+        this.jobMetaService = jobMetaService;
     }
 
     @GetMapping({"/", "/homepage"})
@@ -71,6 +75,8 @@ public class HomeController {
         model.addAttribute("jobGroup", jobGroup);
         model.addAttribute("jobLevel", jobLevel);
         model.addAttribute("keyword", keyword);
+        model.addAttribute("jobGroups", jobMetaService.getActiveGroups());
+        model.addAttribute("jobLevelsMap", jobMetaService.getActiveLevelsMap());
         return "pages/courses";
     }
 
@@ -109,6 +115,8 @@ public class HomeController {
         model.addAttribute("keyword", keyword);
         model.addAttribute("courseCode", courseCode);
         model.addAttribute("selectedDays", normalizedDays);
+        model.addAttribute("jobGroups", jobMetaService.getActiveGroups());
+        model.addAttribute("jobLevelsMap", jobMetaService.getActiveLevelsMap());
         model.addAttribute("hasApprovedEnrollment", hasApprovedEnrollment);
         return "enrollment/apply";
     }
@@ -259,6 +267,12 @@ public class HomeController {
 
     @GetMapping("/payments")
     public String paymentsPage() { return "redirect:/mypage?tab=payments"; }
+
+    @GetMapping("/api/meta/job-levels")
+    @ResponseBody
+    public Map<String, List<String>> jobLevelsMeta() {
+        return jobMetaService.getActiveLevelsMap();
+    }
 
     private List<Course> readCourses(Map<Long, String> myStatusByCourseId) {
         List<CourseListProjection> rows = courseSessionJpaRepository.findAllCourseRows();

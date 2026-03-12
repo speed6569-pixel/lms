@@ -5,6 +5,10 @@
   <div class="admin-toolbar" style="flex-wrap:wrap;gap:8px;align-items:center;">
     <select id="cStatus"><option value="OPEN">모집중</option><option value="CLOSED">마감</option></select>
     <input id="cCode" placeholder="과목코드"><input id="cTitle" placeholder="교과목명"><input id="cProfessor" placeholder="교수">
+    <select id="cJobGroup"><option value="">직군 선택</option></select>
+    <select id="cJobLevel"><option value="">직급 선택</option></select>
+    <button type="button" onclick="addJobGroup()">직군 추가</button>
+    <button type="button" onclick="addJobLevel()">직급 추가</button>
     <input id="cPrice" type="number" min="0" placeholder="가격"><input id="cMax" type="number" min="0" placeholder="인원제한">
     <input id="cStart" type="time" value="09:00"><input id="cEnd" type="time" value="11:00">
 
@@ -38,7 +42,7 @@
     <table>
       <thead>
       <tr>
-        <th>신청</th><th>ID</th><th>과목코드</th><th>교과목명</th><th>교수</th><th>요일</th><th>강의시간</th><th>가격</th><th>인원제한</th><th>수정</th><th>삭제</th>
+        <th>신청</th><th>ID</th><th>과목코드</th><th>직군</th><th>직급</th><th>교과목명</th><th>교수</th><th>요일</th><th>강의시간</th><th>가격</th><th>인원제한</th><th>수정</th><th>삭제</th>
       </tr>
       </thead>
       <tbody id="courseBody"></tbody>
@@ -48,6 +52,11 @@
   <div id="editDaysBox" style="display:none;margin-top:12px;border:1px solid #e5e7eb;border-radius:10px;padding:12px;background:#fff;">
     <div style="font-weight:600;margin-bottom:6px;">강의 요일 수정</div>
     <div id="editDaysTitle" style="font-size:13px;color:#6b7280;margin-bottom:8px;"></div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">
+      <select id="eJobGroup"><option value="">직군 선택</option></select>
+      <select id="eJobLevel"><option value="">직급 선택</option></select>
+    </div>
 
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">
       <label><input type="checkbox" class="edit-day" value="MON"> 월</label>
@@ -83,6 +92,7 @@
  const KO_TO_EN = {월:'MON',화:'TUE',수:'WED',목:'THU',금:'FRI',토:'SAT',일:'SUN'};
  let courseRows = [];
  let editingCourseId = null;
+ let jobMeta = { groups: [], levelsMap: {} };
 
  function normalizeDay(v){
    if(!v) return '';
@@ -106,6 +116,50 @@
    if(!v) return '-';
    return String(v);
  }
+ function populateLevelOptions(groupSelectId, levelSelectId, selected='') {
+   const group = document.getElementById(groupSelectId)?.value || '';
+   const levelSelect = document.getElementById(levelSelectId);
+   if (!levelSelect) return;
+   const levels = group ? (jobMeta.levelsMap[group] || []) : [...new Set(Object.values(jobMeta.levelsMap).flat())];
+   levelSelect.innerHTML = '<option value="">직급 선택</option>' + levels.map(v=>`<option value="${v}">${v}</option>`).join('');
+   if (selected && levels.includes(selected)) levelSelect.value = selected;
+ }
+
+ async function loadJobMeta() {
+   jobMeta = await fetch('/admin/api/job-meta').then(r=>r.json()).catch(()=>({groups:[],levelsMap:{}}));
+   const createGroup = document.getElementById('cJobGroup');
+   const editGroup = document.getElementById('eJobGroup');
+   const options = '<option value="">직군 선택</option>' + (jobMeta.groups||[]).map(v=>`<option value="${v}">${v}</option>`).join('');
+   if (createGroup) createGroup.innerHTML = options;
+   if (editGroup) editGroup.innerHTML = options;
+   populateLevelOptions('cJobGroup','cJobLevel');
+   populateLevelOptions('eJobGroup','eJobLevel');
+   createGroup?.addEventListener('change', ()=>populateLevelOptions('cJobGroup','cJobLevel'));
+   editGroup?.addEventListener('change', ()=>populateLevelOptions('eJobGroup','eJobLevel'));
+ }
+
+ async function addJobGroup(){
+   const name = prompt('새 직군명을 입력하세요');
+   if(!name) return;
+   const res = await fetch('/admin/api/job-groups',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+   if(!res.ok){const j=await res.json().catch(()=>({message:'직군 추가 실패'})); alert(j.message||'직군 추가 실패'); return;}
+   await loadJobMeta();
+   document.getElementById('cJobGroup').value = name.trim();
+   populateLevelOptions('cJobGroup','cJobLevel');
+ }
+
+ async function addJobLevel(){
+   const groupName = document.getElementById('cJobGroup').value;
+   if(!groupName){ alert('직군을 먼저 선택해 주세요.'); return; }
+   const name = prompt('새 직급명을 입력하세요');
+   if(!name) return;
+   const res = await fetch('/admin/api/job-levels',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({groupName,name})});
+   if(!res.ok){const j=await res.json().catch(()=>({message:'직급 추가 실패'})); alert(j.message||'직급 추가 실패'); return;}
+   await loadJobMeta();
+   document.getElementById('cJobGroup').value = groupName;
+   populateLevelOptions('cJobGroup','cJobLevel', name.trim());
+ }
+
  function applyRangeToChecks(prefix='create'){
    const start = document.getElementById(prefix==='edit' ? 'eRangeStart' : 'cRangeStart').value;
    const end = document.getElementById(prefix==='edit' ? 'eRangeEnd' : 'cRangeEnd').value;
@@ -122,7 +176,7 @@
    courseRows = rows;
    document.getElementById('courseBody').innerHTML = rows.map(v=>`<tr>
 <td><button class='btn-primary' onclick="toggleStatus(${v.id},'${v.status||'OPEN'}')">${v.applyStatus||'모집중'}</button></td>
-<td>${v.id}</td><td>${v.subjectCode||''}</td><td>${v.subjectName||''}</td><td>${v.instructor||''}</td>
+<td>${v.id}</td><td>${v.subjectCode||''}</td><td>${v.jobGroup||''}</td><td>${v.jobLevel||''}</td><td>${v.subjectName||''}</td><td>${v.instructor||''}</td>
 <td>${normalizeDaysText(v.selectedDays)}</td>
 <td>${v.classTime||'-'}</td><td>${v.price||0}</td><td>${v.capacity||0}</td>
 <td><button type='button' onclick='openEditDays(${v.id})'>요일수정</button></td>
@@ -146,6 +200,7 @@
 
    const payload={
      subjectCode:cCode.value,subjectName:cTitle.value,instructor:cProfessor.value,
+     jobGroup:document.getElementById('cJobGroup').value, jobLevel:document.getElementById('cJobLevel').value,
      price:Number(cPrice.value||0),capacity:Number(cMax.value||0),status:cStatus.value,
      dayMode:'MULTI',days,startDay:startDay||days[0],endDay:endDay||days[days.length-1],
      startTime:cStart.value,endTime:cEnd.value
@@ -162,6 +217,9 @@
    if(!row) return;
    editingCourseId = id;
    document.getElementById('editDaysTitle').textContent = `${row.subjectCode||''} / ${row.subjectName||''}`;
+
+   document.getElementById('eJobGroup').value = row.jobGroup || '';
+   populateLevelOptions('eJobGroup','eJobLevel', row.jobLevel || '');
 
    document.querySelectorAll('.edit-day').forEach(ch=>ch.checked=false);
    const text = String(row.selectedDays||'');
@@ -208,14 +266,17 @@
    const days = uniqueSortedDays([...checks, ...rangeDays]);
    if(!days.length){ alert('요일을 1개 이상 선택해 주세요.'); return; }
 
-   const res = await fetch('/admin/api/courses/'+editingCourseId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({days, startDay, endDay})});
+   const res = await fetch('/admin/api/courses/'+editingCourseId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({days, startDay, endDay, jobGroup:document.getElementById('eJobGroup').value, jobLevel:document.getElementById('eJobLevel').value})});
    if(!res.ok){ const j=await res.json().catch(()=>({message:'요일 저장 실패'})); alert(j.message||'요일 저장 실패'); return; }
    closeEditDays();
    await loadCourses();
  }
  async function toggleStatus(id,current){ const next=current==='OPEN'?'CLOSED':'OPEN'; await fetch('/admin/api/courses/'+id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:next})}); loadCourses(); }
  async function deleteCourse(id){ if(!confirm('삭제하시겠습니까?')) return; await fetch('/admin/api/courses/'+id,{method:'DELETE'}); loadCourses(); }
- loadCourses();
+ (async function init(){
+   await loadJobMeta();
+   await loadCourses();
+ })();
 </script>
 </th:block>
 </body></html>

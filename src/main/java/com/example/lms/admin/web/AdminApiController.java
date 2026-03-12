@@ -2,6 +2,7 @@ package com.example.lms.admin.web;
 
 import com.example.lms.admin.dto.AdminDtos;
 import com.example.lms.admin.service.AdminService;
+import com.example.lms.admin.service.JobMetaService;
 import com.example.lms.enrollment.repo.UserJpaRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
@@ -17,10 +18,12 @@ import java.util.Map;
 public class AdminApiController {
 
     private final AdminService adminService;
+    private final JobMetaService jobMetaService;
     private final UserJpaRepository userJpaRepository;
 
-    public AdminApiController(AdminService adminService, UserJpaRepository userJpaRepository) {
+    public AdminApiController(AdminService adminService, JobMetaService jobMetaService, UserJpaRepository userJpaRepository) {
         this.adminService = adminService;
+        this.jobMetaService = jobMetaService;
         this.userJpaRepository = userJpaRepository;
     }
 
@@ -148,6 +151,24 @@ public class AdminApiController {
                                          Authentication auth,
                                          HttpServletRequest request) {
         return ResponseEntity.ok(adminService.updateUserEnabled(id, req.enabled(), adminId(auth), request.getRemoteAddr()));
+    }
+
+    @GetMapping("/job-meta")
+    public Map<String, Object> jobMeta() {
+        return Map.of(
+                "groups", jobMetaService.getActiveGroups(),
+                "levelsMap", jobMetaService.getActiveLevelsMap()
+        );
+    }
+
+    @PostMapping("/job-groups")
+    public ResponseEntity<?> addJobGroup(@RequestBody Map<String, String> body) {
+        return ResponseEntity.ok(jobMetaService.addGroup(body.get("name")));
+    }
+
+    @PostMapping("/job-levels")
+    public ResponseEntity<?> addJobLevel(@RequestBody Map<String, String> body) {
+        return ResponseEntity.ok(jobMetaService.addLevel(body.get("groupName"), body.get("name")));
     }
 
     @GetMapping("/stats")

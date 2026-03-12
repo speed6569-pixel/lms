@@ -23,33 +23,27 @@
     <section id="openPanel">
         <form class="filter-grid" method="get" action="/enrollments/apply">
             <input id="quickCourseCode" name="courseCode" type="text" placeholder="과목코드" th:value="${courseCode}" style="max-width:140px;">
-            <select name="job">
+            <select name="job" id="jobFilter">
                 <option value="">직군 전체</option>
-                <option value="개발" th:selected="${job == '개발'}">개발</option>
-                <option value="기획/마케팅" th:selected="${job == '기획/마케팅'}">기획/마케팅</option>
-                <option value="경영" th:selected="${job == '경영'}">경영</option>
-                <option value="영업" th:selected="${job == '영업'}">영업</option>
+                <option th:each="g : ${jobGroups}" th:value="${g}" th:text="${g}" th:selected="${job == g}"></option>
             </select>
-            <select name="position">
+            <select name="position" id="positionFilter">
                 <option value="">직급 전체</option>
-                <option value="사원" th:selected="${position == '사원'}">사원</option>
-                <option value="주임" th:selected="${position == '주임'}">주임</option>
-                <option value="대리" th:selected="${position == '대리'}">대리</option>
-                <option value="과장" th:selected="${position == '과장'}">과장</option>
-                <option value="차장" th:selected="${position == '차장'}">차장</option>
-                <option value="부장" th:selected="${position == '부장'}">부장</option>
+                <option th:each="lv : ${jobLevelsMap[job]}" th:value="${lv}" th:text="${lv}" th:selected="${position == lv}"></option>
             </select>
             <input type="text" name="keyword" placeholder="키워드 검색" th:value="${keyword}" style="min-width:180px;">
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 10px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;">
-                <span style="font-size:13px;color:#374151;">요일 선택</span>
-                <label><input type="checkbox" name="days" value="월" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '월')}"> 월</label>
-                <label><input type="checkbox" name="days" value="화" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '화')}"> 화</label>
-                <label><input type="checkbox" name="days" value="수" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '수')}"> 수</label>
-                <label><input type="checkbox" name="days" value="목" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '목')}"> 목</label>
-                <label><input type="checkbox" name="days" value="금" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '금')}"> 금</label>
-                <label><input type="checkbox" name="days" value="토" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '토')}"> 토</label>
-                <label><input type="checkbox" name="days" value="일" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '일')}"> 일</label>
-            </div>
+            <details style="display:inline-block;border:1px solid #e5e7eb;border-radius:8px;background:#fff;padding:2px 6px;">
+                <summary style="font-size:12px;cursor:pointer;color:#374151;">요일 선택</summary>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:4px 0;">
+                    <label style="font-size:12px;"><input type="checkbox" name="days" value="월" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '월')}"> 월</label>
+                    <label style="font-size:12px;"><input type="checkbox" name="days" value="화" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '화')}"> 화</label>
+                    <label style="font-size:12px;"><input type="checkbox" name="days" value="수" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '수')}"> 수</label>
+                    <label style="font-size:12px;"><input type="checkbox" name="days" value="목" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '목')}"> 목</label>
+                    <label style="font-size:12px;"><input type="checkbox" name="days" value="금" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '금')}"> 금</label>
+                    <label style="font-size:12px;"><input type="checkbox" name="days" value="토" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '토')}"> 토</label>
+                    <label style="font-size:12px;"><input type="checkbox" name="days" value="일" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '일')}"> 일</label>
+                </div>
+            </details>
             <button type="submit" id="searchBtn" class="btn-primary">검색</button>
             <button type="button" id="resetFilterBtn" class="btn-primary" style="background:#6b7280;">필터 초기화</button>
             <button type="button" class="btn-primary" onclick="submitApplyByInput()">신청</button>
@@ -173,6 +167,29 @@
     });
 
     resetFilterBtn.addEventListener('click', resetCourseFilters);
+
+    async function bindJobLevelFilter() {
+      const jobSel = document.getElementById('jobFilter');
+      const levelSel = document.getElementById('positionFilter');
+      if (!jobSel || !levelSel) return;
+
+      const currentLevel = levelSel.value;
+      const map = await fetch('/api/meta/job-levels').then(r => r.json()).catch(() => ({}));
+
+      function renderLevels() {
+        const group = jobSel.value;
+        const levels = group ? (map[group] || []) : Object.values(map).flat();
+        const dedup = [...new Set(levels)];
+        levelSel.innerHTML = '<option value="">직급 전체</option>' + dedup.map(v => `<option value="${v}">${v}</option>`).join('');
+        if (dedup.includes(currentLevel)) levelSel.value = currentLevel;
+      }
+
+      jobSel.addEventListener('change', () => {
+        renderLevels();
+        if (!levelSel.querySelector(`option[value="${levelSel.value}"]`)) levelSel.value = '';
+      });
+      renderLevels();
+    }
 
     function keyOf(code){ return `${code}`; }
 
@@ -412,6 +429,7 @@
     });
 
     (async function init(){
+      await bindJobLevelFilter();
       await loadState();
       renderHistory();
       syncApplyButtons();

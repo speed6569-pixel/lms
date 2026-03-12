@@ -443,6 +443,11 @@ public class AdminService {
         AdminCourseSessionEntity base = old.get(0);
         if (base.getStartTime() == null || base.getEndTime() == null) return;
 
+        long linkedLearners = enrollmentJpaRepository.countByCourseIdAndStatusIn(course.getId(), List.of("APPLIED", "WAITLIST", "APPROVED", "RUNNING"));
+        if (linkedLearners > 0) {
+            throw new IllegalArgumentException("수강 신청/승인 데이터가 있는 강의는 요일 변경을 할 수 없습니다.");
+        }
+
         Map<String, Integer> oldEnrolledMap = new HashMap<>();
         for (AdminCourseSessionEntity s : old) {
             oldEnrolledMap.put(s.getDayOfWeek(), s.getEnrolledCount() == null ? 0 : s.getEnrolledCount());
