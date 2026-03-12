@@ -7,8 +7,6 @@
     <input id="cCode" placeholder="과목코드"><input id="cTitle" placeholder="교과목명"><input id="cProfessor" placeholder="교수">
     <select id="cJobGroup"><option value="">직군 선택</option></select>
     <select id="cJobLevel"><option value="">직급 선택</option></select>
-    <button type="button" onclick="addJobGroup()">직군 추가</button>
-    <button type="button" onclick="addJobLevel()">직급 추가</button>
     <input id="cPrice" type="number" min="0" placeholder="가격"><input id="cMax" type="number" min="0" placeholder="인원제한">
     <input id="cStart" type="time" value="09:00"><input id="cEnd" type="time" value="11:00">
 
@@ -136,28 +134,6 @@
    populateLevelOptions('eJobGroup','eJobLevel');
    createGroup?.addEventListener('change', ()=>populateLevelOptions('cJobGroup','cJobLevel'));
    editGroup?.addEventListener('change', ()=>populateLevelOptions('eJobGroup','eJobLevel'));
- }
-
- async function addJobGroup(){
-   const name = prompt('새 직군명을 입력하세요');
-   if(!name) return;
-   const res = await fetch('/admin/api/job-groups',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
-   if(!res.ok){const j=await res.json().catch(()=>({message:'직군 추가 실패'})); alert(j.message||'직군 추가 실패'); return;}
-   await loadJobMeta();
-   document.getElementById('cJobGroup').value = name.trim();
-   populateLevelOptions('cJobGroup','cJobLevel');
- }
-
- async function addJobLevel(){
-   const groupName = document.getElementById('cJobGroup').value;
-   if(!groupName){ alert('직군을 먼저 선택해 주세요.'); return; }
-   const name = prompt('새 직급명을 입력하세요');
-   if(!name) return;
-   const res = await fetch('/admin/api/job-levels',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({groupName,name})});
-   if(!res.ok){const j=await res.json().catch(()=>({message:'직급 추가 실패'})); alert(j.message||'직급 추가 실패'); return;}
-   await loadJobMeta();
-   document.getElementById('cJobGroup').value = groupName;
-   populateLevelOptions('cJobGroup','cJobLevel', name.trim());
  }
 
  function applyRangeToChecks(prefix='create'){
