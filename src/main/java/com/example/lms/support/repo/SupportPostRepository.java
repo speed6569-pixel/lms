@@ -11,6 +11,7 @@ public interface SupportPostRepository extends JpaRepository<SupportPostEntity, 
     List<SupportPostEntity> findByWriterLoginIdOrderByIdDesc(String writerLoginId);
     List<SupportPostEntity> findByStatusOrderByIdDesc(PostStatus status);
     List<SupportPostEntity> findAllByOrderByIdDesc();
+    List<SupportPostEntity> findAllByOrderByCreatedAtDesc();
     List<SupportPostEntity> findTop5ByOrderByCreatedAtDesc();
     long countByStatus(PostStatus status);
 }

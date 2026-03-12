@@ -43,6 +43,11 @@ public class SupportPostService {
     }
 
     @Transactional(readOnly = true)
+    public List<SupportPostEntity> getPostsForAdmin() {
+        return supportPostRepository.findAllByOrderByCreatedAtDesc();
+    }
+
+    @Transactional(readOnly = true)
     public SupportPostEntity getPost(Long id) {
         return supportPostRepository.findById(id).orElseThrow();
     }

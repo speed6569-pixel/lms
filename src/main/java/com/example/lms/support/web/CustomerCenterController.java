@@ -24,14 +24,7 @@ public class CustomerCenterController {
     @GetMapping
     public String list(Authentication authentication, Model model) {
         String loginId = authentication.getName();
-        var userOpt = userJpaRepository.findByLoginId(loginId);
-        boolean isAdmin = userOpt.isPresent() && "ADMIN".equalsIgnoreCase(userOpt.get().getRole());
-
-        if (isAdmin) {
-            model.addAttribute("posts", supportPostService.getPosts());
-        } else {
-            model.addAttribute("posts", supportPostService.getPostsByWriterLoginId(loginId));
-        }
+        model.addAttribute("posts", supportPostService.getPostsByWriterLoginId(loginId));
         return "support/customer-center";
     }
 
@@ -57,10 +50,7 @@ public class CustomerCenterController {
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Authentication authentication, Model model) {
         var post = supportPostService.getPost(id);
-        var userOpt = userJpaRepository.findByLoginId(authentication.getName());
-        boolean isAdmin = userOpt.isPresent() && "ADMIN".equalsIgnoreCase(userOpt.get().getRole());
-
-        if (!isAdmin && !authentication.getName().equals(post.getWriterLoginId())) {
+        if (!authentication.getName().equals(post.getWriterLoginId())) {
             throw new IllegalArgumentException("본인이 작성한 문의만 조회할 수 있습니다.");
         }
         model.addAttribute("post", post);

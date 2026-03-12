@@ -1,6 +1,8 @@
 package com.example.lms.support.web;
 
+import com.example.lms.enrollment.repo.UserJpaRepository;
 import com.example.lms.support.service.SupportPostService;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -11,22 +13,27 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class AdminSupportController {
 
     private final SupportPostService supportPostService;
+    private final UserJpaRepository userJpaRepository;
 
-    public AdminSupportController(SupportPostService supportPostService) {
+    public AdminSupportController(SupportPostService supportPostService,
+                                  UserJpaRepository userJpaRepository) {
         this.supportPostService = supportPostService;
+        this.userJpaRepository = userJpaRepository;
     }
 
     @GetMapping
-    public String list(Model model) {
-        model.addAttribute("posts", supportPostService.getPosts());
+    public String list(Authentication authentication, Model model) {
+        requireAdmin(authentication);
+        model.addAttribute("posts", supportPostService.getPostsForAdmin());
         model.addAttribute("title", "고객센터 문의 관리");
         model.addAttribute("activeMenu", "support");
         model.addAttribute("contentTemplate", "admin/admin_support_list");
         return "admin/layout";
     }
 
-    @GetMapping("/{id}/answer")
-    public String answerForm(@PathVariable Long id, Model model) {
+    @GetMapping("/{id}")
+    public String detail(@PathVariable Long id, Authentication authentication, Model model) {
+        requireAdmin(authentication);
         model.addAttribute("post", supportPostService.getPost(id));
         model.addAttribute("title", "고객센터 답변");
         model.addAttribute("activeMenu", "support");
@@ -37,14 +44,19 @@ public class AdminSupportController {
     @PostMapping("/{id}/answer")
     public String answer(@PathVariable Long id,
                          @RequestParam String answer,
+                         Authentication authentication,
                          RedirectAttributes ra) {
+        requireAdmin(authentication);
         supportPostService.answerPost(id, answer);
         ra.addFlashAttribute("message", "답변이 저장되었습니다.");
         return "redirect:/admin/support";
     }
 
     @PostMapping("/{id}/delete")
-    public String delete(@PathVariable Long id, RedirectAttributes ra) {
+    public String delete(@PathVariable Long id,
+                         Authentication authentication,
+                         RedirectAttributes ra) {
+        requireAdmin(authentication);
         supportPostService.deletePost(id);
         ra.addFlashAttribute("message", "문의가 삭제되었습니다.");
         return "redirect:/admin/support";
@@ -54,9 +66,18 @@ public class AdminSupportController {
     public String edit(@PathVariable Long id,
                        @RequestParam String title,
                        @RequestParam String content,
+                       Authentication authentication,
                        RedirectAttributes ra) {
+        requireAdmin(authentication);
         supportPostService.updatePost(id, title, content);
         ra.addFlashAttribute("message", "문의가 수정되었습니다.");
         return "redirect:/admin/support";
+    }
+
+    private void requireAdmin(Authentication authentication) {
+        var user = userJpaRepository.findByLoginId(authentication.getName()).orElseThrow();
+        if (!"ADMIN".equalsIgnoreCase(user.getRole())) {
+            throw new IllegalArgumentException("관리자만 접근할 수 있습니다.");
+        }
     }
 }

@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org"><body>
 <th:block th:fragment="content">
-  <h2>고객센터 답변</h2>
+  <h2>고객센터 문의 상세/답변</h2>
   <div class="admin-card" style="box-shadow:none;border:1px solid #e5e7eb;padding:12px;margin-bottom:12px;">
-    <p><strong>작성자:</strong> <span th:text="${post.writer}"></span></p>
     <p><strong>제목:</strong> <span th:text="${post.title}"></span></p>
+    <p><strong>작성자:</strong> <span th:text="${post.writer}"></span></p>
+    <p><strong>작성일:</strong> <span th:text="${post.createdAt != null ? #temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm') : ''}"></span></p>
     <p><strong>문의내용:</strong></p>
     <div th:text="${post.content}" style="white-space:pre-wrap;"></div>
+    <p style="margin-top:8px;"><strong>답변등록일:</strong> <span th:text="${post.answer != null and !#strings.isEmpty(post.answer) and post.updatedAt != null ? #temporals.format(post.updatedAt, 'yyyy-MM-dd HH:mm') : '-'}"></span></p>
   </div>
 
   <form th:action="@{/admin/support/{id}/edit(id=${post.id})}" method="post" class="admin-toolbar" style="display:grid;grid-template-columns:1fr;">
