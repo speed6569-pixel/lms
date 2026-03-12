@@ -79,8 +79,6 @@ public class HomeController {
             @RequestParam(required = false) String job,
             @RequestParam(required = false) String position,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String courseCode,
-            @RequestParam(required = false) List<String> days,
             Authentication authentication,
             Model model
     ) {
@@ -93,22 +91,16 @@ public class HomeController {
                 : findMyStatusByCourseId(userId);
         boolean hasApprovedEnrollment = userId != null && hasApprovedEnrollment(userId);
 
-        List<String> normalizedDays = normalizeDays(days);
-
         List<Course> filtered = readCourses(myStatusByCourseId).stream()
                 .filter(c -> isBlank(job) || c.job().equalsIgnoreCase(job))
                 .filter(c -> isBlank(position) || c.position().equalsIgnoreCase(position))
                 .filter(c -> isBlank(keyword) || contains(c, keyword))
-                .filter(c -> isBlank(courseCode) || c.courseCode().toLowerCase().contains(courseCode.toLowerCase()))
-                .filter(c -> normalizedDays.isEmpty() || hasAnySelectedDay(c, normalizedDays))
                 .toList();
 
         model.addAttribute("courses", filtered);
         model.addAttribute("job", job);
         model.addAttribute("position", position);
         model.addAttribute("keyword", keyword);
-        model.addAttribute("courseCode", courseCode);
-        model.addAttribute("selectedDays", normalizedDays);
         model.addAttribute("hasApprovedEnrollment", hasApprovedEnrollment);
         return "enrollment/apply";
     }
@@ -284,14 +276,6 @@ public class HomeController {
                     ? "신청 불가"
                     : (!open ? "모집마감" : (enrolled >= maxCount && maxCount > 0 ? "신청불가" : "신청가능"));
 
-            List<String> courseDays = g.stream()
-                    .map(CourseListProjection::getDay)
-                    .filter(Objects::nonNull)
-                    .map(String::trim)
-                    .filter(v -> !v.isBlank())
-                    .distinct()
-                    .toList();
-
             out.add(new Course(
                     0, "", "", "", first.getTitle(), "",
                     maxCount,
@@ -303,8 +287,7 @@ public class HomeController {
                     first.getCourseId(),
                     open,
                     myStatus,
-                    canApply,
-                    courseDays
+                    canApply
             ));
         }
         return out;
@@ -454,77 +437,6 @@ public class HomeController {
         return result;
     }
 
-    private List<String> normalizeDays(List<String> days) {
-        if (days == null || days.isEmpty()) return List.of();
-        List<String> order = List.of("월", "화", "수", "목", "금", "토", "일");
-        List<String> normalized = days.stream()
-                .filter(Objects::nonNull)
-                .map(String::trim)
-                .filter(v -> !v.isBlank())
-                .map(this::normalizeDay)
-                .distinct()
-                .sorted(Comparator.comparingInt(order::indexOf))
-                .toList();
-        return normalized.size() == 7 ? List.of() : normalized;
-    }
-
-    private String normalizeDay(String day) {
-        return switch (day) {
-            case "MON", "월" -> "월";
-            case "TUE", "화" -> "화";
-            case "WED", "수" -> "수";
-            case "THU", "목" -> "목";
-            case "FRI", "금" -> "금";
-            case "SAT", "토" -> "토";
-            case "SUN", "일" -> "일";
-            default -> day;
-        };
-    }
-
-    private boolean hasAnySelectedDay(Course course, List<String> selectedDays) {
-        if (selectedDays == null || selectedDays.isEmpty()) return true;
-        if (course.courseDays() == null || course.courseDays().isEmpty()) {
-            return matchesByClassTimeText(course.classTime(), selectedDays);
-        }
-        return course.courseDays().stream().anyMatch(selectedDays::contains);
-    }
-
-    private boolean matchesByClassTimeText(String classTime, List<String> selectedDays) {
-        if (classTime == null || classTime.isBlank()) return false;
-        Set<String> daysInText = extractDaysFromClassTime(classTime);
-        return selectedDays.stream().anyMatch(daysInText::contains);
-    }
-
-    private Set<String> extractDaysFromClassTime(String text) {
-        Set<String> out = new LinkedHashSet<>();
-        if (text == null || text.isBlank()) return out;
-
-        java.util.regex.Matcher rangeMatcher = java.util.regex.Pattern
-                .compile("([월화수목금토일])~([월화수목금토일])")
-                .matcher(text);
-        while (rangeMatcher.find()) {
-            out.addAll(expandDayRange(rangeMatcher.group(1), rangeMatcher.group(2)));
-        }
-
-        java.util.regex.Matcher dayMatcher = java.util.regex.Pattern
-                .compile("[월화수목금토일]")
-                .matcher(text);
-        while (dayMatcher.find()) {
-            out.add(dayMatcher.group());
-        }
-        return out;
-    }
-
-    private List<String> expandDayRange(String start, String end) {
-        List<String> order = List.of("월", "화", "수", "목", "금", "토", "일");
-        String s = normalizeDay(start);
-        String e = normalizeDay(end);
-        int si = order.indexOf(s);
-        int ei = order.indexOf(e);
-        if (si < 0 || ei < 0 || si > ei) return List.of();
-        return order.subList(si, ei + 1);
-    }
-
     private double safeRate(Double value) {
         if (value == null || value.isNaN() || value.isInfinite()) return 0.0;
         return Math.max(0.0, Math.min(100.0, value));
@@ -598,8 +510,7 @@ public class HomeController {
             Long courseId,
             boolean open,
             String myStatus,
-            boolean canApply,
-            List<String> courseDays
+            boolean canApply
     ) {
     }
 }

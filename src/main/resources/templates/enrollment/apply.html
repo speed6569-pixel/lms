@@ -22,7 +22,7 @@
 
     <section id="openPanel">
         <form class="filter-grid" method="get" action="/enrollments/apply">
-            <input id="quickCourseCode" name="courseCode" type="text" placeholder="과목코드" th:value="${courseCode}" style="max-width:140px;">
+            <input id="quickCourseCode" type="text" placeholder="과목코드" style="max-width:140px;">
             <select name="job">
                 <option value="">직군 전체</option>
                 <option value="개발" th:selected="${job == '개발'}">개발</option>
@@ -40,17 +40,7 @@
                 <option value="부장" th:selected="${position == '부장'}">부장</option>
             </select>
             <input type="text" name="keyword" placeholder="키워드 검색" th:value="${keyword}" style="min-width:180px;">
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 10px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;">
-                <span style="font-size:13px;color:#374151;">요일 선택</span>
-                <label><input type="checkbox" name="days" value="월" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '월')}"> 월</label>
-                <label><input type="checkbox" name="days" value="화" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '화')}"> 화</label>
-                <label><input type="checkbox" name="days" value="수" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '수')}"> 수</label>
-                <label><input type="checkbox" name="days" value="목" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '목')}"> 목</label>
-                <label><input type="checkbox" name="days" value="금" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '금')}"> 금</label>
-                <label><input type="checkbox" name="days" value="토" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '토')}"> 토</label>
-                <label><input type="checkbox" name="days" value="일" th:checked="${selectedDays == null or #lists.isEmpty(selectedDays) or #lists.contains(selectedDays, '일')}"> 일</label>
-            </div>
-            <button type="submit" id="searchBtn" class="btn-primary">검색</button>
+            <button type="button" id="searchBtn" class="btn-primary">검색</button>
             <button type="button" id="resetFilterBtn" class="btn-primary" style="background:#6b7280;">필터 초기화</button>
             <button type="button" class="btn-primary" onclick="submitApplyByInput()">신청</button>
         </form>
@@ -136,7 +126,11 @@
     const historyEmpty = document.getElementById('historyEmpty');
     const weeklyBody = document.getElementById('weeklyBody');
     const weeklyEvents = document.getElementById('weeklyEvents');
+    const filterForm = document.querySelector('#openPanel form.filter-grid');
     const enrolledMap = new Map();
+    const courseRows = Array.from(document.querySelectorAll('#courseTableBody .course-row'));
+    const noResultRow = document.getElementById('noResultRow');
+    const searchBtn = document.getElementById('searchBtn');
     const resetFilterBtn = document.getElementById('resetFilterBtn');
 
     const cardOverlay = document.getElementById('courseCardOverlay');
@@ -149,9 +143,37 @@
     const cardEnrollBtn = document.getElementById('cardEnrollBtn');
     let activeCourseId = null;
 
+    function applyCourseFilters() {
+      const code = document.getElementById('quickCourseCode').value.trim().toLowerCase();
+      const job = filterForm.querySelector('select[name="job"]').value.trim().toLowerCase();
+      const position = filterForm.querySelector('select[name="position"]').value.trim().toLowerCase();
+      const keyword = filterForm.querySelector('input[name="keyword"]').value.trim().toLowerCase();
+
+      let visibleCount = 0;
+      courseRows.forEach(row => {
+        const rowCode = (row.dataset.code || '').toLowerCase();
+        const rowJob = (row.dataset.job || '').toLowerCase();
+        const rowPosition = (row.dataset.position || '').toLowerCase();
+        const rowText = row.textContent.toLowerCase();
+
+        const match = (!code || rowCode.includes(code))
+          && (!job || rowJob === job)
+          && (!position || rowPosition === position)
+          && (!keyword || rowText.includes(keyword));
+
+        row.style.display = match ? '' : 'none';
+        if (match) visibleCount++;
+      });
+
+      if (noResultRow) noResultRow.style.display = visibleCount === 0 ? '' : 'none';
+    }
+
     function resetCourseFilters() {
-      const hash = window.location.hash || '';
-      window.location.href = '/enrollments/apply' + hash;
+      document.getElementById('quickCourseCode').value = '';
+      filterForm.querySelector('select[name="job"]').value = '';
+      filterForm.querySelector('select[name="position"]').value = '';
+      filterForm.querySelector('input[name="keyword"]').value = '';
+      applyCourseFilters();
     }
 
     function activate(tab) {
@@ -172,7 +194,16 @@
       syncApplyButtons();
     });
 
+    filterForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      applyCourseFilters();
+    });
+    searchBtn.addEventListener('click', applyCourseFilters);
     resetFilterBtn.addEventListener('click', resetCourseFilters);
+    document.getElementById('quickCourseCode').addEventListener('input', applyCourseFilters);
+    filterForm.querySelector('select[name="job"]').addEventListener('change', applyCourseFilters);
+    filterForm.querySelector('select[name="position"]').addEventListener('change', applyCourseFilters);
+    filterForm.querySelector('input[name="keyword"]').addEventListener('input', applyCourseFilters);
 
     function keyOf(code){ return `${code}`; }
 
@@ -415,6 +446,7 @@
       await loadState();
       renderHistory();
       syncApplyButtons();
+      applyCourseFilters();
     })();
 </script>
 </body>
