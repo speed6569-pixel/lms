@@ -38,8 +38,11 @@ public class CustomerCenterController {
                         @RequestParam String content,
                         Authentication authentication,
                         RedirectAttributes ra) {
-        var user = userJpaRepository.findByLoginId(authentication.getName()).orElseThrow();
-        supportPostService.createPost(title, content, user.getId(), user.getLoginId(), user.getName());
+        var loginId = authentication.getName();
+        var userOpt = userJpaRepository.findByLoginId(loginId);
+        Long userId = userOpt.map(u -> u.getId()).orElse(null);
+        String displayName = userOpt.map(u -> u.getName()).orElse(loginId);
+        supportPostService.createPost(title, content, userId, loginId, displayName);
         ra.addFlashAttribute("message", "문의가 등록되었습니다.");
         return "redirect:/customer-center";
     }
