@@ -11,8 +11,7 @@
       <a href="/mypage" sec:authorize="hasAnyRole('USER','ADMIN')">마이페이지</a>
       <a href="/admin/dashboard" sec:authorize="hasRole('ADMIN')">관리자 대시보드</a>
       <a href="/notices">공지사항</a>
-      <a href="/admin/support" sec:authorize="hasRole('ADMIN')">고객 센터</a>
-      <a href="/customer-center" sec:authorize="!hasRole('ADMIN')">고객 센터</a>
+      <a href="/customer-center">고객 센터</a>
       <a href="/schedule">교육일정</a>
     </nav>
 
