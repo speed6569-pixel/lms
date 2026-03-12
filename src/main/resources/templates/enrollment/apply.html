@@ -47,7 +47,6 @@
             </div>
             <button type="submit" id="searchBtn" class="btn-primary">검색</button>
             <button type="button" id="resetFilterBtn" class="btn-primary" style="background:#6b7280;">필터 초기화</button>
-            <button type="button" class="btn-primary" onclick="submitApplyByInput()">신청</button>
         </form>
 
         <div class="table-wrap">
@@ -426,14 +425,6 @@
       await loadState();
       renderHistory();
       syncApplyButtons();
-    }
-
-    window.submitApplyByInput = function(){
-      const courseCode = document.getElementById('quickCourseCode').value.trim();
-      if (!courseCode) return;
-      const btn = document.querySelector(`button.apply-btn[data-code="${courseCode}"]`);
-      if (!btn) return;
-      window.toggleApply(btn);
     }
 
     window.addEventListener('resize', () => {
