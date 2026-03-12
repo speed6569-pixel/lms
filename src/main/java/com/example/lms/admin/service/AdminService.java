@@ -167,12 +167,15 @@ public class AdminService {
         }
         if (req.status() != null) c.setStatus(req.status());
         if (req.classTime() != null) c.setClassTime(req.classTime());
-        if (req.days() != null && !req.days().isEmpty()) {
-            List<String> normalized = sortDays(req.days().stream().map(this::normalizeDay).distinct().toList());
-            c.setSelectedDays(String.join(",", normalized));
+
+        List<String> updateDays = resolveUpdateDays(req);
+        if (!updateDays.isEmpty()) {
+            c.setSelectedDays(String.join(",", updateDays));
+            syncCourseSessionsForDays(c, updateDays);
         } else if (req.selectedDays() != null) {
             c.setSelectedDays(normalizeSelectedDaysText(req.selectedDays()));
         }
+
         if (req.active() != null) c.setActive(req.active());
         CourseEntity saved = courseJpaRepository.save(c);
         audit(adminUserId, "UPDATE_COURSE", "COURSE", id, ip, req.toString());
@@ -215,9 +218,10 @@ public class AdminService {
             row.put("jobLevel", c.getJobLevel() == null ? "" : c.getJobLevel());
             row.put("subjectName", c.getSubjectName() == null ? c.getTitle() : c.getSubjectName());
             row.put("instructor", c.getInstructor() == null ? c.getProfessor() : c.getInstructor());
-            String selectedDays = normalizeSelectedDaysText(c.getSelectedDays());
+            List<AdminCourseSessionEntity> sessions = adminCourseSessionJpaRepository.findByCourse_Id(c.getId());
+            String selectedDays = toDisplayDayTextFromSessions(sessions, c.getSelectedDays());
             row.put("selectedDays", selectedDays);
-            row.put("classTime", toDayDurationText(adminCourseSessionJpaRepository.findByCourse_Id(c.getId())));
+            row.put("classTime", toScheduleText(sessions));
             row.put("price", c.getPrice());
             row.put("capacity", c.getCapacity() == null ? (c.getMaxCount() == null ? 0 : c.getMaxCount()) : c.getCapacity());
             row.put("status", c.getStatus() == null ? "OPEN" : c.getStatus());
@@ -412,6 +416,56 @@ public class AdminService {
         throw new IllegalArgumentException("요일 선택 모드가 올바르지 않습니다.");
     }
 
+    private List<String> resolveUpdateDays(AdminDtos.CourseUpdateRequest req) {
+        List<String> fromChecks = req.days() == null ? List.of() : req.days().stream().map(this::normalizeDay).distinct().toList();
+        List<String> fromRange = List.of();
+
+        boolean hasRange = (req.startDay() != null && !req.startDay().isBlank()) || (req.endDay() != null && !req.endDay().isBlank());
+        if (hasRange) {
+            if (req.startDay() == null || req.endDay() == null) {
+                throw new IllegalArgumentException("요일 범위를 사용할 때 시작/종료 요일을 모두 선택해 주세요.");
+            }
+            fromRange = expandDayRange(req.startDay(), req.endDay());
+        }
+
+        if (fromChecks.isEmpty() && fromRange.isEmpty()) return List.of();
+
+        List<String> merged = new ArrayList<>();
+        merged.addAll(fromChecks);
+        merged.addAll(fromRange);
+        return sortDays(merged);
+    }
+
+    private void syncCourseSessionsForDays(CourseEntity course, List<String> days) {
+        List<AdminCourseSessionEntity> old = adminCourseSessionJpaRepository.findByCourse_Id(course.getId());
+        if (old.isEmpty()) return;
+
+        AdminCourseSessionEntity base = old.get(0);
+        if (base.getStartTime() == null || base.getEndTime() == null) return;
+
+        Map<String, Integer> oldEnrolledMap = new HashMap<>();
+        for (AdminCourseSessionEntity s : old) {
+            oldEnrolledMap.put(s.getDayOfWeek(), s.getEnrolledCount() == null ? 0 : s.getEnrolledCount());
+        }
+
+        adminCourseSessionJpaRepository.deleteByCourse_Id(course.getId());
+
+        int sectionNo = 1;
+        for (String day : days) {
+            AdminCourseSessionEntity s = new AdminCourseSessionEntity();
+            s.setCourse(course);
+            s.setSection(String.format("%02d", sectionNo++));
+            s.setDayOfWeek(day);
+            s.setStartTime(base.getStartTime());
+            s.setEndTime(base.getEndTime());
+            s.setRoom(base.getRoom());
+            s.setMaxCount(course.getCapacity() == null ? 0 : course.getCapacity());
+            s.setEnrolledCount(oldEnrolledMap.getOrDefault(day, 0));
+            s.setStatus("OPEN");
+            adminCourseSessionJpaRepository.save(s);
+        }
+    }
+
     private List<String> expandDayRange(String startDay, String endDay) {
         List<String> week = List.of("월", "화", "수", "목", "금", "토", "일");
         String sNorm = normalizeDay(startDay);
@@ -487,23 +541,36 @@ public class AdminService {
         return String.join("/", chunks);
     }
 
-    private String toDayDurationText(List<AdminCourseSessionEntity> sessions) {
+    private String toDisplayDayTextFromSessions(List<AdminCourseSessionEntity> sessions, String fallbackSelectedDays) {
+        if (sessions == null || sessions.isEmpty()) return normalizeSelectedDaysText(fallbackSelectedDays);
+        List<String> order = List.of("월", "화", "수", "목", "금", "토", "일");
+        List<String> days = sessions.stream()
+                .map(AdminCourseSessionEntity::getDayOfWeek)
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted(Comparator.comparingInt(order::indexOf))
+                .toList();
+        return compressDays(days, order);
+    }
+
+    private String toScheduleText(List<AdminCourseSessionEntity> sessions) {
         if (sessions == null || sessions.isEmpty()) return "-";
-        Map<String, Integer> dayMinutes = new LinkedHashMap<>();
+        List<String> order = List.of("월", "화", "수", "목", "금", "토", "일");
+        Map<String, List<String>> timeToDays = new LinkedHashMap<>();
         for (AdminCourseSessionEntity s : sessions) {
-            if (s.getStartTime() == null || s.getEndTime() == null) continue;
-            int minutes = (s.getEndTime().getHour() * 60 + s.getEndTime().getMinute())
-                    - (s.getStartTime().getHour() * 60 + s.getStartTime().getMinute());
-            dayMinutes.merge(s.getDayOfWeek(), Math.max(minutes, 0), Integer::sum);
+            if (s.getStartTime() == null || s.getEndTime() == null || s.getDayOfWeek() == null) continue;
+            String time = String.format("%02d:%02d~%02d:%02d",
+                    s.getStartTime().getHour(), s.getStartTime().getMinute(),
+                    s.getEndTime().getHour(), s.getEndTime().getMinute());
+            timeToDays.computeIfAbsent(time, k -> new ArrayList<>()).add(s.getDayOfWeek());
         }
-        if (dayMinutes.isEmpty()) return "-";
+        if (timeToDays.isEmpty()) return "-";
         List<String> parts = new ArrayList<>();
-        for (Map.Entry<String, Integer> e : dayMinutes.entrySet()) {
-            double hours = e.getValue() / 60.0;
-            String h = (hours == (int) hours) ? String.valueOf((int) hours) : String.format("%.1f", hours);
-            parts.add(e.getKey() + " " + h + "시간");
+        for (var en : timeToDays.entrySet()) {
+            List<String> days = en.getValue().stream().distinct().sorted(Comparator.comparingInt(order::indexOf)).toList();
+            parts.add(compressDays(days, order) + " " + en.getKey());
         }
-        return String.join(" / ", parts);
+        return String.join("; ", parts);
     }
 
     @Transactional(readOnly = true)

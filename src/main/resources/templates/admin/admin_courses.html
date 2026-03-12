@@ -7,8 +7,9 @@
     <input id="cCode" placeholder="과목코드"><input id="cTitle" placeholder="교과목명"><input id="cProfessor" placeholder="교수">
     <input id="cPrice" type="number" min="0" placeholder="가격"><input id="cMax" type="number" min="0" placeholder="인원제한">
     <input id="cStart" type="time" value="09:00"><input id="cEnd" type="time" value="11:00">
-    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:4px 8px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;">
-      <span style="font-size:13px;color:#374151;">요일 선택</span>
+
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 10px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;">
+      <span style="font-size:13px;color:#374151;">개별 요일</span>
       <label><input type="checkbox" class="day-check" value="MON"> 월</label>
       <label><input type="checkbox" class="day-check" value="TUE"> 화</label>
       <label><input type="checkbox" class="day-check" value="WED"> 수</label>
@@ -17,6 +18,19 @@
       <label><input type="checkbox" class="day-check" value="SAT"> 토</label>
       <label><input type="checkbox" class="day-check" value="SUN"> 일</label>
     </div>
+
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 10px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;">
+      <span style="font-size:13px;color:#374151;">범위 선택</span>
+      <select id="cRangeStart">
+        <option value="">시작</option><option value="MON">월</option><option value="TUE">화</option><option value="WED">수</option><option value="THU">목</option><option value="FRI">금</option><option value="SAT">토</option><option value="SUN">일</option>
+      </select>
+      <span>~</span>
+      <select id="cRangeEnd">
+        <option value="">종료</option><option value="MON">월</option><option value="TUE">화</option><option value="WED">수</option><option value="THU">목</option><option value="FRI">금</option><option value="SAT">토</option><option value="SUN">일</option>
+      </select>
+      <button type="button" onclick="applyRangeToChecks('create')">범위 적용</button>
+    </div>
+
     <button class="btn-primary" onclick="createCourse()">강의 생성</button>
   </div>
 
@@ -34,7 +48,8 @@
   <div id="editDaysBox" style="display:none;margin-top:12px;border:1px solid #e5e7eb;border-radius:10px;padding:12px;background:#fff;">
     <div style="font-weight:600;margin-bottom:6px;">강의 요일 수정</div>
     <div id="editDaysTitle" style="font-size:13px;color:#6b7280;margin-bottom:8px;"></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">
       <label><input type="checkbox" class="edit-day" value="MON"> 월</label>
       <label><input type="checkbox" class="edit-day" value="TUE"> 화</label>
       <label><input type="checkbox" class="edit-day" value="WED"> 수</label>
@@ -43,6 +58,20 @@
       <label><input type="checkbox" class="edit-day" value="SAT"> 토</label>
       <label><input type="checkbox" class="edit-day" value="SUN"> 일</label>
     </div>
+
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+      <span style="font-size:13px;color:#374151;">범위 선택</span>
+      <select id="eRangeStart">
+        <option value="">시작</option><option value="MON">월</option><option value="TUE">화</option><option value="WED">수</option><option value="THU">목</option><option value="FRI">금</option><option value="SAT">토</option><option value="SUN">일</option>
+      </select>
+      <span>~</span>
+      <select id="eRangeEnd">
+        <option value="">종료</option><option value="MON">월</option><option value="TUE">화</option><option value="WED">수</option><option value="THU">목</option><option value="FRI">금</option><option value="SAT">토</option><option value="SUN">일</option>
+      </select>
+      <button type="button" onclick="applyRangeToChecks('edit')">범위 적용</button>
+      <span style="font-size:12px;color:#6b7280;">개별 + 범위를 함께 사용하면 자동 합집합으로 저장됩니다.</span>
+    </div>
+
     <div style="margin-top:10px;display:flex;gap:8px;">
       <button class="btn-primary" onclick="saveEditDays()">저장</button>
       <button type="button" onclick="closeEditDays()">취소</button>
@@ -50,16 +79,44 @@
   </div>
 <script>
  const DAY_LABEL = {MON:'월',TUE:'화',WED:'수',THU:'목',FRI:'금',SAT:'토',SUN:'일'};
+ const DAY_ORDER = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+ const KO_TO_EN = {월:'MON',화:'TUE',수:'WED',목:'THU',금:'FRI',토:'SAT',일:'SUN'};
  let courseRows = [];
  let editingCourseId = null;
- function selectedDays(){
-   return [...document.querySelectorAll('.day-check:checked')].map(v=>v.value);
+
+ function normalizeDay(v){
+   if(!v) return '';
+   const t=String(v).trim();
+   return KO_TO_EN[t] || t.toUpperCase();
+ }
+ function expandRange(start,end){
+   const s = DAY_ORDER.indexOf(normalizeDay(start));
+   const e = DAY_ORDER.indexOf(normalizeDay(end));
+   if(s<0 || e<0 || s>e) return null;
+   return DAY_ORDER.slice(s,e+1);
+ }
+ function selectedDays(prefix='create'){
+   const cls = prefix === 'edit' ? '.edit-day' : '.day-check';
+   return [...document.querySelectorAll(cls+':checked')].map(v=>v.value);
+ }
+ function uniqueSortedDays(days){
+   return [...new Set(days)].sort((a,b)=>DAY_ORDER.indexOf(a)-DAY_ORDER.indexOf(b));
  }
  function normalizeDaysText(v){
    if(!v) return '-';
-   const arr = String(v).split(',').map(s=>s.trim()).filter(Boolean).map(d=>DAY_LABEL[d]||d);
-   return arr.length ? arr.join(',') : '-';
+   return String(v);
  }
+ function applyRangeToChecks(prefix='create'){
+   const start = document.getElementById(prefix==='edit' ? 'eRangeStart' : 'cRangeStart').value;
+   const end = document.getElementById(prefix==='edit' ? 'eRangeEnd' : 'cRangeEnd').value;
+   if(!start && !end) return;
+   if(!start || !end){ alert('범위를 사용할 때 시작/종료 요일을 모두 선택해 주세요.'); return; }
+   const range = expandRange(start,end);
+   if(!range){ alert('요일 범위가 올바르지 않습니다. (예: 월~금, 토~일)'); return; }
+   const cls = prefix === 'edit' ? '.edit-day' : '.day-check';
+   document.querySelectorAll(cls).forEach(ch=>{ if(range.includes(ch.value)) ch.checked=true; });
+ }
+
  async function loadCourses(){
    const rows = await (await fetch('/admin/api/courses')).json();
    courseRows = rows;
@@ -72,17 +129,32 @@
 <td><button class='btn-danger' onclick='deleteCourse(${v.id})'>삭제</button></td></tr>`).join('');
  }
  async function createCourse(){
-   const days = selectedDays();
+   const checks = selectedDays('create');
+   const startDay = document.getElementById('cRangeStart').value;
+   const endDay = document.getElementById('cRangeEnd').value;
+
+   if((startDay && !endDay) || (!startDay && endDay)){ alert('범위를 사용할 때 시작/종료 요일을 모두 선택해 주세요.'); return; }
+
+   let rangeDays=[];
+   if(startDay && endDay){
+     const range = expandRange(startDay,endDay);
+     if(!range){ alert('요일 범위가 올바르지 않습니다.'); return; }
+     rangeDays=range;
+   }
+   const days = uniqueSortedDays([...checks, ...rangeDays]);
    if(!days.length){ alert('요일을 1개 이상 선택해 주세요.'); return; }
+
    const payload={
      subjectCode:cCode.value,subjectName:cTitle.value,instructor:cProfessor.value,
      price:Number(cPrice.value||0),capacity:Number(cMax.value||0),status:cStatus.value,
-     dayMode:'MULTI',days,startDay:days[0],endDay:days[days.length-1],
+     dayMode:'MULTI',days,startDay:startDay||days[0],endDay:endDay||days[days.length-1],
      startTime:cStart.value,endTime:cEnd.value
    };
    const res = await fetch('/admin/api/courses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
    if(!res.ok){ const j=await res.json().catch(()=>({message:'강의 생성 실패'})); alert(j.message||'강의 생성 실패'); return; }
    document.querySelectorAll('.day-check').forEach(ch=>ch.checked=false);
+   document.getElementById('cRangeStart').value='';
+   document.getElementById('cRangeEnd').value='';
    loadCourses();
  }
  function openEditDays(id){
@@ -90,22 +162,53 @@
    if(!row) return;
    editingCourseId = id;
    document.getElementById('editDaysTitle').textContent = `${row.subjectCode||''} / ${row.subjectName||''}`;
-   const selected = String(row.selectedDays||'').split(',').map(v=>v.trim()).filter(Boolean);
-   document.querySelectorAll('.edit-day').forEach(ch=>{
-     const label = DAY_LABEL[ch.value] || ch.value;
-     ch.checked = selected.includes(ch.value) || selected.includes(label);
+
+   document.querySelectorAll('.edit-day').forEach(ch=>ch.checked=false);
+   const text = String(row.selectedDays||'');
+   const parts = text.split(/[\/ ,]/).map(v=>v.trim()).filter(Boolean);
+
+   parts.forEach(p=>{
+     if(p.includes('~')){
+       const [a,b] = p.split('~');
+       const range = expandRange(a,b);
+       if(range){
+         range.forEach(d=>{ const el=document.querySelector(`.edit-day[value="${d}"]`); if(el) el.checked=true; });
+         document.getElementById('eRangeStart').value = normalizeDay(a);
+         document.getElementById('eRangeEnd').value = normalizeDay(b);
+       }
+     } else {
+       const d = normalizeDay(p);
+       const el = document.querySelector(`.edit-day[value="${d}"]`);
+       if(el) el.checked=true;
+     }
    });
    document.getElementById('editDaysBox').style.display = 'block';
  }
  function closeEditDays(){
    editingCourseId = null;
    document.getElementById('editDaysBox').style.display = 'none';
+   document.getElementById('eRangeStart').value='';
+   document.getElementById('eRangeEnd').value='';
  }
  async function saveEditDays(){
    if(!editingCourseId) return;
-   const days = [...document.querySelectorAll('.edit-day:checked')].map(v=>v.value);
+   const checks = selectedDays('edit');
+   const startDay = document.getElementById('eRangeStart').value;
+   const endDay = document.getElementById('eRangeEnd').value;
+
+   if((startDay && !endDay) || (!startDay && endDay)){ alert('범위를 사용할 때 시작/종료 요일을 모두 선택해 주세요.'); return; }
+
+   let rangeDays=[];
+   if(startDay && endDay){
+     const range = expandRange(startDay,endDay);
+     if(!range){ alert('요일 범위가 올바르지 않습니다.'); return; }
+     rangeDays=range;
+   }
+
+   const days = uniqueSortedDays([...checks, ...rangeDays]);
    if(!days.length){ alert('요일을 1개 이상 선택해 주세요.'); return; }
-   const res = await fetch('/admin/api/courses/'+editingCourseId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({days})});
+
+   const res = await fetch('/admin/api/courses/'+editingCourseId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({days, startDay, endDay})});
    if(!res.ok){ const j=await res.json().catch(()=>({message:'요일 저장 실패'})); alert(j.message||'요일 저장 실패'); return; }
    closeEditDays();
    await loadCourses();

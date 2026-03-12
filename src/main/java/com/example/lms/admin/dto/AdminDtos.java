@@ -4,7 +4,7 @@ import java.time.LocalDate;
 
 public class AdminDtos {
     public record CourseCreateRequest(String subjectCode, String jobGroup, String jobLevel, String subjectName, String instructor, Integer price, Integer capacity, String status, String description, String dayMode, java.util.List<String> days, String startDay, String endDay, String startTime, String endTime, java.util.List<CourseSessionInput> sessions, java.util.List<LessonInput> lessons) {}
-    public record CourseUpdateRequest(String subjectName, String instructor, Integer price, Integer capacity, String status, String jobGroup, String jobLevel, String classTime, Boolean active, java.util.List<String> days, String selectedDays) {}
+    public record CourseUpdateRequest(String subjectName, String instructor, Integer price, Integer capacity, String status, String jobGroup, String jobLevel, String classTime, Boolean active, java.util.List<String> days, String selectedDays, String dayMode, String startDay, String endDay) {}
     public record CourseSessionInput(String dayOfWeek, String startTime, String endTime, String room) {}
     public record LessonInput(Long id, String title, String description, String videoUrl, Integer orderNo, String thumbnailUrl) {}
     public record SessionCreateRequest(String section, String dayOfWeek, String startTime, String endTime, String room, Integer maxCount) {}
