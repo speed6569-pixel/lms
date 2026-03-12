@@ -12,7 +12,7 @@
 <div th:replace="~{fragments/header :: siteHeader(${userName}, ${userEmail})}"></div>
 <main class="wrap">
   <div class="card">
-    <div class="top"><h2>고객센터 문의</h2><a class="btn btn-primary" href="/customer-center/write">문의 작성</a></div>
+    <div class="top"><h2 th:text="${adminView} ? '고객센터 문의 (전체)' : '고객센터 문의'"></h2><a class="btn btn-primary" href="/customer-center/write" th:if="${!adminView}">문의 작성</a></div>
     <table>
       <thead><tr><th>번호</th><th>제목</th><th>작성일</th><th>상태</th></tr></thead>
       <tbody>
