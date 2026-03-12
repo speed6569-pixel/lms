@@ -24,6 +24,10 @@ public class CustomerCenterController {
     @GetMapping
     public String list(Authentication authentication, Model model) {
         String loginId = authentication.getName();
+        var userOpt = userJpaRepository.findByLoginId(loginId);
+        if (userOpt.isPresent() && "ADMIN".equalsIgnoreCase(userOpt.get().getRole())) {
+            return "redirect:/admin/support";
+        }
         model.addAttribute("posts", supportPostService.getPostsByWriterLoginId(loginId));
         return "support/customer-center";
     }
