@@ -152,29 +152,50 @@ public class AdminService {
     @Transactional
     public CourseEntity updateCourse(Long id, AdminDtos.CourseUpdateRequest req, Long adminUserId, String ip) {
         CourseEntity c = courseJpaRepository.findById(id).orElseThrow();
-        if (req.subjectName() != null) { c.setSubjectName(req.subjectName()); c.setTitle(req.subjectName()); }
-        if (req.instructor() != null) { c.setInstructor(req.instructor()); c.setProfessor(req.instructor()); }
-        if (req.jobGroup() != null) c.setJobGroup(req.jobGroup());
-        if (req.jobLevel() != null) c.setJobLevel(req.jobLevel());
-        if (req.price() != null) {
-            if (req.price() < 0) throw new IllegalArgumentException("가격은 0 이상이어야 합니다.");
-            c.setPrice(req.price());
+
+        if (req.subjectCode() == null || req.subjectCode().isBlank()) throw new IllegalArgumentException("과목코드는 필수입니다.");
+        String subjectCode = req.subjectCode().trim();
+        if (courseJpaRepository.existsBySubjectCodeAndIdNot(subjectCode, id) || courseJpaRepository.existsByCourseCodeAndIdNot(subjectCode, id)) {
+            throw new IllegalArgumentException("이미 존재하는 과목코드입니다.");
         }
-        if (req.capacity() != null) {
-            if (req.capacity() < 0) throw new IllegalArgumentException("정원은 0 이상이어야 합니다.");
-            c.setCapacity(req.capacity());
-            c.setMaxCount(req.capacity());
-        }
-        if (req.status() != null) c.setStatus(req.status());
+        c.setSubjectCode(subjectCode);
+        c.setCourseCode(subjectCode);
+
+        if (req.subjectName() == null || req.subjectName().isBlank()) throw new IllegalArgumentException("교과목명은 필수입니다.");
+        c.setSubjectName(req.subjectName().trim());
+        c.setTitle(req.subjectName().trim());
+
+        if (req.instructor() == null || req.instructor().isBlank()) throw new IllegalArgumentException("교수명은 필수입니다.");
+        c.setInstructor(req.instructor().trim());
+        c.setProfessor(req.instructor().trim());
+
+        if (req.jobGroup() == null || req.jobGroup().isBlank()) throw new IllegalArgumentException("직군은 필수입니다.");
+        if (req.jobLevel() == null || req.jobLevel().isBlank()) throw new IllegalArgumentException("직급은 필수입니다.");
+        c.setJobGroup(req.jobGroup());
+        c.setJobLevel(req.jobLevel());
+
+        if (req.price() == null || req.price() < 0) throw new IllegalArgumentException("가격은 0 이상이어야 합니다.");
+        c.setPrice(req.price());
+
+        if (req.capacity() == null || req.capacity() < 1) throw new IllegalArgumentException("인원제한은 1 이상이어야 합니다.");
+        long enrolledCount = enrollmentJpaRepository.countByCourseIdAndStatusIn(id, List.of("APPLIED", "WAITLIST", "APPROVED", "RUNNING"));
+        if (req.capacity() < enrolledCount) throw new IllegalArgumentException("인원제한은 현재 신청/승인 인원보다 작을 수 없습니다.");
+        c.setCapacity(req.capacity());
+        c.setMaxCount(req.capacity());
+
+        if (req.status() == null || req.status().isBlank()) throw new IllegalArgumentException("모집상태는 필수입니다.");
+        c.setStatus(req.status());
         if (req.classTime() != null) c.setClassTime(req.classTime());
 
+        if (req.startTime() == null || req.endTime() == null) throw new IllegalArgumentException("시작/종료 시간은 필수입니다.");
+        LocalTime start = LocalTime.parse(req.startTime());
+        LocalTime end = LocalTime.parse(req.endTime());
+        if (!start.isBefore(end)) throw new IllegalArgumentException("시작시간은 종료시간보다 빨라야 합니다.");
+
         List<String> updateDays = resolveUpdateDays(req);
-        if (!updateDays.isEmpty()) {
-            c.setSelectedDays(String.join(",", updateDays));
-            syncCourseSessionsForDays(c, updateDays);
-        } else if (req.selectedDays() != null) {
-            c.setSelectedDays(normalizeSelectedDaysText(req.selectedDays()));
-        }
+        if (updateDays.isEmpty()) throw new IllegalArgumentException("요일을 1개 이상 선택해 주세요.");
+        c.setSelectedDays(String.join(",", updateDays));
+        syncCourseSessions(c, updateDays, start, end);
 
         if (req.active() != null) c.setActive(req.active());
         CourseEntity saved = courseJpaRepository.save(c);
@@ -221,6 +242,11 @@ public class AdminService {
             List<AdminCourseSessionEntity> sessions = adminCourseSessionJpaRepository.findByCourse_Id(c.getId());
             String selectedDays = toDisplayDayTextFromSessions(sessions, c.getSelectedDays());
             row.put("selectedDays", selectedDays);
+            row.put("days", sessions.stream().map(AdminCourseSessionEntity::getDayOfWeek).filter(Objects::nonNull).distinct().toList());
+            if (!sessions.isEmpty()) {
+                row.put("startTime", String.format("%02d:%02d", sessions.get(0).getStartTime().getHour(), sessions.get(0).getStartTime().getMinute()));
+                row.put("endTime", String.format("%02d:%02d", sessions.get(0).getEndTime().getHour(), sessions.get(0).getEndTime().getMinute()));
+            }
             row.put("classTime", toScheduleText(sessions));
             row.put("price", c.getPrice());
             row.put("capacity", c.getCapacity() == null ? (c.getMaxCount() == null ? 0 : c.getMaxCount()) : c.getCapacity());
@@ -436,21 +462,18 @@ public class AdminService {
         return sortDays(merged);
     }
 
-    private void syncCourseSessionsForDays(CourseEntity course, List<String> days) {
+    private void syncCourseSessions(CourseEntity course, List<String> days, LocalTime start, LocalTime end) {
         List<AdminCourseSessionEntity> old = adminCourseSessionJpaRepository.findByCourse_Id(course.getId());
-        if (old.isEmpty()) return;
-
-        AdminCourseSessionEntity base = old.get(0);
-        if (base.getStartTime() == null || base.getEndTime() == null) return;
+        String room = old.isEmpty() ? null : old.get(0).getRoom();
 
         long linkedLearners = enrollmentJpaRepository.countByCourseIdAndStatusIn(course.getId(), List.of("APPLIED", "WAITLIST", "APPROVED", "RUNNING"));
         if (linkedLearners > 0) {
-            throw new IllegalArgumentException("수강 신청/승인 데이터가 있는 강의는 요일 변경을 할 수 없습니다.");
-        }
-
-        Map<String, Integer> oldEnrolledMap = new HashMap<>();
-        for (AdminCourseSessionEntity s : old) {
-            oldEnrolledMap.put(s.getDayOfWeek(), s.getEnrolledCount() == null ? 0 : s.getEnrolledCount());
+            boolean sameDays = sortDays(old.stream().map(AdminCourseSessionEntity::getDayOfWeek).filter(Objects::nonNull).toList()).equals(sortDays(days));
+            boolean sameTime = old.stream().allMatch(s -> start.equals(s.getStartTime()) && end.equals(s.getEndTime()));
+            if (!(sameDays && sameTime)) {
+                throw new IllegalArgumentException("수강 신청/승인 데이터가 있는 강의는 요일/시간을 변경할 수 없습니다.");
+            }
+            return;
         }
 
         adminCourseSessionJpaRepository.deleteByCourse_Id(course.getId());
@@ -461,11 +484,11 @@ public class AdminService {
             s.setCourse(course);
             s.setSection(String.format("%02d", sectionNo++));
             s.setDayOfWeek(day);
-            s.setStartTime(base.getStartTime());
-            s.setEndTime(base.getEndTime());
-            s.setRoom(base.getRoom());
+            s.setStartTime(start);
+            s.setEndTime(end);
+            s.setRoom(room);
             s.setMaxCount(course.getCapacity() == null ? 0 : course.getCapacity());
-            s.setEnrolledCount(oldEnrolledMap.getOrDefault(day, 0));
+            s.setEnrolledCount(0);
             s.setStatus("OPEN");
             adminCourseSessionJpaRepository.save(s);
         }
