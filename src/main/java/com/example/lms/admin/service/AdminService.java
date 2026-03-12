@@ -87,16 +87,22 @@ public class AdminService {
         c.setMaxCount(req.capacity() == null ? 0 : req.capacity());
         c.setStatus(req.status() == null || req.status().isBlank() ? "OPEN" : req.status());
         c.setClassTime(null);
+        c.setSelectedDays(null);
         c.setActive(true);
         c.setIsDeleted(false);
         CourseEntity saved = courseJpaRepository.save(c);
 
         List<AdminDtos.CourseSessionInput> sessions = req.sessions() == null ? List.of() : req.sessions();
+        if (!sessions.isEmpty()) {
+            List<String> selectedDays = sortDays(sessions.stream().map(AdminDtos.CourseSessionInput::dayOfWeek).map(this::normalizeDay).distinct().toList());
+            c.setSelectedDays(String.join(",", selectedDays));
+        }
         if (sessions.isEmpty()) {
             if (req.startTime() == null || req.endTime() == null) {
                 throw new IllegalArgumentException("시작/종료 시간을 입력해 주세요.");
             }
-            List<String> selectedDays = resolveSelectedDays(req.dayMode(), req.days(), req.startDay(), req.endDay());
+            List<String> selectedDays = sortDays(resolveSelectedDays(req.dayMode(), req.days(), req.startDay(), req.endDay()));
+            c.setSelectedDays(String.join(",", selectedDays));
             sessions = selectedDays.stream()
                     .map(d -> new AdminDtos.CourseSessionInput(d, req.startTime(), req.endTime(), null))
                     .toList();
@@ -161,6 +167,12 @@ public class AdminService {
         }
         if (req.status() != null) c.setStatus(req.status());
         if (req.classTime() != null) c.setClassTime(req.classTime());
+        if (req.days() != null && !req.days().isEmpty()) {
+            List<String> normalized = sortDays(req.days().stream().map(this::normalizeDay).distinct().toList());
+            c.setSelectedDays(String.join(",", normalized));
+        } else if (req.selectedDays() != null) {
+            c.setSelectedDays(normalizeSelectedDaysText(req.selectedDays()));
+        }
         if (req.active() != null) c.setActive(req.active());
         CourseEntity saved = courseJpaRepository.save(c);
         audit(adminUserId, "UPDATE_COURSE", "COURSE", id, ip, req.toString());
@@ -203,6 +215,8 @@ public class AdminService {
             row.put("jobLevel", c.getJobLevel() == null ? "" : c.getJobLevel());
             row.put("subjectName", c.getSubjectName() == null ? c.getTitle() : c.getSubjectName());
             row.put("instructor", c.getInstructor() == null ? c.getProfessor() : c.getInstructor());
+            String selectedDays = normalizeSelectedDaysText(c.getSelectedDays());
+            row.put("selectedDays", selectedDays);
             row.put("classTime", toDayDurationText(adminCourseSessionJpaRepository.findByCourse_Id(c.getId())));
             row.put("price", c.getPrice());
             row.put("capacity", c.getCapacity() == null ? (c.getMaxCount() == null ? 0 : c.getMaxCount()) : c.getCapacity());
@@ -419,6 +433,22 @@ public class AdminService {
             case "SUN", "일" -> "일";
             default -> throw new IllegalArgumentException("지원하지 않는 요일: " + day);
         };
+    }
+
+    private String normalizeSelectedDaysText(String selectedDays) {
+        if (selectedDays == null || selectedDays.isBlank()) return "";
+        List<String> normalized = sortDays(Arrays.stream(selectedDays.split(","))
+                .map(String::trim)
+                .filter(v -> !v.isBlank())
+                .map(this::normalizeDay)
+                .distinct()
+                .toList());
+        return String.join(",", normalized);
+    }
+
+    private List<String> sortDays(List<String> days) {
+        List<String> order = List.of("월", "화", "수", "목", "금", "토", "일");
+        return days.stream().distinct().sorted(Comparator.comparingInt(order::indexOf)).toList();
     }
 
     private String buildScheduleTextFromFlat(List<AdminEnrollmentFlatProjection> sessions) {

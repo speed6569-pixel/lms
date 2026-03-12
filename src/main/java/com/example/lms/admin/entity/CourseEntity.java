@@ -21,6 +21,8 @@ public class CourseEntity {
     private Integer maxCount;
     @Column(name = "class_time")
     private String classTime;
+    @Column(name = "selected_days")
+    private String selectedDays;
     private Boolean active;
 
     @Column(name = "subject_code")
@@ -58,6 +60,8 @@ public class CourseEntity {
     public void setMaxCount(Integer maxCount) { this.maxCount = maxCount; }
     public String getClassTime() { return classTime; }
     public void setClassTime(String classTime) { this.classTime = classTime; }
+    public String getSelectedDays() { return selectedDays; }
+    public void setSelectedDays(String selectedDays) { this.selectedDays = selectedDays; }
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
     public List<AdminCourseSessionEntity> getSessions() { return sessions; }

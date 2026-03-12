@@ -2,17 +2,114 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org"><body>
 <th:block th:fragment="content">
   <h2>강의 관리</h2>
-  <div class="admin-toolbar">
+  <div class="admin-toolbar" style="flex-wrap:wrap;gap:8px;align-items:center;">
     <select id="cStatus"><option value="OPEN">모집중</option><option value="CLOSED">마감</option></select>
     <input id="cCode" placeholder="과목코드"><input id="cTitle" placeholder="교과목명"><input id="cProfessor" placeholder="교수">
     <input id="cPrice" type="number" min="0" placeholder="가격"><input id="cMax" type="number" min="0" placeholder="인원제한">
     <input id="cStart" type="time" value="09:00"><input id="cEnd" type="time" value="11:00">
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:4px 8px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;">
+      <span style="font-size:13px;color:#374151;">요일 선택</span>
+      <label><input type="checkbox" class="day-check" value="MON"> 월</label>
+      <label><input type="checkbox" class="day-check" value="TUE"> 화</label>
+      <label><input type="checkbox" class="day-check" value="WED"> 수</label>
+      <label><input type="checkbox" class="day-check" value="THU"> 목</label>
+      <label><input type="checkbox" class="day-check" value="FRI"> 금</label>
+      <label><input type="checkbox" class="day-check" value="SAT"> 토</label>
+      <label><input type="checkbox" class="day-check" value="SUN"> 일</label>
+    </div>
     <button class="btn-primary" onclick="createCourse()">강의 생성</button>
   </div>
-  <div class="admin-table table-wrap"><table><thead><tr><th>신청</th><th>ID</th><th>과목코드</th><th>교과목명</th><th>교수</th><th>강의시간</th><th>가격</th><th>인원제한</th><th>삭제</th></tr></thead><tbody id="courseBody"></tbody></table></div>
+
+  <div class="admin-table table-wrap">
+    <table>
+      <thead>
+      <tr>
+        <th>신청</th><th>ID</th><th>과목코드</th><th>교과목명</th><th>교수</th><th>요일</th><th>강의시간</th><th>가격</th><th>인원제한</th><th>수정</th><th>삭제</th>
+      </tr>
+      </thead>
+      <tbody id="courseBody"></tbody>
+    </table>
+  </div>
+
+  <div id="editDaysBox" style="display:none;margin-top:12px;border:1px solid #e5e7eb;border-radius:10px;padding:12px;background:#fff;">
+    <div style="font-weight:600;margin-bottom:6px;">강의 요일 수정</div>
+    <div id="editDaysTitle" style="font-size:13px;color:#6b7280;margin-bottom:8px;"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <label><input type="checkbox" class="edit-day" value="MON"> 월</label>
+      <label><input type="checkbox" class="edit-day" value="TUE"> 화</label>
+      <label><input type="checkbox" class="edit-day" value="WED"> 수</label>
+      <label><input type="checkbox" class="edit-day" value="THU"> 목</label>
+      <label><input type="checkbox" class="edit-day" value="FRI"> 금</label>
+      <label><input type="checkbox" class="edit-day" value="SAT"> 토</label>
+      <label><input type="checkbox" class="edit-day" value="SUN"> 일</label>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px;">
+      <button class="btn-primary" onclick="saveEditDays()">저장</button>
+      <button type="button" onclick="closeEditDays()">취소</button>
+    </div>
+  </div>
 <script>
- async function loadCourses(){ const rows = await (await fetch('/admin/api/courses')).json(); document.getElementById('courseBody').innerHTML = rows.map(v=>`<tr><td><button class='btn-primary' onclick="toggleStatus(${v.id},'${v.status||'OPEN'}')">${v.applyStatus||'모집중'}</button></td><td>${v.id}</td><td>${v.subjectCode||''}</td><td>${v.subjectName||''}</td><td>${v.instructor||''}</td><td>${v.classTime||'-'}</td><td>${v.price||0}</td><td>${v.capacity||0}</td><td><button class='btn-danger' onclick='deleteCourse(${v.id})'>삭제</button></td></tr>`).join(''); }
- async function createCourse(){ const payload={subjectCode:cCode.value,subjectName:cTitle.value,instructor:cProfessor.value,price:Number(cPrice.value||0),capacity:Number(cMax.value||0),status:cStatus.value,dayMode:'MULTI',days:['MON'],startDay:'MON',endDay:'MON',startTime:cStart.value,endTime:cEnd.value}; await fetch('/admin/api/courses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); loadCourses(); }
+ const DAY_LABEL = {MON:'월',TUE:'화',WED:'수',THU:'목',FRI:'금',SAT:'토',SUN:'일'};
+ let courseRows = [];
+ let editingCourseId = null;
+ function selectedDays(){
+   return [...document.querySelectorAll('.day-check:checked')].map(v=>v.value);
+ }
+ function normalizeDaysText(v){
+   if(!v) return '-';
+   const arr = String(v).split(',').map(s=>s.trim()).filter(Boolean).map(d=>DAY_LABEL[d]||d);
+   return arr.length ? arr.join(',') : '-';
+ }
+ async function loadCourses(){
+   const rows = await (await fetch('/admin/api/courses')).json();
+   courseRows = rows;
+   document.getElementById('courseBody').innerHTML = rows.map(v=>`<tr>
+<td><button class='btn-primary' onclick="toggleStatus(${v.id},'${v.status||'OPEN'}')">${v.applyStatus||'모집중'}</button></td>
+<td>${v.id}</td><td>${v.subjectCode||''}</td><td>${v.subjectName||''}</td><td>${v.instructor||''}</td>
+<td>${normalizeDaysText(v.selectedDays)}</td>
+<td>${v.classTime||'-'}</td><td>${v.price||0}</td><td>${v.capacity||0}</td>
+<td><button type='button' onclick='openEditDays(${v.id})'>요일수정</button></td>
+<td><button class='btn-danger' onclick='deleteCourse(${v.id})'>삭제</button></td></tr>`).join('');
+ }
+ async function createCourse(){
+   const days = selectedDays();
+   if(!days.length){ alert('요일을 1개 이상 선택해 주세요.'); return; }
+   const payload={
+     subjectCode:cCode.value,subjectName:cTitle.value,instructor:cProfessor.value,
+     price:Number(cPrice.value||0),capacity:Number(cMax.value||0),status:cStatus.value,
+     dayMode:'MULTI',days,startDay:days[0],endDay:days[days.length-1],
+     startTime:cStart.value,endTime:cEnd.value
+   };
+   const res = await fetch('/admin/api/courses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+   if(!res.ok){ const j=await res.json().catch(()=>({message:'강의 생성 실패'})); alert(j.message||'강의 생성 실패'); return; }
+   document.querySelectorAll('.day-check').forEach(ch=>ch.checked=false);
+   loadCourses();
+ }
+ function openEditDays(id){
+   const row = courseRows.find(v=>Number(v.id)===Number(id));
+   if(!row) return;
+   editingCourseId = id;
+   document.getElementById('editDaysTitle').textContent = `${row.subjectCode||''} / ${row.subjectName||''}`;
+   const selected = String(row.selectedDays||'').split(',').map(v=>v.trim()).filter(Boolean);
+   document.querySelectorAll('.edit-day').forEach(ch=>{
+     const label = DAY_LABEL[ch.value] || ch.value;
+     ch.checked = selected.includes(ch.value) || selected.includes(label);
+   });
+   document.getElementById('editDaysBox').style.display = 'block';
+ }
+ function closeEditDays(){
+   editingCourseId = null;
+   document.getElementById('editDaysBox').style.display = 'none';
+ }
+ async function saveEditDays(){
+   if(!editingCourseId) return;
+   const days = [...document.querySelectorAll('.edit-day:checked')].map(v=>v.value);
+   if(!days.length){ alert('요일을 1개 이상 선택해 주세요.'); return; }
+   const res = await fetch('/admin/api/courses/'+editingCourseId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({days})});
+   if(!res.ok){ const j=await res.json().catch(()=>({message:'요일 저장 실패'})); alert(j.message||'요일 저장 실패'); return; }
+   closeEditDays();
+   await loadCourses();
+ }
  async function toggleStatus(id,current){ const next=current==='OPEN'?'CLOSED':'OPEN'; await fetch('/admin/api/courses/'+id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:next})}); loadCourses(); }
  async function deleteCourse(id){ if(!confirm('삭제하시겠습니까?')) return; await fetch('/admin/api/courses/'+id,{method:'DELETE'}); loadCourses(); }
  loadCourses();
