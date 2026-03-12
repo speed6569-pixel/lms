@@ -75,8 +75,14 @@ public class AdminSupportController {
     }
 
     private void requireAdmin(Authentication authentication) {
-        var user = userJpaRepository.findByLoginId(authentication.getName()).orElseThrow();
-        if (!"ADMIN".equalsIgnoreCase(user.getRole())) {
+        boolean byAuthority = authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()) || "ADMIN".equalsIgnoreCase(a.getAuthority()));
+
+        if (byAuthority) return;
+
+        var user = userJpaRepository.findByLoginId(authentication.getName()).orElse(null);
+        boolean byDbRole = user != null && user.getRole() != null && user.getRole().toUpperCase().contains("ADMIN");
+        if (!byDbRole) {
             throw new IllegalArgumentException("관리자만 접근할 수 있습니다.");
         }
     }
