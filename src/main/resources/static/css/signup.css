@@ -1,0 +1,258 @@
+:root {
+    --bg: #f3f6fb;
+    --card-bg: #ffffff;
+    --text: #111827;
+    --muted: #6b7280;
+    --line: #dbe3ef;
+    --line-soft: #e5e7eb;
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --success-bg: #ecfdf3;
+    --success-text: #166534;
+    --error-bg: #fef2f2;
+    --error-text: #b91c1c;
+    --info-bg: #eff6ff;
+    --info-text: #1e40af;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Pretendard", "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(circle at 15% 10%, #eff6ff 0%, var(--bg) 45%, #eef2ff 100%);
+    color: var(--text);
+}
+
+.signup-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.signup-card {
+    width: 100%;
+    max-width: 560px;
+    background: var(--card-bg);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+    padding: 28px 24px;
+}
+
+.signup-title {
+    margin: 0;
+    font-size: 30px;
+    font-weight: 700;
+}
+
+.signup-subtitle {
+    margin: 8px 0 18px;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.signup-form {
+    display: grid;
+    gap: 14px;
+}
+
+.form-group {
+    display: grid;
+    gap: 8px;
+}
+
+.form-group label {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    height: 48px;
+    border: 1px solid var(--line-soft);
+    border-radius: 10px;
+    padding: 0 14px;
+    font-size: 15px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    background: #fff;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: #93c5fd;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    outline: none;
+}
+
+.input-row {
+    display: grid;
+    grid-template-columns: 1fr 170px;
+    gap: 8px;
+}
+
+.split-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.btn-primary,
+.btn-secondary {
+    border: 0;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-primary {
+    height: 50px;
+    background: var(--primary);
+    color: #fff;
+    margin-top: 2px;
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover);
+}
+
+.btn-secondary {
+    height: 48px;
+    border: 1px solid #bfdbfe;
+    background: #eff6ff;
+    color: #1d4ed8;
+    padding: 0 12px;
+}
+
+.btn-secondary:hover {
+    background: #dbeafe;
+}
+
+.msg {
+    margin: 0;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+}
+
+.msg-success {
+    background: var(--success-bg);
+    color: var(--success-text);
+}
+
+.msg-error {
+    background: var(--error-bg);
+    color: var(--error-text);
+}
+
+.msg-info {
+    background: var(--info-bg);
+    color: var(--info-text);
+}
+
+.msg-dev {
+    background: #fff7ed;
+    color: #b45309;
+    font-weight: 700;
+}
+
+.guide-text {
+    margin: 0;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.sso-section {
+    margin-top: 20px;
+    border-top: 1px solid #edf2f7;
+    padding-top: 16px;
+}
+
+.sso-section h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.sso-description {
+    margin: 8px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.sso-buttons {
+    margin-top: 12px;
+    display: grid;
+    gap: 8px;
+}
+
+.sso-button {
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line-soft);
+    border-radius: 10px;
+    text-decoration: none;
+    color: #111827;
+    font-weight: 600;
+    background: #fff;
+}
+
+.sso-button:hover {
+    background: #f9fafb;
+}
+
+.sso-note {
+    margin: 10px 0 0;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.bottom-links {
+    margin-top: 16px;
+    display: grid;
+    gap: 8px;
+    text-align: center;
+}
+
+.bottom-links a {
+    color: #4b5563;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.bottom-links a:hover {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+@media (max-width: 720px) {
+    .signup-container {
+        padding: 14px;
+    }
+
+    .signup-card {
+        border-radius: 14px;
+        padding: 20px 16px;
+    }
+
+    .signup-title {
+        font-size: 26px;
+    }
+
+    .input-row {
+        grid-template-columns: 1fr;
+    }
+
+    .split-row {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+}

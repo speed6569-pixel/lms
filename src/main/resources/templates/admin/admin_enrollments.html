@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"><body>
+<th:block th:fragment="content">
+  <h2>수강신청 관리</h2>
+  <div class="admin-toolbar"><select id="eStatus" onchange="loadEnrollments()"><option>APPLIED</option><option>WAITLIST</option><option>APPROVED</option><option>REJECTED</option><option>CANCELLED</option></select></div>
+  <div class="admin-table table-wrap"><table><thead><tr><th>ID</th><th>사용자</th><th>강의</th><th>강의시간</th><th>가격</th><th>결제여부</th><th>상태</th><th>처리</th></tr></thead><tbody id="enrollmentBody"></tbody></table></div>
+<script>
+async function loadEnrollments(){ const rows = await (await fetch('/admin/api/enrollments?status='+eStatus.value)).json(); document.getElementById('enrollmentBody').innerHTML = rows.map(v=>`<tr><td>${v.enrollmentId}</td><td>${v.username||''} / ${v.name||''}</td><td>${v.subjectCode||''} / ${v.courseName||''}</td><td>${v.scheduleText||'-'}</td><td>${Number(v.price||0).toLocaleString()}원</td><td>${v.paymentStatus||'UNPAID'}</td><td>${v.status||''}</td><td><button class='btn-primary' onclick='approve(${v.enrollmentId})'>승인</button> <button class='btn-danger' onclick='reject(${v.enrollmentId})'>반려</button></td></tr>`).join(''); }
+async function approve(id){ await fetch('/admin/api/enrollments/'+id+'/approve',{method:'POST'}); loadEnrollments(); }
+async function reject(id){ await fetch('/admin/api/enrollments/'+id+'/reject',{method:'POST'}); loadEnrollments(); }
+loadEnrollments();
+</script>
+</th:block>
+</body></html>

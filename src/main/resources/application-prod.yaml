@@ -1,0 +1,13 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+# Production profile:
+# - provide DB_URL/DB_USERNAME/DB_PASSWORD via environment or secret manager
+# - provide MAIL_* via environment or secret manager
+# - avoid any plaintext credentials in repository
+logging:
+  level:
+    org.springframework.jdbc.core: WARN
+    org.springframework.security: INFO

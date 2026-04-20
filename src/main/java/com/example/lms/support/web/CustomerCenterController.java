@@ -1,0 +1,71 @@
+package com.example.lms.support.web;
+
+import com.example.lms.enrollment.repo.UserJpaRepository;
+import com.example.lms.support.service.SupportPostService;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+@Controller
+@RequestMapping("/customer-center")
+public class CustomerCenterController {
+
+    private final SupportPostService supportPostService;
+    private final UserJpaRepository userJpaRepository;
+
+    public CustomerCenterController(SupportPostService supportPostService,
+                                    UserJpaRepository userJpaRepository) {
+        this.supportPostService = supportPostService;
+        this.userJpaRepository = userJpaRepository;
+    }
+
+    @GetMapping
+    public String list(Authentication authentication, Model model) {
+        String loginId = authentication.getName();
+        var user = userJpaRepository.findByLoginId(loginId).orElse(null);
+        boolean isAdmin = user != null && user.getRole() != null && user.getRole().toUpperCase().contains("ADMIN");
+
+        if (isAdmin) {
+            model.addAttribute("posts", supportPostService.getPostsForAdmin());
+            model.addAttribute("adminView", true);
+        } else {
+            model.addAttribute("posts", supportPostService.getPostsByWriterLoginId(loginId));
+            model.addAttribute("adminView", false);
+        }
+        return "support/customer-center";
+    }
+
+    @GetMapping("/write")
+    public String writeForm() {
+        return "support/customer-center-write";
+    }
+
+    @PostMapping
+    public String write(@RequestParam String title,
+                        @RequestParam String content,
+                        Authentication authentication,
+                        RedirectAttributes ra) {
+        var loginId = authentication.getName();
+        var userOpt = userJpaRepository.findByLoginId(loginId);
+        Long userId = userOpt.map(u -> u.getId()).orElse(null);
+        String displayName = userOpt.map(u -> u.getName()).orElse(loginId);
+        supportPostService.createPost(title, content, userId, loginId, displayName);
+        ra.addFlashAttribute("message", "문의가 등록되었습니다.");
+        return "redirect:/customer-center";
+    }
+
+    @GetMapping("/{id}")
+    public String detail(@PathVariable Long id, Authentication authentication, Model model) {
+        var post = supportPostService.getPost(id);
+        var user = userJpaRepository.findByLoginId(authentication.getName()).orElse(null);
+        boolean isAdmin = user != null && user.getRole() != null && user.getRole().toUpperCase().contains("ADMIN");
+
+        if (!isAdmin && !authentication.getName().equals(post.getWriterLoginId())) {
+            throw new IllegalArgumentException("본인이 작성한 문의만 조회할 수 있습니다.");
+        }
+        model.addAttribute("post", post);
+        return "support/customer-center-detail";
+    }
+}

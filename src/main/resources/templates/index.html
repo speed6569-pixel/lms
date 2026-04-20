@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LMS 홈</title>
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/header-profile.css}">
+    <script defer th:src="@{/js/header-profile.js}"></script>
+</head>
+<body>
+<div th:replace="~{fragments/header :: siteHeader(${userName}, ${userEmail})}"></div>
+
+
+
+<main>
+    <section class="hero">
+        <div class="container hero-inner">
+            <div>
+                <p class="badge">Spring Boot + Thymeleaf</p>
+                <h2>학습을 더 단순하게,
+                    <br>운영은 더 체계적으로</h2>
+                <p class="desc">
+                    강의 개설, 수강 신청, 공지 관리까지
+                    필요한 기능만 담은 가벼운 LMS 템플릿입니다.
+                </p>
+            </div>
+            <div class="card preview-card" id="customer">
+                <div sec:authorize="isAnonymous()">
+                    <h3>로그인</h3>
+                    <form method="post" action="/login" class="login-mini-form">
+                        <label for="miniLoginId">아이디 또는 이메일</label>
+                        <input id="miniLoginId" name="loginId" type="text" placeholder="아이디 또는 이메일을 입력하세요" required>
+                        <label for="miniPassword">비밀번호</label>
+                        <input id="miniPassword" name="password" type="password" placeholder="비밀번호를 입력하세요" required>
+                        <label style="font-size:13px; color:#4b5563;"><input type="checkbox" name="remember-me"> 로그인 유지(14일)</label>
+                        <button class="btn btn-primary" type="submit">로그인</button>
+                    </form>
+                    <div class="account-links">
+                        <a href="/find-id">아이디 찾기</a>
+                        <a href="/forgot-password">비밀번호 찾기</a>
+                        <a href="/signup">회원가입</a>
+                    </div>
+                </div>
+
+                <div sec:authorize="isAuthenticated()" class="naver-like-card" id="miniProfileWrap">
+                    <div class="nl-top">
+                        <div class="nl-avatar" id="miniAvatar">U</div>
+
+                        <div class="nl-main">
+                            <div class="nl-name-row">
+                                <strong class="nl-name" th:text="${userName != null ? userName : #authentication.name}">사용자</strong>
+                            </div>
+                            <p class="nl-email" th:text="${userEmail != null ? userEmail : #authentication.name}">email</p>
+
+
+                        </div>
+
+                        <div class="nl-logout-area">
+                            <form action="/logout" method="post" class="nl-logout-form">
+                                <button class="nl-logout-btn" type="submit">로그아웃</button>
+                            </form>
+                            <button class="nl-menu-btn" type="button" id="nlMenuBtn">⋯</button>
+                            <div class="nl-menu" id="nlMenu">
+                                <a href="/enrollments/me">마이페이지</a>
+                                <a href="/payments">결제내역</a>
+                                <a href="/settings">설정</a>
+                                <form action="/logout" method="post"><button type="submit">로그아웃</button></form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="nl-tabs">
+                        <a class="nl-tab" href="/enrollments/me"><span>마이페이지</span></a>
+                        <a class="nl-tab" href="/payments"><span>결제내역</span></a>
+                        <a class="nl-tab" href="/settings"><span>설정</span></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="container section-block" id="support">
+        <div class="section-head">
+            <h3>최신 강의</h3>
+            <div class="carousel-controls">
+                <button id="lecturePrev" class="carousel-btn" type="button" aria-label="이전 강의">◀</button>
+                <button id="lectureNext" class="carousel-btn" type="button" aria-label="다음 강의">▶</button>
+            </div>
+        </div>
+
+        <div id="lectureCarousel" class="lecture-carousel" aria-label="최신 강의 목록" th:if="${!#lists.isEmpty(latestCourses)}">
+            <article class="card lecture-card" th:each="c : ${latestCourses}" th:attr="data-course-id=${c.courseId}">
+                <h4 th:text="${c.courseName}"></h4>
+                <p th:text="${c.summary}"></p>
+            </article>
+        </div>
+        <div class="card" th:if="${#lists.isEmpty(latestCourses)}">표시할 최신 강의가 없습니다.</div>
+    </section>
+
+    <section class="container section-block" id="board-cards">
+        <div class="home-board-grid">
+            <article class="card home-board-card">
+                <div class="home-board-head">
+                    <h3>공지사항</h3>
+                    <a href="/notices">더보기</a>
+                </div>
+                <ul class="home-board-list" th:if="${!#lists.isEmpty(latestNotices)}">
+                    <li th:each="n : ${latestNotices}">
+                        <a th:href="@{/notices/{id}(id=${n.id})}" th:text="${n.title}"></a>
+                        <span th:text="${n.createdAt != null ? #temporals.format(n.createdAt, 'yyyy-MM-dd') : ''}"></span>
+                    </li>
+                </ul>
+                <div class="card" th:if="${#lists.isEmpty(latestNotices)}">등록된 글이 없습니다.</div>
+            </article>
+
+            <article class="card home-board-card">
+                <div class="home-board-head">
+                    <h3>고객 센터</h3>
+                    <a href="/customer-center">더보기</a>
+                </div>
+                <ul class="home-board-list" th:if="${!#lists.isEmpty(latestSupportPosts)}">
+                    <li th:each="f : ${latestSupportPosts}">
+                        <a th:href="@{/customer-center/{id}(id=${f.id})}" th:text="${f.title}"></a>
+                        <span th:text="|${f.statusLabel} · ${f.createdAt != null ? #temporals.format(f.createdAt, 'yyyy-MM-dd') : ''}|"></span>
+                    </li>
+                </ul>
+                <div class="card" th:if="${#lists.isEmpty(latestSupportPosts)}">등록된 글이 없습니다.</div>
+            </article>
+        </div>
+    </section>
+</main>
+
+<div th:replace="~{fragments/footer :: siteFooter}"></div>
+
+<script>
+    (function () {
+        const lectureCarousel = document.getElementById('lectureCarousel');
+        const prevBtn = document.getElementById('lecturePrev');
+        const nextBtn = document.getElementById('lectureNext');
+
+        prevBtn.addEventListener('click', () => {
+            lectureCarousel.scrollBy({ left: -340, behavior: 'smooth' });
+        });
+
+        nextBtn.addEventListener('click', () => {
+            lectureCarousel.scrollBy({ left: 340, behavior: 'smooth' });
+        });
+
+        const isAuthenticated = document.body.querySelector('.profile-wrap') !== null;
+        document.querySelectorAll('.lecture-card').forEach((card) => {
+            card.addEventListener('click', () => {
+                const courseId = card.dataset.courseId;
+
+                if (isAuthenticated) {
+                    location.href = `/enrollments/apply?course=${encodeURIComponent(courseId)}`;
+                    return;
+                }
+
+                location.href = '/login';
+            });
+        });
+
+        const miniWrap = document.getElementById('miniProfileWrap');
+        const miniAvatar = document.getElementById('miniAvatar');
+        const nlMenuBtn = document.getElementById('nlMenuBtn');
+        const nlMenu = document.getElementById('nlMenu');
+
+        if (miniWrap) {
+            const nameText = miniWrap.querySelector('.nl-name')?.textContent?.trim() || '';
+            if (miniAvatar && nameText) miniAvatar.textContent = nameText.substring(0, 1).toUpperCase();
+
+            if (nlMenuBtn && nlMenu) {
+                nlMenuBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    nlMenu.classList.toggle('open');
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!miniWrap.contains(e.target)) nlMenu.classList.remove('open');
+                });
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') nlMenu.classList.remove('open');
+                });
+            }
+        }
+    })();
+</script>
+</body>
+</html>

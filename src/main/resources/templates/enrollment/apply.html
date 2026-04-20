@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수강신청</title>
+    <link rel="stylesheet" th:href="@{/css/page.css}">
+    <link rel="stylesheet" th:href="@{/css/header-profile.css}">
+    <script defer th:src="@{/js/header-profile.js}"></script>
+</head>
+<body>
+<div th:replace="~{fragments/header :: siteHeader(${userName}, ${userEmail})}"></div>
+
+
+
+<main class="container content-wrap">
+    <section class="tab-row">
+        <button id="tabOpen" type="button" class="tab-btn active">개설과목 조회/신청</button>
+        <button id="tabHistory" type="button" class="tab-btn" th:if="${!hasApprovedEnrollment}">수강신청 내역</button>
+        <button id="tabTime" type="button" class="tab-btn" th:if="${!hasApprovedEnrollment}">시간표 조회</button>
+    </section>
+
+    <section id="openPanel">
+        <form class="filter-grid" method="get" action="/enrollments/apply">
+            <input id="quickCourseCode" name="courseCode" type="text" placeholder="과목코드" th:value="${courseCode}" style="max-width:140px;">
+            <select name="job" id="jobFilter">
+                <option value="">직군 전체</option>
+                <option th:each="g : ${jobGroups}" th:value="${g}" th:text="${g}" th:selected="${job == g}"></option>
+            </select>
+            <select name="position" id="positionFilter">
+                <option value="">직급 전체</option>
+                <option th:each="lv : ${jobLevelsMap[job]}" th:value="${lv}" th:text="${lv}" th:selected="${position == lv}"></option>
+            </select>
+            <input type="text" name="keyword" placeholder="키워드 검색" th:value="${keyword}" style="min-width:180px;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:4px 8px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;">
+                <span style="font-size:12px;color:#374151;">범위 선택</span>
+                <select name="startDay" id="startDay" style="font-size:12px;padding:4px 6px;min-width:64px;">
+                    <option value="">시작</option>
+                    <option value="월" th:selected="${startDay == '월'}">월</option><option value="화" th:selected="${startDay == '화'}">화</option><option value="수" th:selected="${startDay == '수'}">수</option><option value="목" th:selected="${startDay == '목'}">목</option><option value="금" th:selected="${startDay == '금'}">금</option><option value="토" th:selected="${startDay == '토'}">토</option><option value="일" th:selected="${startDay == '일'}">일</option>
+                </select>
+                <span style="font-size:12px;">~</span>
+                <select name="endDay" id="endDay" style="font-size:12px;padding:4px 6px;min-width:64px;">
+                    <option value="">종료</option>
+                    <option value="월" th:selected="${endDay == '월'}">월</option><option value="화" th:selected="${endDay == '화'}">화</option><option value="수" th:selected="${endDay == '수'}">수</option><option value="목" th:selected="${endDay == '목'}">목</option><option value="금" th:selected="${endDay == '금'}">금</option><option value="토" th:selected="${endDay == '토'}">토</option><option value="일" th:selected="${endDay == '일'}">일</option>
+                </select>
+                <button type="button" id="rangeApplyBtn" class="btn-primary" style="padding:5px 8px;font-size:12px;">범위 적용</button>
+            </div>
+            <button type="submit" id="searchBtn" class="btn-primary">검색</button>
+            <button type="button" id="resetFilterBtn" class="btn-primary" style="background:#6b7280;">필터 초기화</button>
+        </form>
+
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                <tr>
+                    <th>신청</th><th>과목코드</th><th>직군</th><th>직급</th><th>교과목명</th><th>담당교수</th><th>강의시간</th><th>가격</th><th>인원제한</th><th>비고</th>
+                </tr>
+                </thead>
+                <tbody id="courseTableBody">
+                <tr th:each="course : ${courses}" class="course-row"
+                    th:attr="data-code=${course.courseCode},data-job=${course.job},data-position=${course.position}">
+                    <td>
+                        <span th:if="${course.myStatus == 'APPROVED' or course.myStatus == 'RUNNING'}" style="display:inline-block;padding:4px 8px;border-radius:999px;background:#16a34a;color:#fff;font-size:12px;">승인됨</span>
+                        <button th:if="${!(course.myStatus == 'APPROVED' or course.myStatus == 'RUNNING')}" type="button" class="apply-btn"
+                                th:attr="data-code=${course.courseCode},data-section=${course.section},data-title=${course.title},data-course-id=${course.courseId},data-my-status=${course.myStatus}"
+                                th:disabled="${!course.canApply}"
+                                th:data-full="${!course.canApply}"
+                                onclick="toggleApply(this)"
+                                th:text="${!course.open} ? '모집마감' : (course.enrolledCount >= course.maxCount ? '신청불가' : '신청')">신청</button>
+                    </td>
+                    <td th:text="${course.courseCode}"></td>
+                    <td th:text="${course.job}"></td>
+                    <td th:text="${course.position}"></td>
+                    <td th:text="${course.title}"></td>
+                    <td th:text="${course.professor}"></td>
+                    <td th:text="${course.classTime}"></td>
+                    <td th:text="${course.price}"></td>
+                    <td th:text="|${course.enrolledCount}/${course.maxCount}|"></td>
+                    <td th:text="${(course.myStatus == 'APPROVED' or course.myStatus == 'RUNNING') ? '신청 불가' : course.note}"></td>
+                </tr>
+                <tr id="noResultRow" th:if="${#lists.isEmpty(courses)}"><td colspan="11">검색 결과가 없습니다.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section id="historyPanel" style="display:none;">
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>신청일</th><th>과목코드</th><th>교과목명</th><th>상태</th><th>관리</th></tr></thead>
+                <tbody id="historyBody">
+                <tr id="historyEmpty"><td colspan="5">수강신청 내역이 없습니다.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section id="timePanel" style="display:none;">
+        <div id="weeklyTimetable" class="weekly-wrap">
+            <div class="weekly-head">
+                <div>시간</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div>
+            </div>
+            <div class="weekly-body" id="weeklyBody"></div>
+            <div id="weeklyEvents" class="weekly-events"></div>
+        </div>
+    </section>
+</main>
+
+<div id="courseCardOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:999;"></div>
+<aside id="courseCardPanel" style="display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:560px;max-width:calc(100vw - 40px);max-height:calc(100vh - 80px);overflow:auto;background:#fff;border-radius:14px;padding:22px;z-index:1000;box-shadow:0 18px 40px rgba(0,0,0,.25);">
+    <button type="button" id="cardCloseBtn" style="float:right;border:none;background:transparent;font-size:18px;cursor:pointer;">✕</button>
+    <h3 id="cardTitle" style="margin-top:0;">강의 신청</h3>
+    <div id="cardBody" style="font-size:14px;line-height:1.6;"></div>
+    <p id="cardPaidBadge" style="display:none;color:#0f766e;font-weight:700;">결제 완료</p>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;">
+        <button type="button" id="cardPayBtn" class="btn-primary">결제</button>
+        <button type="button" id="cardEnrollBtn" class="btn-primary" style="display:none;">수강신청</button>
+    </div>
+</aside>
+
+<script>
+    const tabOpen = document.getElementById('tabOpen');
+    const tabHistory = document.getElementById('tabHistory');
+    const tabTime = document.getElementById('tabTime');
+    const openPanel = document.getElementById('openPanel');
+    const historyPanel = document.getElementById('historyPanel');
+    const timePanel = document.getElementById('timePanel');
+
+    const historyBody = document.getElementById('historyBody');
+    const historyEmpty = document.getElementById('historyEmpty');
+    const weeklyBody = document.getElementById('weeklyBody');
+    const weeklyEvents = document.getElementById('weeklyEvents');
+    const enrolledMap = new Map();
+    const resetFilterBtn = document.getElementById('resetFilterBtn');
+    const rangeApplyBtn = document.getElementById('rangeApplyBtn');
+
+    const cardOverlay = document.getElementById('courseCardOverlay');
+    const cardPanel = document.getElementById('courseCardPanel');
+    const cardCloseBtn = document.getElementById('cardCloseBtn');
+    const cardTitle = document.getElementById('cardTitle');
+    const cardBody = document.getElementById('cardBody');
+    const cardPaidBadge = document.getElementById('cardPaidBadge');
+    const cardPayBtn = document.getElementById('cardPayBtn');
+    const cardEnrollBtn = document.getElementById('cardEnrollBtn');
+    let activeCourseId = null;
+
+    function resetCourseFilters() {
+      const hash = window.location.hash || '';
+      window.location.href = '/enrollments/apply' + hash;
+    }
+
+    function activate(tab) {
+      [tabOpen, tabHistory, tabTime].filter(Boolean).forEach(t => t.classList.remove('active'));
+      tab?.classList.add('active');
+    }
+
+    tabOpen?.addEventListener('click', () => {
+      activate(tabOpen); openPanel.style.display=''; historyPanel.style.display='none'; timePanel.style.display='none';
+    });
+    tabHistory?.addEventListener('click', () => {
+      activate(tabHistory); openPanel.style.display='none'; historyPanel.style.display=''; timePanel.style.display='none';
+    });
+    tabTime?.addEventListener('click', async () => {
+      activate(tabTime); openPanel.style.display='none'; historyPanel.style.display='none'; timePanel.style.display='';
+      await loadState();
+      renderHistory();
+      syncApplyButtons();
+    });
+
+    resetFilterBtn.addEventListener('click', resetCourseFilters);
+    rangeApplyBtn?.addEventListener('click', () => {
+      const start = document.getElementById('startDay')?.value || '';
+      const end = document.getElementById('endDay')?.value || '';
+      const order = ['월','화','수','목','금','토','일'];
+
+      if ((start && !end) || (!start && end)) {
+        alert('범위를 사용할 때 시작/종료 요일을 모두 선택해 주세요.');
+        return;
+      }
+      if (start && end && order.indexOf(start) > order.indexOf(end)) {
+        alert('요일 범위가 올바르지 않습니다. (예: 월~금, 토~일)');
+        return;
+      }
+      document.querySelector('#openPanel form.filter-grid')?.submit();
+    });
+
+    async function bindJobLevelFilter() {
+      const jobSel = document.getElementById('jobFilter');
+      const levelSel = document.getElementById('positionFilter');
+      if (!jobSel || !levelSel) return;
+
+      const currentLevel = levelSel.value;
+      const map = await fetch('/api/meta/job-levels').then(r => r.json()).catch(() => ({}));
+
+      function renderLevels() {
+        const group = jobSel.value;
+        const levels = group ? (map[group] || []) : Object.values(map).flat();
+        const dedup = [...new Set(levels)];
+        levelSel.innerHTML = '<option value="">직급 전체</option>' + dedup.map(v => `<option value="${v}">${v}</option>`).join('');
+        if (dedup.includes(currentLevel)) levelSel.value = currentLevel;
+      }
+
+      jobSel.addEventListener('change', () => {
+        renderLevels();
+        if (!levelSel.querySelector(`option[value="${levelSel.value}"]`)) levelSel.value = '';
+      });
+      renderLevels();
+    }
+
+    function keyOf(code){ return `${code}`; }
+
+    async function loadState(){
+      const [historyRes, myRes] = await Promise.all([
+        fetch('/api/me/enrollments/history'),
+        fetch('/api/me/enrollments')
+      ]);
+      const historyItems = await historyRes.json();
+      const myJson = await myRes.json();
+      const myLectures = myJson.lectures || [];
+
+      enrolledMap.clear();
+      historyItems.forEach(v => enrolledMap.set(keyOf(v.courseCode), {
+        enrollmentId: v.enrollmentId,
+        code: v.courseCode,
+        title: v.title,
+        status: v.status,
+        date: v.appliedAt || ''
+      }));
+
+      renderWeeklyGrid(myLectures);
+    }
+
+    function getCourseMeta(code, section) {
+      const btn = document.querySelector(`button.apply-btn[data-code="${code}"][data-section="${section}"]`);
+      if (!btn) return { title: code, professor: '-', classTime: '-' };
+      const row = btn.closest('tr');
+      const cells = row ? row.querySelectorAll('td') : [];
+      return {
+        title: cells[6]?.textContent?.trim() || btn.dataset.title || code,
+        professor: cells[7]?.textContent?.trim() || '-',
+        classTime: cells[8]?.textContent?.trim() || '-'
+      };
+    }
+
+    function updateEmptyRow(){ historyEmpty.style.display = enrolledMap.size ? 'none' : ''; }
+    function addHistoryRow(item){
+      const tr = document.createElement('tr');
+      tr.id = `history-${item.enrollmentId}`;
+      tr.innerHTML = `<td>${item.date||''}</td><td>${item.code}</td><td>${item.title}</td><td>${item.status||''}</td>`+
+                     `<td><button type="button" class="apply-btn" onclick="window.cancelFromHistory(${item.enrollmentId})">취소</button></td>`;
+      historyBody.appendChild(tr);
+    }
+    function renderHistory(){
+      historyBody.querySelectorAll('tr[id^="history-"]').forEach(x => x.remove());
+      Array.from(enrolledMap.values()).forEach(addHistoryRow);
+      updateEmptyRow();
+    }
+
+    function toMin(hm){ const [h,m] = hm.split(':').map(Number); return h*60+m; }
+
+    function colorFor(title){
+      let hash = 0;
+      for (let i=0;i<title.length;i++) hash = (hash*31 + title.charCodeAt(i)) >>> 0;
+      const hue = hash % 360;
+      return `hsl(${hue} 75% 85%)`;
+    }
+
+    function renderWeeklyGrid(lectures){
+      const days = ['월','화','수','목','금'];
+      const startMin = 9*60, endMin = 22*60, step=30;
+      const rows = (endMin-startMin)/step;
+
+      weeklyBody.innerHTML = '';
+      weeklyEvents.innerHTML = '';
+
+      for(let r=0; r<rows; r++){
+        const t = startMin + r*step;
+        const th = document.createElement('div');
+        th.className='t';
+        th.textContent = t%60===0 ? `${String(Math.floor(t/60)).padStart(2,'0')}:00` : '';
+        weeklyBody.appendChild(th);
+        for(let d=0; d<5; d++){
+          const c=document.createElement('div'); c.className='c'; weeklyBody.appendChild(c);
+        }
+      }
+
+      const conflicts = new Set();
+      const byDay = {월:[],화:[],수:[],목:[],금:[]};
+      lectures.forEach((l,i)=>{ if(byDay[l.day]) byDay[l.day].push({...l,_i:i}); });
+      for(const day of days){
+        const arr = byDay[day].sort((a,b)=>toMin(a.startTime)-toMin(b.startTime));
+        for(let i=0;i<arr.length;i++) for(let j=i+1;j<arr.length;j++){
+          if(toMin(arr[j].startTime) < toMin(arr[i].endTime)) { conflicts.add(arr[i]._i); conflicts.add(arr[j]._i); }
+        }
+      }
+
+      const dayWidth = weeklyEvents.clientWidth/5;
+      const slotH = 24;
+      lectures.forEach((l,i)=>{
+        if(!days.includes(l.day)) return;
+        const s=Math.max(toMin(l.startTime),startMin), e=Math.min(toMin(l.endTime),endMin);
+        if(e<=s) return;
+        const dayIdx=days.indexOf(l.day);
+        const top=((s-startMin)/step)*slotH + 2;
+        const height=((e-s)/step)*slotH - 4;
+
+        const div=document.createElement('div');
+        div.className='lecture-block'+(conflicts.has(i)?' conflict':'');
+        div.style.left = `${dayIdx*dayWidth + 4}px`;
+        div.style.top = `${top}px`;
+        div.style.width = `${dayWidth - 8}px`;
+        div.style.height = `${Math.max(height,24)}px`;
+        div.style.background = colorFor(l.title || l.subject || '강의');
+        div.innerHTML = `<strong>${l.title || l.subject}</strong><div>${l.room || '-'}</div><div>${l.startTime}~${l.endTime}</div>`;
+        weeklyEvents.appendChild(div);
+      });
+    }
+
+    function findApplyButton(code, section){
+      return document.querySelector(`button.apply-btn[data-code="${code}"][data-section="${section}"]`);
+    }
+
+    function syncApplyButtons(){
+      document.querySelectorAll('button.apply-btn[data-code]').forEach(btn => {
+        if (btn.dataset.full === 'true') return;
+        const key = keyOf(btn.dataset.code);
+        btn.textContent = enrolledMap.has(key) ? '수강 취소' : '신청';
+      });
+    }
+
+    function closeCard(){
+      cardOverlay.style.display = 'none';
+      cardPanel.style.display = 'none';
+      activeCourseId = null;
+    }
+
+    cardOverlay.addEventListener('click', closeCard);
+    cardCloseBtn.addEventListener('click', closeCard);
+
+    async function openCard(courseId){
+      const res = await fetch(`/api/courses/${courseId}/card`);
+      const data = await res.json();
+      if (!res.ok) { alert(data.message || '강의 정보를 불러오지 못했습니다.'); return; }
+
+      activeCourseId = courseId;
+      cardTitle.textContent = `${data.title} (${data.courseCode})`;
+      cardBody.innerHTML = `
+        <div>담당교수: ${data.professor || '-'}</div>
+        <div>강의시간: ${data.scheduleText || '-'}</div>
+        <div>가격: ${Number(data.price || 0).toLocaleString()}P</div>
+        <div>정원: ${data.enrolledCount}/${data.capacity}</div>
+        <div>강의실: ${data.room || '-'}</div>
+        <div>내 포인트: ${Number(data.pointBalance || 0).toLocaleString()}P</div>
+      `;
+
+      const isFree = Number(data.price || 0) === 0;
+      const paid = !!data.paid;
+      cardPaidBadge.style.display = paid ? '' : 'none';
+      cardPayBtn.style.display = (!isFree && !paid) ? '' : 'none';
+      cardEnrollBtn.style.display = (isFree || paid) ? '' : 'none';
+
+      cardOverlay.style.display = 'block';
+      cardPanel.style.display = 'block';
+    }
+
+    cardPayBtn.addEventListener('click', async () => {
+      if (!activeCourseId) return;
+      const res = await fetch(`/api/courses/${activeCourseId}/pay`, { method: 'POST' });
+      const data = await res.json().catch(()=>({}));
+
+      if (res.status === 409 && data.code === 'INSUFFICIENT_POINTS') {
+        const go = confirm('포인트가 부족합니다. 충전하시겠습니까?');
+        if (go) location.href = '/mypage?tab=payments';
+        return;
+      }
+
+      if (!res.ok) { alert(data.message || '결제 처리 중 오류가 발생했습니다.'); return; }
+      alert(data.message || '결제 완료');
+      cardPaidBadge.style.display = '';
+      cardPayBtn.style.display = 'none';
+      cardEnrollBtn.style.display = '';
+    });
+
+    cardEnrollBtn.addEventListener('click', async () => {
+      if (!activeCourseId) return;
+      const res = await fetch(`/api/courses/${activeCourseId}/enroll`, { method: 'POST' });
+      const data = await res.json().catch(()=>({ enrolled:false, message:'신청 처리 중 오류가 발생했습니다.' }));
+      if (!res.ok || data.enrolled === false) {
+        alert(data.message || '신청 실패');
+        return;
+      }
+      alert('수강신청이 완료되었습니다.');
+      location.reload();
+    });
+
+    window.toggleApply = async function(button){
+      if (button.disabled || button.dataset.full === 'true') return;
+      const code = button.dataset.code;
+      const key = keyOf(code);
+
+      if (!enrolledMap.has(key)) {
+        const courseId = button.dataset.courseId;
+        if (!courseId) {
+          alert('강의 정보가 없습니다.');
+          return;
+        }
+        await openCard(courseId);
+        return;
+      }
+
+      const enrollmentId = enrolledMap.get(key)?.enrollmentId;
+      const res = await fetch(`/api/me/enrollments/${enrollmentId}/cancel`, { method: 'POST' });
+      const result = await res.json().catch(()=>({success:false,message:'취소 처리 중 오류가 발생했습니다.'}));
+      alert(result.message || (result.success ? '처리 완료' : '처리 실패'));
+
+      await loadState();
+      renderHistory();
+      syncApplyButtons();
+    }
+
+    window.cancelFromHistory = async function(enrollmentId){
+      const res = await fetch(`/api/me/enrollments/${enrollmentId}/cancel`, { method: 'POST' });
+      await res.json();
+
+      await loadState();
+      renderHistory();
+      syncApplyButtons();
+    }
+
+    window.addEventListener('resize', () => {
+      if (timePanel.style.display !== 'none') {
+        loadState().then(() => {
+          renderHistory();
+          syncApplyButtons();
+        });
+      }
+    });
+
+    (async function init(){
+      await bindJobLevelFilter();
+      await loadState();
+      renderHistory();
+      syncApplyButtons();
+    })();
+</script>
+</body>
+</html>

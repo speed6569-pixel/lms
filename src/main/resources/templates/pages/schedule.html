@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>교육일정</title>
+    <link rel="stylesheet" th:href="@{/css/page.css}">
+    <link rel="stylesheet" th:href="@{/css/header-profile.css}">
+    <script defer th:src="@{/js/header-profile.js}"></script>
+</head>
+<body>
+<div th:replace="~{fragments/header :: siteHeader(${userName}, ${userEmail})}"></div>
+
+
+<main class="container content-wrap">
+    <div class="search-row"><input id="pageSearchInput" type="text" placeholder="교육일정 검색"><button id="pageSearchBtn" type="button">검색</button></div>
+    <section class="post-list" id="searchContainer">
+        <article class="post-card">등록된 게시물이 없습니다.</article>
+    </section>
+</main>
+<script>
+(function(){
+  const input = document.getElementById('pageSearchInput');
+  const btn = document.getElementById('pageSearchBtn');
+  const rows = Array.from(document.querySelectorAll('.search-item'));
+  function run(){
+    const q = (input.value||'').trim().toLowerCase();
+    rows.forEach(r=>{ r.style.display = !q || r.textContent.toLowerCase().includes(q) ? '' : 'none'; });
+  }
+  btn.addEventListener('click', run);
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter'){e.preventDefault();run();} });
+})();
+</script>
+</body>
+</html>

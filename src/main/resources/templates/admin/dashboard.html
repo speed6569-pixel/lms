@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"><body>
+<th:block th:fragment="content">
+  <h2>대시보드 통계</h2>
+  <div class="admin-table table-wrap"><table><thead><tr><th>항목</th><th>값</th></tr></thead><tbody id="statsBody"></tbody></table></div>
+<script>
+(async function(){
+  const stats = await (await fetch('/admin/api/stats')).json();
+  const body = document.getElementById('statsBody');
+  body.innerHTML = Object.entries(stats).map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+})();
+</script>
+</th:block>
+</body></html>

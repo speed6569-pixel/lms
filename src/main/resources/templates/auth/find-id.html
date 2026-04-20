@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>아이디 찾기</title>
+</head>
+<body>
+<h1>아이디 찾기</h1>
+<p th:if="${message}" th:text="${message}" style="color: green;"></p>
+<p th:if="${maskedLoginId}">가입된 아이디: <strong th:text="${maskedLoginId}"></strong></p>
+
+<form method="post" action="/find-id">
+    <div>
+        <label for="email">이메일</label>
+        <input id="email" name="email" type="email" required>
+    </div>
+    <button type="submit">아이디 안내 받기</button>
+</form>
+
+<p><a href="/login">로그인으로 돌아가기</a></p>
+</body>
+</html>

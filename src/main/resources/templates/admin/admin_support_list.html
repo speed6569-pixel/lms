@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"><body>
+<th:block th:fragment="content">
+  <h2>고객센터 문의 관리</h2>
+  <div class="admin-table table-wrap">
+    <table>
+      <thead><tr><th>번호</th><th>제목</th><th>작성자</th><th>작성일</th><th>상태</th><th>관리</th></tr></thead>
+      <tbody>
+      <tr th:each="p : ${posts}">
+        <td th:text="${p.id}"></td>
+        <td><a th:href="@{/admin/support/{id}(id=${p.id})}" th:text="${p.title}"></a></td>
+        <td th:text="${p.writer}"></td>
+        <td th:text="${p.createdAt != null ? #temporals.format(p.createdAt, 'yyyy-MM-dd HH:mm') : ''}"></td>
+        <td th:text="${p.answer != null and !#strings.isEmpty(p.answer) ? '답변완료' : '답변대기'}"></td>
+        <td>
+          <a class="btn-primary" th:href="@{/admin/support/{id}(id=${p.id})}">상세/답변</a>
+          <form th:action="@{/admin/support/{id}/delete(id=${p.id})}" method="post" style="display:inline"><button type="submit" class="btn-danger">삭제</button></form>
+        </td>
+      </tr>
+      <tr th:if="${#lists.isEmpty(posts)}"><td colspan="6">문의가 없습니다.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</th:block>
+</body></html>

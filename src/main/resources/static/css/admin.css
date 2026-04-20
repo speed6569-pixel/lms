@@ -1,0 +1,20 @@
+.admin-shell{max-width:1280px;margin:24px auto;padding:0 16px;display:grid;grid-template-columns:240px 1fr;gap:16px}
+.admin-sidebar,.admin-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.06)}
+.admin-sidebar{padding:14px}
+.admin-content{min-width:0}
+.admin-card{padding:16px}
+.admin-sidebar .nav-btn{display:block;width:100%;text-align:left;padding:10px;border-radius:10px;text-decoration:none;color:#1f2937;background:#fff;border:0;cursor:pointer}
+.admin-sidebar .nav-btn:hover,.admin-sidebar .nav-btn.active{background:#eff6ff}
+.admin-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.btn-primary,.btn-secondary,.btn-danger,.action{height:36px;border:0;border-radius:8px;padding:0 12px;display:inline-flex;align-items:center;cursor:pointer;text-decoration:none}
+.btn-primary,.action{background:#2563eb;color:#fff}
+.btn-secondary{background:#6b7280;color:#fff}
+.btn-danger{background:#dc2626;color:#fff}
+.admin-table,.admin-table table{width:100%;border-collapse:collapse}
+.table-wrap{overflow-x:auto}
+.admin-table table{table-layout:fixed}
+.admin-table th,.admin-table td{border-bottom:1px solid #e5e7eb;padding:8px;text-align:left;font-size:13px}
+.admin-table td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+input,select,textarea{border:1px solid #d1d5db;border-radius:8px;padding:8px 10px}
+input,select{height:36px}
+@media (max-width:960px){.admin-shell{grid-template-columns:1fr}}

@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마이페이지</title>
+    <link rel="stylesheet" th:href="@{/css/page.css}">
+    <link rel="stylesheet" th:href="@{/css/header-profile.css}">
+    <script defer th:src="@{/js/header-profile.js}"></script>
+</head>
+<body>
+<div th:replace="~{fragments/header :: siteHeader(${userName}, ${userEmail})}"></div>
+
+<main class="container content-wrap modern-mypage">
+    <aside class="profile-sidebar card-surface">
+        <div class="profile-avatar">U</div>
+        <h2 class="profile-name" th:text="|${userName != null ? userName : '학습자'} 님|">학습자 님</h2>
+        <p class="profile-sub">LMS 마이페이지</p>
+        <p class="profile-sub" th:text="|포인트 잔액: ${#numbers.formatInteger(pointBalance, 1, 'COMMA')}P|"></p>
+
+        <p th:if="${summaryMessage != null}" class="profile-sub" th:text="${summaryMessage}"></p>
+    </aside>
+
+    <section class="mypage-dashboard">
+        <div class="card-surface" th:if="${errorMessage}" style="background:#fff7ed;color:#9a3412;" th:text="${errorMessage}"></div>
+        <div class="card-surface" th:if="${message}" style="background:#ecfdf3;color:#166534;" th:text="${message}"></div>
+
+        <div class="card-surface">
+            <div class="tab-row">
+                <button type="button" class="tab-btn" data-tab="ongoing">진행중 교육</button>
+                <button type="button" class="tab-btn" data-tab="applied">신청중 교육</button>
+                <button type="button" class="tab-btn" data-tab="payments">결제 내역</button>
+                <button type="button" class="tab-btn" data-tab="closed">처리완료/취소내역</button>
+            </div>
+
+            <div id="tab-ongoing" class="tab-pane table-wrap">
+                <table class="data-table">
+                    <thead>
+                    <tr>
+                        <th>강의명</th>
+                        <th>상태</th>
+                        <th>교수</th>
+                        <th>강의시간</th>
+                        <th>가격</th>
+                        <th>인원제한</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="course : ${ongoingCourses}" th:onclick="|location.href='/learn/${course.courseId}'|" style="cursor:pointer;">
+                        <td th:text="${course.title}"></td>
+                        <td><span class="type-tag type-offline" th:text="${course.status == 'APPROVED'} ? '신청완료' : '진행중'"></span></td>
+                        <td th:text="${course.professor}"></td>
+                        <td th:text="${course.classTime}"></td>
+                        <td th:text="${course.price}"></td>
+                        <td th:text="|${course.enrolledCount}/${course.maxCount}|"></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(ongoingCourses)}"><td colspan="6">표시할 강의가 없습니다.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="tab-applied" class="tab-pane table-wrap" style="display:none;">
+                <table class="data-table">
+                    <thead>
+                    <tr>
+                        <th>강의명</th>
+                        <th>상태</th>
+                        <th>교수</th>
+                        <th>강의시간</th>
+                        <th>가격</th>
+                        <th>인원제한</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="course : ${appliedCourses}" th:onclick="|location.href='/learn/${course.courseId}'|" style="cursor:pointer;">
+                        <td th:text="${course.title}"></td>
+                        <td><span class="type-tag type-online" th:text="${course.status == 'WAITLIST'} ? '대기중' : '신청중'"></span></td>
+                        <td th:text="${course.professor}"></td>
+                        <td th:text="${course.classTime}"></td>
+                        <td th:text="${course.price}"></td>
+                        <td th:text="|${course.enrolledCount}/${course.maxCount}|"></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(appliedCourses)}"><td colspan="6">표시할 강의가 없습니다.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="tab-payments" class="tab-pane table-wrap" style="display:none;">
+                <div style="display:flex;justify-content:flex-end;padding:10px;">
+                    <a href="/settings/charge" class="btn-primary" style="text-decoration:none;display:inline-block;">충전하러 가기</a>
+                </div>
+                <table class="data-table">
+                    <thead>
+                    <tr>
+                        <th>결제일시</th>
+                        <th>강의명/과목코드</th>
+                        <th>결제금액</th>
+                        <th>결제수단</th>
+                        <th>상태</th>
+                        <th>잔액</th>
+                        <th>환불</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="p : ${paymentItems}">
+                        <td th:text="${#temporals.format(p.createdAt, 'yyyy-MM-dd HH:mm')}"></td>
+                        <td th:text="${p.courseLabel}"></td>
+                        <td th:text="|${#numbers.formatInteger(p.amount, 1, 'COMMA')}P|"></td>
+                        <td th:text="${p.method}"></td>
+                        <td>
+                            <span th:text="${p.status}"></span>
+                            <div th:if="${p.status == 'REFUND_REJECTED' and p.refundRejectReason != null}" style="font-size:12px;color:#b91c1c;" th:text="|사유: ${p.refundRejectReason}|"></div>
+                        </td>
+                        <td th:text="|${#numbers.formatInteger(p.balanceAfter, 1, 'COMMA')}P|"></td>
+                        <td>
+                            <div th:if="${p.status == 'PAID'}" style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;">
+                                <form th:action="@{/mypage/payments/{id}/refund-request(id=${p.paymentId})}" method="post" onsubmit="return confirm('환불을 신청하시겠습니까?');">
+                                    <button type="submit" class="btn-primary" th:disabled="${!p.canRequestRefund}" th:title="${!p.canRequestRefund ? p.refundGuide : ''}">환불 신청</button>
+                                </form>
+                                <span th:if="${!p.canRequestRefund}" style="font-size:12px;color:#6b7280;" th:text="${p.refundGuide}">환불 불가(진도 30% 이상 또는 구매 후 3일 초과)</span>
+                            </div>
+                            <span th:if="${p.status != 'PAID'}" style="font-size:12px;color:#6b7280;">-</span>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(paymentItems)}"><td colspan="7">결제 내역이 없습니다.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="tab-closed" class="tab-pane table-wrap" style="display:none;">
+                <table class="data-table">
+                    <thead>
+                    <tr>
+                        <th>강의명</th>
+                        <th>상태</th>
+                        <th>교수</th>
+                        <th>강의시간</th>
+                        <th>가격</th>
+                        <th>인원제한</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="course : ${closedCourses}">
+                        <td th:text="${course.title}"></td>
+                        <td>
+                            <span class="type-tag type-online"
+                                  th:text="${course.status == 'APPLIED'} ? '신청중' : (${course.status == 'WAITLIST'} ? '대기' : (${course.status == 'APPROVED'} ? '승인' : (${course.status == 'REJECTED'} ? '반려/거부' : (${course.status == 'CANCELLED'} ? '취소됨' : course.status))))"></span>
+                        </td>
+                        <td th:text="${course.professor}"></td>
+                        <td th:text="${course.classTime}"></td>
+                        <td th:text="${course.price}"></td>
+                        <td th:text="|${course.enrolledCount}/${course.maxCount}|"></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(closedCourses)}"><td colspan="6">표시할 내역이 없습니다.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="dashboard-grid" id="ongoingCards">
+            <article class="card-surface lecture-card" th:each="course : ${ongoingCourses}" th:attr="data-course-id=${course.courseId}" th:onclick="|location.href='/learn/${course.courseId}'|" style="cursor:pointer;">
+                <div class="lecture-thumb" th:text="${course.courseCode}"></div>
+                <div class="lecture-body">
+                    <h3 th:text="${course.title}"></h3>
+                    <p th:text="|${course.professor} · ${course.classTime} · ${course.price}|"></p>
+                    <div class="status-head">
+                        <span class="course-progress-text" th:text="|진도율 ${course.progressPercent}%|">진도율 0%</span>
+                        <strong class="course-progress-count" th:text="|${course.completedLessons}/${course.totalLessons}차시|">0/0차시</strong>
+                    </div>
+                    <div class="progress-track"><span class="course-progress-bar" th:style="|width:${course.progressPercent}%|"></span></div>
+                    <div class="status-head"><span>수강 인원</span><strong th:text="|${course.enrolledCount}/${course.maxCount}|"></strong></div>
+                    <div class="progress-track"><span th:style="|width:${course.maxCount > 0 ? (course.enrolledCount * 100) / course.maxCount : 0}%|"></span></div>
+                </div>
+            </article>
+        </div>
+
+        <div class="card-surface" id="appliedTimetable" style="display:none;">
+            <h3 style="margin-bottom:10px;">시간표 조회</h3>
+            <div id="weeklyTimetable" class="weekly-wrap">
+                <div class="weekly-head">
+                    <div>시간</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div>
+                </div>
+                <div class="weekly-body" id="weeklyBody"></div>
+                <div id="weeklyEvents" class="weekly-events"></div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script th:inline="javascript">
+    (function(){
+      const serverTab = /*[[${tab}]]*/ 'ongoing';
+      const validTabs = new Set(['ongoing', 'applied', 'payments', 'closed']);
+      const tabPanes = document.querySelectorAll('.tab-pane');
+      const tabButtons = document.querySelectorAll('.tab-btn');
+      const ongoingCards = document.getElementById('ongoingCards');
+      const appliedTimetable = document.getElementById('appliedTimetable');
+
+      function normalizeTab(tab) {
+        return validTabs.has(tab) ? tab : 'ongoing';
+      }
+
+      function resolveTabFromUrl() {
+        const url = new URL(window.location.href);
+        const fromQuery = url.searchParams.get('tab');
+        if (validTabs.has(fromQuery)) return fromQuery;
+
+        const hash = (window.location.hash || '').replace('#', '');
+        if (validTabs.has(hash)) return hash;
+        if (hash === 'payments') return 'payments';
+
+        return normalizeTab(serverTab);
+      }
+
+      function showTab(tab, syncUrl = true) {
+        const activeTab = normalizeTab(tab);
+
+        tabPanes.forEach(p => p.style.display = 'none');
+        document.getElementById('tab-' + activeTab).style.display = 'block';
+        tabButtons.forEach(b => b.classList.remove('active'));
+        document.querySelector('.tab-btn[data-tab="' + activeTab + '"]')?.classList.add('active');
+
+        ongoingCards.style.display = (activeTab === 'ongoing') ? '' : 'none';
+        appliedTimetable.style.display = (activeTab === 'applied') ? '' : 'none';
+
+        if (syncUrl) {
+          const url = new URL(window.location.href);
+          url.searchParams.set('tab', activeTab);
+          history.replaceState({}, '', url.pathname + '?' + url.searchParams.toString());
+        }
+
+        if (activeTab === 'applied') loadTimetable();
+      }
+
+      tabButtons.forEach(btn => btn.addEventListener('click', () => showTab(btn.dataset.tab, true)));
+
+      const weeklyBody = document.getElementById('weeklyBody');
+      const weeklyEvents = document.getElementById('weeklyEvents');
+      let timetableLoaded = false;
+
+      function toMin(hm){ const [h,m] = hm.split(':').map(Number); return h*60+m; }
+      function colorFor(title){
+        let hash = 0;
+        for (let i=0;i<title.length;i++) hash = (hash*31 + title.charCodeAt(i)) >>> 0;
+        const hue = hash % 360;
+        return `hsl(${hue} 70% 85%)`;
+      }
+
+      function renderWeeklyGrid(lectures){
+        if (!weeklyBody || !weeklyEvents) return;
+        const days = ['월','화','수','목','금'];
+        const startMin = 9*60, endMin = 22*60, step=30;
+        const rows = (endMin-startMin)/step;
+
+        weeklyBody.innerHTML = '';
+        weeklyEvents.innerHTML = '';
+
+        for(let r=0; r<rows; r++){
+          const t = startMin + r*step;
+          const th = document.createElement('div');
+          th.className='t';
+          th.textContent = t%60===0 ? `${String(Math.floor(t/60)).padStart(2,'0')}:00` : '';
+          weeklyBody.appendChild(th);
+          for(let d=0; d<5; d++){
+            const c=document.createElement('div'); c.className='c'; weeklyBody.appendChild(c);
+          }
+        }
+
+        const dayWidth = weeklyEvents.clientWidth/5;
+        lectures.forEach((l)=>{
+          if(!days.includes(l.day)) return;
+          const s=Math.max(toMin(l.startTime),startMin), e=Math.min(toMin(l.endTime),endMin);
+          if(e<=s) return;
+          const dayIdx=days.indexOf(l.day);
+          const top=((s-startMin)/step)*24 + 2;
+          const height=((e-s)/step)*24 - 4;
+
+          const div=document.createElement('div');
+          const requested = l.status === 'REQUESTED';
+          div.className='lecture-block' + (requested ? ' conflict' : '');
+          div.style.left = `${dayIdx*dayWidth + 4}px`;
+          div.style.top = `${top}px`;
+          div.style.width = `${dayWidth - 8}px`;
+          div.style.height = `${Math.max(height,24)}px`;
+          div.style.background = colorFor(l.title || '강의');
+          div.innerHTML = `<strong>${l.title}</strong><div>${l.room || '-'}</div><div>${l.startTime}~${l.endTime}</div><div>${requested ? '신청중' : '수강중'}</div>`;
+          weeklyEvents.appendChild(div);
+        });
+      }
+
+      function loadTimetable() {
+        if (timetableLoaded) return;
+        fetch('/api/me/timetable?tab=applied')
+          .then(r => r.json())
+          .then(renderWeeklyGrid)
+          .catch(() => renderWeeklyGrid([]));
+        timetableLoaded = true;
+      }
+
+      async function refreshCourseProgress(courseId) {
+        if (!courseId) return;
+        const card = document.querySelector(`.lecture-card[data-course-id='${courseId}']`);
+        if (!card) return;
+        try {
+          const res = await fetch(`/api/courses/${courseId}/progress`);
+          if (!res.ok) return;
+          const json = await res.json();
+          const percent = Number(json.percent || 0);
+          const completed = Number(json.completedLessons || 0);
+          const total = Number(json.totalLessons || 0);
+          const textEl = card.querySelector('.course-progress-text');
+          const countEl = card.querySelector('.course-progress-count');
+          const barEl = card.querySelector('.course-progress-bar');
+          if (textEl) textEl.textContent = `진도율 ${percent}%`;
+          if (countEl) countEl.textContent = `${completed}/${total}차시`;
+          if (barEl) barEl.style.width = `${percent}%`;
+        } catch (_) {}
+      }
+
+      window.addEventListener('storage', (e) => {
+        if (e.key !== 'lms-course-progress-updated' || !e.newValue) return;
+        try {
+          const payload = JSON.parse(e.newValue);
+          refreshCourseProgress(payload.courseId);
+        } catch (_) {}
+      });
+
+      window.addEventListener('popstate', () => showTab(resolveTabFromUrl(), false));
+      window.addEventListener('hashchange', () => showTab(resolveTabFromUrl(), false));
+
+      showTab(resolveTabFromUrl(), false);
+    })();
+</script>
+
+</body>
+</html>

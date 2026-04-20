@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"><body>
+<th:block th:fragment="content">
+  <h2>게시물 관리</h2>
+  <form class="admin-toolbar" method="get" action="/admin/posts">
+    <select name="category"><option value="">전체</option><option value="SUPPORT" th:selected="${category=='SUPPORT'}">공지사항</option><option value="CS" th:selected="${category=='CS'}">고객센터</option><option value="SCHEDULE" th:selected="${category=='SCHEDULE'}">교육일정</option></select>
+    <input name="q" th:value="${q}" placeholder="제목 검색">
+    <button class="btn-primary" type="submit">검색</button>
+    <a class="btn-primary" href="/admin/posts/new">등록</a>
+  </form>
+  <div class="admin-table table-wrap"><table><thead><tr><th>ID</th><th>카테고리</th><th>제목</th><th>상태</th><th>고정</th><th>관리</th></tr></thead><tbody>
+  <tr th:each="p:${posts}"><td th:text="${p.id}"></td><td th:text="${p.category}"></td><td th:text="${p.title}"></td><td th:text="${p.status}"></td><td th:text="${p.pinned} ? 'Y':'N'"></td><td><a class="btn-primary" th:href="@{|/admin/posts/${p.id}/edit|}">수정</a> <form th:action="@{|/admin/posts/${p.id}/publish|}" method="post" style="display:inline"><button type="submit" class="btn-primary">게시</button></form> <form th:action="@{|/admin/posts/${p.id}/archive|}" method="post" style="display:inline"><button type="submit" class="btn-secondary">보관</button></form> <form th:action="@{|/admin/posts/${p.id}/delete|}" method="post" style="display:inline"><button type="submit" class="btn-danger">삭제</button></form></td></tr>
+  </tbody></table></div>
+</th:block>
+</body></html>
